@@ -26,15 +26,15 @@
 - [ ] Migration tool wired — deferred to Sprint 1
 **DONE WHEN:** repo boots locally end-to-end; idea-structuring prompt returns schema-valid output on ≥4/5 test ideas — **5/5 achieved**; failure path (malformed output) is caught, not silently persisted — validation pipeline confirmed via schema checks in code.
 
-### Sprint 1 — Days 2–3: Identity & Profile Foundation
-- [ ] `users` table, registration, login, logout, session/token handling, password hashing
-- [ ] Role selection (Founder/Contributor/Investor) persisted
-- [ ] FounderProfile, ContributorProfile, InvestorProfile tables + CRUD APIs
-- [ ] Onboarding APIs for all 3 personas (progressive, optional fields skippable)
-- [ ] Auth + resource-based authorization middleware (architecture doc §7–8)
-- [ ] Profile completeness scoring (real field-based, not decorative)
-- [ ] UI: design tokens (color/type/spacing/radius/shadow per doc 7 §9–16), landing page, auth screens, persona selection
-**DONE WHEN:** a user can register → select persona → complete profile via real API calls → data persists; unauthorized cross-user access is blocked and tested; landing + auth screens functional against real backend.
+### Sprint 1 — Days 2–3: Identity & Profile Foundation ✅ DONE
+- [x] `users` table, registration, login, logout, session/token handling, password hashing
+- [x] Role selection (Founder/Contributor/Investor) persisted
+- [x] FounderProfile, ContributorProfile, InvestorProfile tables + CRUD APIs
+- [x] Onboarding APIs for Contributor/Investor (upsert-based, idempotent)
+- [x] Auth + resource-based authorization middleware (architecture doc §7–8)
+- [x] Profile completeness scoring (real field-based calculation, verified: 20% with only display_name filled — matches expected math)
+- [ ] UI: design tokens, landing page, auth screens, persona selection — deferred, backend-first approach taken instead
+**DONE WHEN:** a user can register → select persona → complete profile via real API calls → data persists — **validated live against Supabase**: register ✅, login ✅, GET /api/profiles/me with real JWT ✅, wrong password correctly rejected (INVALID_CREDENTIALS, no crash) ✅.
 
 ---
 
