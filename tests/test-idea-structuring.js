@@ -2,7 +2,7 @@
  * Sprint 0 validation spike — AI/Intelligence spec §75 (test data strategy),
  * TRD §97 (AI test cases).
  *
- * Run: GEMINI_API_KEY=your_key node tests/test-idea-structuring.js
+ * Run: GROQ_API_KEY=your_key node tests/test-idea-structuring.js
  *
  * Purpose: confirm the idea-structuring engine reliably returns valid,
  * non-hallucinated structured output across a range of REAL messy input —
@@ -36,10 +36,10 @@ const TEST_IDEAS = [
 ];
 
 async function run() {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    console.error('Set GEMINI_API_KEY environment variable first.');
-    console.error('Example: GEMINI_API_KEY=AQ.xxxxx node tests/test-idea-structuring.js');
+    console.error('Set GROQ_API_KEY environment variable first.');
+    console.error('Example: GROQ_API_KEY=gsk_xxxxx node tests/test-idea-structuring.js');
     process.exit(1);
   }
 
