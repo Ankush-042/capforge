@@ -2,8 +2,18 @@
   "name": "capforge",
   "version": "0.1.0",
   "description": "AI-driven venture intelligence and startup team-formation platform",
+  "main": "backend/server.js",
   "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
     "test:idea-structuring": "node tests/test-idea-structuring.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "dotenv": "^16.4.5"
   },
   "engines": {
     "node": ">=18.0.0"
