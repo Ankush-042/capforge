@@ -1,0 +1,155 @@
+/**
+ * Startup creation + AI idea-structuring orchestration.
+ * Ref: TRD §15-16, App Flow §4.2, SRS §13-17.
+ *
+ * Non-negotiable per architecture doc §106 Rule 5: AI output is never
+ * trusted blindly — every call here goes through the Sprint-0-validated
+ * schema validation before persistence, and every AI operation is
+ * traceable via an ai_jobs row (Rule: no fake persistence).
+ */
+const pool = require('../shared/db');
+const { structureIdea } = require('../ai/ideaStructuring');
+
+const RETRY_LIMIT = 2;
+
+/**
+ * SRS §13: Founder creates a startup with a raw idea.
+ * Persists immediately (draft), then triggers AI structuring.
+ * If AI structuring fails, the founder's raw idea is NEVER lost —
+ * this is the exact failure mode the AI spec Rule 8 forbids destroying.
+ */
+async function createStartup(founderId, { name, rawIdea }) {
+  if (!name || name.trim().length === 0) {
+    return { success: false, error: 'MISSING_NAME' };
+  }
+  if (!rawIdea || rawIdea.trim().length < 10) {
+    return { success: false, error: 'IDEA_TOO_SHORT', detail: 'Describe your idea in a bit more detail (10+ characters).' };
+  }
+
+  const result = await pool.query(
+    `INSERT INTO startups (founder_id, name, raw_idea, status) VALUES ($1, $2, $3, 'DRAFT') RETURNING *`,
+    [founderId, name.trim(), rawIdea.trim()]
+  );
+  const startup = result.rows[0];
+
+  // Auto-trigger structuring (App Flow §4.2). Caller gets the draft
+  // immediately; analysis result is attached to the response if it
+  // completes fast enough, but the draft itself is already durable.
+  const analysisResult = await analyzeStartup(founderId, startup.id);
+
+  return { success: true, startup: analysisResult.success ? analysisResult.startup : startup, analysis: analysisResult };
+}
+
+/**
+ * AI-01 orchestration with full job tracking, retry, and failure isolation.
+ * TRD §19, §56-58: bounded retries, never silently corrupt state on failure.
+ */
+async function analyzeStartup(founderId, startupId) {
+  const ownership = await pool.query('SELECT * FROM startups WHERE id = $1 AND founder_id = $2', [startupId, founderId]);
+  if (ownership.rows.length === 0) {
+    return { success: false, error: 'NOT_FOUND_OR_UNAUTHORIZED' };
+  }
+  const startup = ownership.rows[0];
+
+  const jobResult = await pool.query(
+    `INSERT INTO ai_jobs (user_id, startup_id, job_type, status, model, prompt_version)
+     VALUES ($1, $2, 'IDEA_STRUCTURING', 'PROCESSING', 'groq/llama-3.3-70b-versatile', 'idea_structuring_v1')
+     RETURNING id`,
+    [founderId, startupId]
+  );
+  const jobId = jobResult.rows[0].id;
+
+  await pool.query(`UPDATE startups SET status = 'ANALYZING', updated_at = now() WHERE id = $1`, [startupId]);
+
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    await failJob(jobId, 'GROQ_API_KEY not configured on server');
+    await pool.query(`UPDATE startups SET status = 'DRAFT', updated_at = now() WHERE id = $1`, [startupId]);
+    return { success: false, error: 'AI_NOT_CONFIGURED' };
+  }
+
+  let aiResult;
+  let attempts = 0;
+  do {
+    attempts++;
+    aiResult = await structureIdea(startup.raw_idea, apiKey);
+  } while (!aiResult.success && attempts <= RETRY_LIMIT);
+
+  await pool.query('UPDATE ai_jobs SET attempt_count = $1 WHERE id = $2', [attempts, jobId]);
+
+  if (!aiResult.success) {
+    await failJob(jobId, aiResult.errors?.join('; ') || 'Unknown AI failure');
+    // TRD §101: preserve raw idea, revert to a retryable state — never destroy input.
+    await pool.query(`UPDATE startups SET status = 'DRAFT', updated_at = now() WHERE id = $1`, [startupId]);
+    return { success: false, error: 'ANALYSIS_FAILED', detail: aiResult.errors };
+  }
+
+  const d = aiResult.data;
+  const updateResult = await pool.query(
+    `UPDATE startups SET
+       problem = $1, solution = $2, target_users = $3, domain = $4, business_model = $5,
+       stage = $6, required_roles = $7, required_skills = $8, technology_requirements = $9,
+       risks = $10, confidence = $11, clarification_needed = $12,
+       status = 'STRUCTURED', structured_at = now(), updated_at = now(), founder_confirmed = false
+     WHERE id = $13 RETURNING *`,
+    [d.problem, d.solution, d.target_users, d.domain, d.business_model, d.stage,
+     d.required_roles, d.required_skills, d.technology_requirements, d.risks,
+     JSON.stringify(d.confidence), d.clarification_needed, startupId]
+  );
+
+  await pool.query(`UPDATE ai_jobs SET status = 'COMPLETED', completed_at = now() WHERE id = $1`, [jobId]);
+
+  return { success: true, startup: updateResult.rows[0] };
+}
+
+async function failJob(jobId, errorMessage) {
+  await pool.query(`UPDATE ai_jobs SET status = 'FAILED', error = $1, completed_at = now() WHERE id = $2`, [errorMessage, jobId]);
+}
+
+/**
+ * SRS §17: founder confirms/edits AI-generated structure.
+ * Confirmed data takes precedence over future AI inference (App Flow §4.2 principle).
+ */
+async function confirmStartup(founderId, startupId, edits) {
+  const ownership = await pool.query('SELECT id FROM startups WHERE id = $1 AND founder_id = $2', [startupId, founderId]);
+  if (ownership.rows.length === 0) {
+    return { success: false, error: 'NOT_FOUND_OR_UNAUTHORIZED' };
+  }
+
+  const editableFields = ['problem', 'solution', 'target_users', 'domain', 'business_model', 'stage',
+                           'required_roles', 'required_skills', 'technology_requirements', 'risks'];
+  const fields = Object.keys(edits || {}).filter(k => editableFields.includes(k));
+
+  let setClauses = fields.map((f, i) => `${f} = $${i + 2}`);
+  let values = fields.map(f => edits[f]);
+
+  setClauses.push('founder_confirmed = true', "status = 'ACTIVE'", 'updated_at = now()');
+
+  const result = await pool.query(
+    `UPDATE startups SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`,
+    [startupId, ...values]
+  );
+  return { success: true, startup: result.rows[0] };
+}
+
+async function getStartup(startupId, requestingUserId) {
+  const result = await pool.query('SELECT * FROM startups WHERE id = $1', [startupId]);
+  if (result.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
+  const startup = result.rows[0];
+
+  // Visibility check: owner always sees it; others only if discoverable+active.
+  const isOwner = startup.founder_id === requestingUserId;
+  const isVisible = startup.visibility === 'DISCOVERABLE' && startup.status === 'ACTIVE';
+  if (!isOwner && !isVisible) {
+    return { success: false, error: 'NOT_FOUND' }; // don't leak existence of private startups
+  }
+
+  return { success: true, startup, isOwner };
+}
+
+async function listMyStartups(founderId) {
+  const result = await pool.query('SELECT * FROM startups WHERE founder_id = $1 ORDER BY created_at DESC', [founderId]);
+  return { success: true, startups: result.rows };
+}
+
+module.exports = { createStartup, analyzeStartup, confirmStartup, getStartup, listMyStartups };

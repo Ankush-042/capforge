@@ -2,12 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const authRoutes = require('./auth/authRoutes');
 const profileRoutes = require('./profiles/profileRoutes');
+const startupRoutes = require('./startups/startupRoutes');
 
 const app = express();
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);
+app.use('/api/startups', startupRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
