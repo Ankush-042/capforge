@@ -31,8 +31,9 @@ async function register({ email, password, primaryRole, displayName }) {
     return { success: false, error: 'MISSING_DISPLAY_NAME' };
   }
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
 
     const existing = await client.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
@@ -59,10 +60,12 @@ async function register({ email, password, primaryRole, displayName }) {
     const token = signToken(user);
     return { success: true, user: { id: user.id, email: user.email, primaryRole: user.primary_role }, token };
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (client) {
+      try { await client.query('ROLLBACK'); } catch (_) { /* connection may already be dead */ }
+    }
     return { success: false, error: 'REGISTRATION_FAILED', detail: err.message };
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
