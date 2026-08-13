@@ -1,0 +1,11 @@
+{
+  "name": "capforge",
+  "version": "0.1.0",
+  "description": "AI-driven venture intelligence and startup team-formation platform",
+  "scripts": {
+    "test:idea-structuring": "node tests/test-idea-structuring.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
