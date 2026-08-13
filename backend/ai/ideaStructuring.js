@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.5-flash-lite'; // GA model, recommended for extraction/classification tasks
 const GEMINI_ENDPOINT = (apiKey) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
 
@@ -104,8 +104,7 @@ async function structureIdea(rawIdea, apiKey) {
       body: JSON.stringify({
         contents: [{ parts: [{ text: fullPrompt }] }],
         generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2
+          responseMimeType: 'application/json'
         }
       })
     });
