@@ -1,9 +1,12 @@
 /**
  * AI-01 — Idea Structuring Engine
  * Converts a founder's raw startup idea into a structured, schema-validated
- * venture representation using Gemini.
+ * venture representation using an LLM (Groq — OpenAI-compatible endpoint).
  *
  * Spec reference: TRD §15, AI/Intelligence spec §6-9, §53 (validation pipeline)
+ * Provider: Groq (chosen for free-tier reliability — see AI orchestration
+ * design note below; swapping providers is a config change, not a rewrite,
+ * per TRD §8's requirement that the LLM layer stay swappable).
  *
  * Design principles enforced here (non-negotiable per AI spec §86):
  *  - No fake AI output: real API call, real response, real validation.
@@ -15,9 +18,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const GEMINI_MODEL = 'gemini-3.5-flash-lite'; // GA model, recommended for extraction/classification tasks
-const GEMINI_ENDPOINT = (apiKey) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 const PROMPT_TEMPLATE_PATH = path.join(__dirname, '..', '..', 'prompts', 'idea_structuring_v1.md');
 
@@ -33,11 +35,10 @@ const VALID_CONFIDENCE = ['high', 'medium', 'low'];
 /**
  * Loads the system instruction portion of the prompt template
  * (everything between "## System Instruction" and "## Output Schema"
- * plus the schema itself — Gemini gets the full spec, not just a summary).
+ * plus the schema itself — the model gets the full spec, not just a summary).
  */
 function loadPromptTemplate() {
   const raw = fs.readFileSync(PROMPT_TEMPLATE_PATH, 'utf-8');
-  // Strip the User Input Template section — that gets built per-call.
   const cutoff = raw.indexOf('## User Input Template');
   return cutoff !== -1 ? raw.slice(0, cutoff).trim() : raw.trim();
 }
@@ -81,11 +82,11 @@ function validateStructuredOutput(obj) {
 }
 
 /**
- * Calls Gemini to structure a raw idea. Does NOT persist anything —
- * that's the caller's job (per architecture: this module is pure AI orchestration).
+ * Calls the LLM to structure a raw idea. Does NOT persist anything —
+ * that's the caller's job (this module is pure AI orchestration).
  *
  * @param {string} rawIdea - the founder's raw text input
- * @param {string} apiKey - Gemini API key
+ * @param {string} apiKey - Groq API key
  * @returns {Promise<{success: boolean, data?: object, errors?: string[], rawResponse?: string}>}
  */
 async function structureIdea(rawIdea, apiKey) {
@@ -94,24 +95,30 @@ async function structureIdea(rawIdea, apiKey) {
   }
 
   const systemPrompt = loadPromptTemplate();
-  const fullPrompt = `${systemPrompt}\n\n## User Input\n\nRaw idea:\n"""\n${rawIdea.trim()}\n"""\n\nReturn the JSON object now.`;
+  const userMessage = `Raw idea:\n"""\n${rawIdea.trim()}\n"""\n\nReturn the JSON object now.`;
 
   let apiResponse;
   try {
-    const res = await fetch(GEMINI_ENDPOINT(apiKey), {
+    const res = await fetch(GROQ_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: fullPrompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json'
-        }
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2
       })
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      return { success: false, errors: [`Gemini API error ${res.status}: ${errText}`] };
+      return { success: false, errors: [`Groq API error ${res.status}: ${errText}`] };
     }
 
     apiResponse = await res.json();
@@ -119,9 +126,9 @@ async function structureIdea(rawIdea, apiKey) {
     return { success: false, errors: [`Network/request failure: ${err.message}`] };
   }
 
-  const textOutput = apiResponse?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const textOutput = apiResponse?.choices?.[0]?.message?.content;
   if (!textOutput) {
-    return { success: false, errors: ['No text output in Gemini response'], rawResponse: JSON.stringify(apiResponse) };
+    return { success: false, errors: ['No text output in Groq response'], rawResponse: JSON.stringify(apiResponse) };
   }
 
   let parsed;
