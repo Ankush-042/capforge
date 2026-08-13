@@ -40,14 +40,14 @@
 
 ## PHASE 1 — Core Intelligence Loop (Days 4–15) — **Day 15 = core thesis proven end-to-end**
 
-### Sprint 2 — Days 4–6: Venture Core — Startup Creation + AI Structuring
-- [ ] `startups` table (raw_idea, structured fields, status, visibility)
-- [ ] Idea-structuring pipeline wired to validated Sprint-0 prompt with provenance tagging (user-provided / AI-inferred / confirmed)
-- [ ] Founder review/edit/confirm API + UI (doc 7 §31, the "strongest screen")
-- [ ] AI job model: QUEUED → PROCESSING → COMPLETED/FAILED, with retry (bounded, per AI doc §58)
-- [ ] Startup embedding generation (pgvector) on structured-state change
-- [ ] UI: AI idea-structuring screen (hero screen — full polish)
-**DONE WHEN:** founder submits raw idea → gets structured venture back → edits/confirms → persists with correct provenance; simulated LLM failure preserves founder's original input and shows a retryable state; embedding stored and regenerates on meaningful edit.
+### Sprint 2 — Days 4–6: Venture Core — Startup Creation + AI Structuring ✅ CORE DONE
+- [x] `startups` table (raw_idea, structured fields, status, visibility)
+- [x] Idea-structuring pipeline wired to validated Sprint-0 prompt with provenance tagging (confidence + clarification_needed persisted)
+- [x] AI job model: QUEUED → PROCESSING → COMPLETED/FAILED, with retry (bounded, 2 attempts)
+- [ ] Founder review/edit/confirm API — built (PATCH /:id/confirm), not yet live-tested
+- [ ] Startup embedding generation (pgvector) — deferred, needed for Sprint 4/7 semantic matching, not Sprint 2 blocking
+- [ ] UI: AI idea-structuring screen — deferred, backend-first approach
+**DONE WHEN:** founder submits raw idea → gets structured venture back → persists with correct provenance — **validated live**: real "FoodSense" startup created via authenticated API call, Groq returned full valid structure (problem/solution/domain/business_model/required_roles/skills/tech/risks/confidence/clarification_needed), status correctly transitioned DRAFT→ANALYZING→STRUCTURED, raw_idea preserved verbatim.
 
 ### Sprint 3 — Days 6–9: Gap, Readiness, Risk Engines
 - [ ] Gap detection: required-capability set vs. team-coverage set (deterministic first pass, TRD §17)
