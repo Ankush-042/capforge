@@ -1,11 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const authRoutes = require('./auth/authRoutes');
+const profileRoutes = require('./profiles/profileRoutes');
 
 const app = express();
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/profiles', profileRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
