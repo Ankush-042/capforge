@@ -40,11 +40,11 @@
 
 ## PHASE 1 — Core Intelligence Loop (Days 4–15) — **Day 15 = core thesis proven end-to-end**
 
-### Sprint 2 — Days 4–6: Venture Core — Startup Creation + AI Structuring ✅ CORE DONE
+### Sprint 2 — Days 4–6: Venture Core — Startup Creation + AI Structuring ✅ DONE
 - [x] `startups` table (raw_idea, structured fields, status, visibility)
 - [x] Idea-structuring pipeline wired to validated Sprint-0 prompt with provenance tagging (confidence + clarification_needed persisted)
 - [x] AI job model: QUEUED → PROCESSING → COMPLETED/FAILED, with retry (bounded, 2 attempts)
-- [ ] Founder review/edit/confirm API — built (PATCH /:id/confirm), not yet live-tested
+- [x] Founder review/edit/confirm API — validated live (stage edit applied, founder_confirmed=true, status STRUCTURED->ACTIVE)
 - [ ] Startup embedding generation (pgvector) — deferred, needed for Sprint 4/7 semantic matching, not Sprint 2 blocking
 - [ ] UI: AI idea-structuring screen — deferred, backend-first approach
 **DONE WHEN:** founder submits raw idea → gets structured venture back → persists with correct provenance — **validated live**: real "FoodSense" startup created via authenticated API call, Groq returned full valid structure (problem/solution/domain/business_model/required_roles/skills/tech/risks/confidence/clarification_needed), status correctly transitioned DRAFT→ANALYZING→STRUCTURED, raw_idea preserved verbatim.
