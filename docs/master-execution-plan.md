@@ -89,7 +89,7 @@
 - [ ] Founder↔Investor connection flow
 **DONE WHEN:** investor critical journey (SRS §101/§13) passes end-to-end on real data; investor view correctly shows readiness/risk that founder/contributor views don't.
 
-### Sprint 7 — Days 17–19: Search & Discovery ✅ DONE
+### Sprint 7 — Days 17–19: Search & Discovery ✅ DONE (validated live, 1 real bug caught & root-caused)
 - [ ] Structured filter search across startups/contributors/investors
 - [ ] Natural-language semantic search (query → interpreted filters + vector retrieval, SRS §35)
 - [ ] Discovery-level authorization enforced backend-side (no private data leaks through search)
