@@ -82,7 +82,7 @@
 
 ## PHASE 2 — Ecosystem Completion (Days 15–21)
 
-### Sprint 6 — Days 15–17: Investor Module
+### Sprint 6 — Days 15–17: Investor Module ✅ DONE
 - [ ] Investor profile + thesis storage, investor embedding
 - [ ] Investor matching pipeline (same architecture, investor-lens weights: thesis/stage/domain/geography/ticket + readiness + risk)
 - [ ] Investor dashboard + startup detail view (readiness/risk visible per permission rules)
