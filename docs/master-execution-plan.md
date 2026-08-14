@@ -58,7 +58,7 @@
 - [x] Recalculation trigger — manual re-diagnose endpoint working; automatic triggers on team-state change deferred to Sprint 5 (Team Formation)
 **DONE WHEN:** validated live — real "FoodSense2" startup diagnosed 3 critical gaps (0% coverage each, correct since founder profile has no skills yet), readiness scored 50/100 with dimensions matching reality (team=0, technical=0, problem/solution=0.9 from high AI confidence), 2 accurate risks generated with real evidence and suggested actions. Algorithm additionally unit-tested standalone against AI spec §75 scenarios before going live.
 
-### Sprint 4 — Days 9–12: Matching Engine ✅ DONE
+### Sprint 4 — Days 9–12: Matching Engine ✅ DONE (validated live)
 - [ ] Contributor skill/experience/availability data finalized and queryable
 - [ ] Hard-filter candidate retrieval (role, availability, visibility — TRD §23)
 - [ ] Scoring pipeline: skill/role/domain/experience/stage/availability/semantic fit, configurable weights (AI doc §20)
