@@ -5,6 +5,7 @@ const profileRoutes = require('./profiles/profileRoutes');
 const startupRoutes = require('./startups/startupRoutes');
 const gapRoutes = require('./gaps/gapRoutes');
 const readinessRoutes = require('./readiness/readinessRoutes');
+const matchingRoutes = require('./matching/matchingRoutes');
 
 const app = express();
 app.use(express.json());
@@ -14,6 +15,7 @@ app.use('/api/profiles', profileRoutes);
 app.use('/api/startups', startupRoutes);
 app.use('/api', gapRoutes);
 app.use('/api', readinessRoutes);
+app.use('/api', matchingRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

@@ -1,0 +1,193 @@
+/**
+ * AI-06/AI-07 — Candidate Retrieval + Ranking Engine.
+ * Ref: AI/Intelligence spec §18-23, architecture doc §55-60, TRD §21-25.
+ *
+ * NON-NEGOTIABLE (architecture doc §106 Rule 4, AI spec §63):
+ * Ranking is deterministic and rule-based, NOT LLM-generated. The LLM has
+ * no role in this file at all. This is what makes CapForge's matching
+ * reproducible, debuggable, and honestly explainable — the explanation
+ * text is generated FROM the actual component scores below, never
+ * invented separately.
+ */
+const pool = require('../shared/db');
+const { normalizeRole } = require('../gaps/gapDiagnosisService');
+
+// Documented, configurable weights (architecture doc §58) — sum to 1.0.
+const WEIGHTS = {
+  skillFit: 0.40,
+  roleFit: 0.20,
+  domainFit: 0.15,
+  stageFit: 0.10,
+  experienceFit: 0.10,
+  availabilityFit: 0.05
+};
+
+/**
+ * Pure scoring function — one candidate against one gap. Independently
+ * testable (TRD §92), no DB or network access.
+ *
+ * @param {{role: string, required_skills: string[]}} gap
+ * @param {object} startup - needs .domain, .stage
+ * @param {object} candidate - { headline, skills, preferred_domains, preferred_stage, experience_years, availability }
+ */
+function scoreCandidate(gap, startup, candidate) {
+  const requiredSkills = (gap.required_skills || []).map(s => s.toLowerCase().trim());
+  const candidateSkills = new Set((candidate.skills || []).map(s => s.toLowerCase().trim()));
+
+  // --- Skill fit: overlap of candidate's skills against THIS gap's specific skills ---
+  const overlap = requiredSkills.filter(s => candidateSkills.has(s));
+  const skillFit = requiredSkills.length > 0 ? overlap.length / requiredSkills.length : 0;
+
+  // --- Role fit: does the candidate's stated headline match the gap's role? ---
+  const roleFit = (candidate.headline && normalizeRole(candidate.headline) === normalizeRole(gap.role)) ? 1.0 : 0.0;
+
+  // --- Domain fit: overlap of candidate's preferred domains with the startup's domain ---
+  const startupDomains = new Set((startup.domain || []).map(d => d.toLowerCase().trim()));
+  const candidateDomains = (candidate.preferred_domains || []).map(d => d.toLowerCase().trim());
+  const domainOverlap = candidateDomains.filter(d => startupDomains.has(d));
+  const domainFit = startupDomains.size > 0
+    ? Math.min(domainOverlap.length / startupDomains.size, 1)
+    : 0.5; // neutral if startup has no domain info to compare against
+
+  // --- Stage fit: does the candidate's preferred stage include this startup's stage? ---
+  const preferredStages = (candidate.preferred_stage || []).map(s => s.toLowerCase().trim());
+  let stageFit;
+  if (preferredStages.length === 0) {
+    stageFit = 0.5; // no stated preference — neutral, not penalized
+  } else {
+    stageFit = preferredStages.includes((startup.stage || '').toLowerCase()) ? 1.0 : 0.0;
+  }
+
+  // --- Experience fit: v1 heuristic, linear up to 5 years (documented approximation) ---
+  const experienceFit = Math.min((candidate.experience_years || 0) / 5, 1);
+
+  // --- Availability fit: v1 — presence signal only, no startup-side requirement yet ---
+  const availabilityFit = candidate.availability ? 0.7 : 0.3;
+
+  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit };
+
+  const finalScore = Object.keys(WEIGHTS).reduce(
+    (sum, key) => sum + breakdown[key] * WEIGHTS[key], 0
+  );
+
+  return { score: Math.round(finalScore * 100) / 100, breakdown, overlap, domainOverlap };
+}
+
+/**
+ * Converts raw component scores into human-readable, evidence-based
+ * explanation text. Never invents a reason not present in `breakdown`
+ * (AI spec §64, architecture doc §59).
+ */
+function explainScore(gap, breakdown, overlap, domainOverlap) {
+  const strengths = [];
+  const limitations = [];
+
+  if (breakdown.skillFit >= 0.6) {
+    strengths.push(`Strong skill match for "${gap.role}" — covers ${overlap.join(', ')}.`);
+  } else if (breakdown.skillFit > 0) {
+    strengths.push(`Partial skill overlap: ${overlap.join(', ')}.`);
+  } else {
+    limitations.push(`No overlapping skills found for the specific requirements of "${gap.role}".`);
+  }
+
+  if (breakdown.roleFit === 1.0) {
+    strengths.push(`Profile headline directly matches the "${gap.role}" role.`);
+  }
+
+  if (breakdown.domainFit >= 0.6) {
+    strengths.push(`Domain preference aligns with this venture (${domainOverlap.join(', ')}).`);
+  } else if (breakdown.domainFit < 0.3 && domainOverlap.length === 0) {
+    limitations.push('No stated domain preference overlaps with this venture.');
+  }
+
+  if (breakdown.stageFit === 1.0) {
+    strengths.push('Prefers working with startups at this exact stage.');
+  } else if (breakdown.stageFit === 0.0) {
+    limitations.push('Stated stage preference does not include this venture\'s current stage.');
+  }
+
+  if (breakdown.experienceFit >= 0.6) {
+    strengths.push('Has meaningful relevant experience.');
+  }
+
+  if (breakdown.availabilityFit < 0.5) {
+    limitations.push('Availability is not clearly stated on their profile.');
+  }
+
+  return { strengths, limitations };
+}
+
+/**
+ * Retrieves eligible candidates (hard filters, TRD §23) and ranks them
+ * against a specific gap. Persists results as recommendations.
+ */
+async function rankCandidatesForGap(gapId) {
+  const gapResult = await pool.query('SELECT * FROM gaps WHERE id = $1', [gapId]);
+  if (gapResult.rows.length === 0) return { success: false, error: 'GAP_NOT_FOUND' };
+  const gap = gapResult.rows[0];
+
+  const startupResult = await pool.query('SELECT * FROM startups WHERE id = $1', [gap.startup_id]);
+  const startup = startupResult.rows[0];
+
+  // Hard filters: must be a CONTRIBUTOR, profile must be discoverable,
+  // and must not already be on this startup's team.
+  const candidatesResult = await pool.query(
+    `SELECT u.id as user_id, p.headline, p.skills, cp.availability, cp.preferred_domains,
+            cp.preferred_stage, cp.experience_years
+     FROM users u
+     JOIN profiles p ON p.user_id = u.id
+     JOIN contributor_profiles cp ON cp.profile_id = p.id
+     WHERE u.primary_role = 'CONTRIBUTOR'
+       AND p.visibility = 'DISCOVERABLE'
+       AND u.id NOT IN (SELECT user_id FROM startup_team_members WHERE startup_id = $1)`,
+    [startup.id]
+  );
+
+  if (candidatesResult.rows.length === 0) {
+    return { success: true, recommendations: [], note: 'No eligible contributors currently on the platform.' };
+  }
+
+  const ranked = candidatesResult.rows.map(candidate => {
+    const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate);
+    const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
+    return { candidate, score, breakdown, explanation };
+  }).sort((a, b) => b.score - a.score);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM recommendations WHERE source_gap_id = $1', [gapId]);
+
+    const inserted = [];
+    for (let i = 0; i < ranked.length; i++) {
+      const r = ranked[i];
+      const row = await client.query(
+        `INSERT INTO recommendations (startup_id, target_user_id, source_gap_id, recommendation_type, score, rank, score_breakdown, explanation)
+         VALUES ($1, $2, $3, 'CONTRIBUTOR', $4, $5, $6, $7) RETURNING *`,
+        [startup.id, r.candidate.user_id, gapId, r.score, i + 1, JSON.stringify(r.breakdown), JSON.stringify(r.explanation)]
+      );
+      inserted.push({ ...row.rows[0], candidate_headline: r.candidate.headline });
+    }
+    await client.query('COMMIT');
+    return { success: true, recommendations: inserted };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return { success: false, error: 'PERSISTENCE_FAILED', detail: err.message };
+  } finally {
+    client.release();
+  }
+}
+
+async function getRecommendationsForStartup(startupId) {
+  const result = await pool.query(
+    `SELECT r.*, p.headline as candidate_headline, g.role as gap_role
+     FROM recommendations r
+     JOIN profiles p ON p.user_id = r.target_user_id
+     LEFT JOIN gaps g ON g.id = r.source_gap_id
+     WHERE r.startup_id = $1 ORDER BY r.source_gap_id, r.rank`,
+    [startupId]
+  );
+  return { success: true, recommendations: result.rows };
+}
+
+module.exports = { scoreCandidate, explainScore, rankCandidatesForGap, getRecommendationsForStartup, WEIGHTS };
