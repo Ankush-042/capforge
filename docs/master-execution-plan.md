@@ -68,7 +68,7 @@
 - [ ] UI: Gap dashboard, Gap detail, Match/candidate card (hero screens)
 **DONE WHEN:** given a real gap + seeded contributor pool, API returns ranked candidates with structured evidence-based reasons; identical inputs produce identical rankings (deterministic, reproducible); UI renders real scores/reasons, no mock data.
 
-### Sprint 5 — Days 12–15: Connections, Team Formation, Propagation Loop ✅ DONE
+### Sprint 5 — Days 12–15: Connections, Team Formation, Propagation Loop ✅ DONE (validated live — full loop confirmed)
 - [ ] Connection request/accept/reject APIs + state machine (PENDING/ACCEPTED/REJECTED/CANCELLED)
 - [ ] Notification generation on connection events
 - [ ] Team membership CRUD, role assignment
