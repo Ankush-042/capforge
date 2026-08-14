@@ -61,7 +61,7 @@ async function getMyProfile(userId, role) {
 }
 
 async function updateBaseProfile(userId, updates) {
-  const allowed = ['display_name', 'headline', 'bio', 'location', 'profile_image'];
+  const allowed = ['display_name', 'headline', 'bio', 'location', 'profile_image', 'skills'];
   const fields = Object.keys(updates).filter(k => allowed.includes(k));
   if (fields.length === 0) return { success: false, error: 'NO_VALID_FIELDS' };
 
