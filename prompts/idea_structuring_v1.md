@@ -24,18 +24,21 @@ Your job is to extract a structured representation of the venture. You must:
   "domain": string[],
   "business_model": string[],
   "stage": "Idea" | "Prototype" | "MVP" | "Early Traction" | "Unclear",
-  "required_roles": string[],
-  "required_skills": string[],
+  "role_requirements": [
+    { "role": string, "skills": string[] }
+  ],
   "technology_requirements": string[],
   "risks": string[],
   "confidence": {
     "problem": "high" | "medium" | "low",
     "solution": "high" | "medium" | "low",
     "domain": "high" | "medium" | "low",
-    "required_roles": "high" | "medium" | "low"
+    "role_requirements": "high" | "medium" | "low"
   },
   "clarification_needed": string[]
 }
+
+`role_requirements` is a list of the distinct roles this venture needs, each paired with ONLY the skills specifically relevant to that role — do not repeat unrelated skills across roles. For example, a "Backend Engineer" role should list backend-relevant skills (e.g. "Node.js", "PostgreSQL"), not marketing or design skills, even if the venture needs those elsewhere. This pairing is critical — it is used downstream to calculate exactly how well each specific role is covered by the current team, so vague or cross-contaminated skill lists will produce incorrect results.
 
 `clarification_needed` should list specific questions worth asking the founder if key information was missing or ambiguous. Empty array if the idea was clear enough.
 

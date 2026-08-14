@@ -32,6 +32,22 @@ async function createStartup(founderId, { name, rawIdea }) {
   );
   const startup = result.rows[0];
 
+  // The founder is the venture's first team member by definition — this
+  // is what gives gap diagnosis real coverage data to compare against
+  // from the very first analysis, rather than showing 100% gaps on
+  // every role even when the founder themself covers one of them.
+  const profileResult = await pool.query(
+    `SELECT p.headline, p.skills FROM profiles p WHERE p.user_id = $1`,
+    [founderId]
+  );
+  const founderProfile = profileResult.rows[0];
+  await pool.query(
+    `INSERT INTO startup_team_members (startup_id, user_id, role, skills, is_founder)
+     VALUES ($1, $2, $3, $4, true)
+     ON CONFLICT (startup_id, user_id) DO NOTHING`,
+    [startup.id, founderId, founderProfile?.headline || 'Founder', founderProfile?.skills || []]
+  );
+
   // Auto-trigger structuring (App Flow §4.2). Caller gets the draft
   // immediately; analysis result is attached to the response if it
   // completes fast enough, but the draft itself is already durable.
@@ -88,12 +104,12 @@ async function analyzeStartup(founderId, startupId) {
   const updateResult = await pool.query(
     `UPDATE startups SET
        problem = $1, solution = $2, target_users = $3, domain = $4, business_model = $5,
-       stage = $6, required_roles = $7, required_skills = $8, technology_requirements = $9,
-       risks = $10, confidence = $11, clarification_needed = $12,
+       stage = $6, role_requirements = $7, technology_requirements = $8,
+       risks = $9, confidence = $10, clarification_needed = $11,
        status = 'STRUCTURED', structured_at = now(), updated_at = now(), founder_confirmed = false
-     WHERE id = $13 RETURNING *`,
+     WHERE id = $12 RETURNING *`,
     [d.problem, d.solution, d.target_users, d.domain, d.business_model, d.stage,
-     d.required_roles, d.required_skills, d.technology_requirements, d.risks,
+     JSON.stringify(d.role_requirements), d.technology_requirements, d.risks,
      JSON.stringify(d.confidence), d.clarification_needed, startupId]
   );
 
@@ -117,11 +133,11 @@ async function confirmStartup(founderId, startupId, edits) {
   }
 
   const editableFields = ['problem', 'solution', 'target_users', 'domain', 'business_model', 'stage',
-                           'required_roles', 'required_skills', 'technology_requirements', 'risks'];
+                           'role_requirements', 'technology_requirements', 'risks'];
   const fields = Object.keys(edits || {}).filter(k => editableFields.includes(k));
 
   let setClauses = fields.map((f, i) => `${f} = $${i + 2}`);
-  let values = fields.map(f => edits[f]);
+  let values = fields.map(f => f === 'role_requirements' ? JSON.stringify(edits[f]) : edits[f]);
 
   setClauses.push('founder_confirmed = true', "status = 'ACTIVE'", 'updated_at = now()');
 
