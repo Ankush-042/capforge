@@ -3,6 +3,8 @@ const express = require('express');
 const authRoutes = require('./auth/authRoutes');
 const profileRoutes = require('./profiles/profileRoutes');
 const startupRoutes = require('./startups/startupRoutes');
+const gapRoutes = require('./gaps/gapRoutes');
+const readinessRoutes = require('./readiness/readinessRoutes');
 
 const app = express();
 app.use(express.json());
@@ -10,6 +12,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/startups', startupRoutes);
+app.use('/api', gapRoutes);
+app.use('/api', readinessRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

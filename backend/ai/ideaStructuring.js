@@ -25,7 +25,7 @@ const PROMPT_TEMPLATE_PATH = path.join(__dirname, '..', '..', 'prompts', 'idea_s
 
 const REQUIRED_FIELDS = [
   'problem', 'solution', 'target_users', 'domain', 'business_model',
-  'stage', 'required_roles', 'required_skills', 'technology_requirements',
+  'stage', 'role_requirements', 'technology_requirements',
   'risks', 'confidence', 'clarification_needed'
 ];
 
@@ -63,15 +63,34 @@ function validateStructuredOutput(obj) {
   }
 
   if (obj.confidence) {
-    for (const k of ['problem', 'solution', 'domain', 'required_roles']) {
+    for (const k of ['problem', 'solution', 'domain', 'role_requirements']) {
       if (obj.confidence[k] && !VALID_CONFIDENCE.includes(obj.confidence[k])) {
         errors.push(`Invalid confidence value for ${k}: ${obj.confidence[k]}`);
       }
     }
   }
 
-  const arrayFields = ['target_users', 'domain', 'business_model', 'required_roles',
-                        'required_skills', 'technology_requirements', 'risks', 'clarification_needed'];
+  if (obj.role_requirements !== undefined) {
+    if (!Array.isArray(obj.role_requirements)) {
+      errors.push('role_requirements must be an array');
+    } else {
+      obj.role_requirements.forEach((r, i) => {
+        if (typeof r !== 'object' || r === null) {
+          errors.push(`role_requirements[${i}] is not an object`);
+        } else {
+          if (typeof r.role !== 'string' || r.role.trim().length === 0) {
+            errors.push(`role_requirements[${i}].role must be a non-empty string`);
+          }
+          if (!Array.isArray(r.skills)) {
+            errors.push(`role_requirements[${i}].skills must be an array`);
+          }
+        }
+      });
+    }
+  }
+
+  const arrayFields = ['target_users', 'domain', 'business_model',
+                        'technology_requirements', 'risks', 'clarification_needed'];
   for (const field of arrayFields) {
     if (obj[field] !== undefined && !Array.isArray(obj[field])) {
       errors.push(`Field ${field} should be an array, got ${typeof obj[field]}`);
