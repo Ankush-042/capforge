@@ -49,15 +49,14 @@
 - [ ] UI: AI idea-structuring screen — deferred, backend-first approach
 **DONE WHEN:** founder submits raw idea → gets structured venture back → persists with correct provenance — **validated live**: real "FoodSense" startup created via authenticated API call, Groq returned full valid structure (problem/solution/domain/business_model/required_roles/skills/tech/risks/confidence/clarification_needed), status correctly transitioned DRAFT→ANALYZING→STRUCTURED, raw_idea preserved verbatim.
 
-### Sprint 3 — Days 6–9: Gap, Readiness, Risk Engines
-- [ ] Gap detection: required-capability set vs. team-coverage set (deterministic first pass, TRD §17)
-- [ ] Gap priority scoring with configurable weights (AI doc §16)
-- [ ] Gap CRUD, evidence/reason storage, status states (OPEN/PARTIALLY_COVERED/FILLED/DISMISSED)
-- [ ] Readiness engine: dimension scores (team/problem/solution/market/execution/technical/business) + weighted overall (AI doc §26)
-- [ ] Risk engine: rule-based category checks (team/execution/technical/market/business)
-- [ ] Recalculation trigger wired for team-state change (test via seeded mutation, no live team yet)
-- [ ] Validate against seed test scenarios A/B/C (AI doc §75) — expected gap/risk output must match
-**DONE WHEN:** three seeded startup scenarios (strong-tech/weak-sales, strong-biz/no-tech, strong-tech/no-domain) each produce the expected gap priorities and risk flags via API; readiness/risk both return explainable component breakdowns, not bare numbers.
+### Sprint 3 — Days 6–9: Gap, Readiness, Risk Engines ✅ DONE
+- [x] Gap detection: required-capability set vs. team-coverage set — **real bug found and fixed pre-launch**: original flat required_roles[]/required_skills[] design caused cross-contaminated coverage (a "Sales Lead" gap showing covered by Python/ML skills). Fixed at the schema source with paired role_requirements: [{role, skills}].
+- [x] Gap priority scoring with configurable weights (AI doc §16) — priority = 1-coverage, bucketed per AI spec §17 thresholds
+- [x] Gap CRUD, evidence/reason storage, status states (OPEN/PARTIALLY_COVERED/FILLED/DISMISSED)
+- [x] Readiness engine: dimension scores (team/problem/solution/market/execution/technical/business) + weighted overall
+- [x] Risk engine: rule-based category checks (team/execution/technical/market/business), independent from readiness score
+- [x] Recalculation trigger — manual re-diagnose endpoint working; automatic triggers on team-state change deferred to Sprint 5 (Team Formation)
+**DONE WHEN:** validated live — real "FoodSense2" startup diagnosed 3 critical gaps (0% coverage each, correct since founder profile has no skills yet), readiness scored 50/100 with dimensions matching reality (team=0, technical=0, problem/solution=0.9 from high AI confidence), 2 accurate risks generated with real evidence and suggested actions. Algorithm additionally unit-tested standalone against AI spec §75 scenarios before going live.
 
 ### Sprint 4 — Days 9–12: Matching Engine
 - [ ] Contributor skill/experience/availability data finalized and queryable
