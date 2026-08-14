@@ -33,8 +33,9 @@ async function searchStartups({ domain, stage, role, skill, q }, requestingUserI
   }
 
   if (domain) {
-    conditions.push(`domain && $${i}::text[]`);
-    params.push(Array.isArray(domain) ? domain : [domain]);
+    const domainList = Array.isArray(domain) ? domain : [domain];
+    conditions.push(`EXISTS (SELECT 1 FROM unnest(domain) d WHERE LOWER(d) = ANY($${i}::text[]))`);
+    params.push(domainList.map(d => d.toLowerCase().trim()));
     i++;
   }
   if (stage) {
@@ -71,18 +72,20 @@ async function searchContributors({ skill, domain, stage, availability, q }) {
   let i = 1;
 
   if (skill) {
-    conditions.push(`p.skills && $${i}::text[]`);
-    params.push(Array.isArray(skill) ? skill : [skill]);
+    const skillList = (Array.isArray(skill) ? skill : [skill]).map(s => s.toLowerCase().trim());
+    conditions.push(`EXISTS (SELECT 1 FROM unnest(p.skills) s WHERE LOWER(s) = ANY($${i}::text[]))`);
+    params.push(skillList);
     i++;
   }
   if (domain) {
-    conditions.push(`cp.preferred_domains && $${i}::text[]`);
-    params.push(Array.isArray(domain) ? domain : [domain]);
+    const domainList = (Array.isArray(domain) ? domain : [domain]).map(d => d.toLowerCase().trim());
+    conditions.push(`EXISTS (SELECT 1 FROM unnest(cp.preferred_domains) d WHERE LOWER(d) = ANY($${i}::text[]))`);
+    params.push(domainList);
     i++;
   }
   if (stage) {
-    conditions.push(`cp.preferred_stage && $${i}::text[]`);
-    params.push([stage]);
+    conditions.push(`EXISTS (SELECT 1 FROM unnest(cp.preferred_stage) s WHERE LOWER(s) = LOWER($${i}))`);
+    params.push(stage);
     i++;
   }
   if (availability) {
@@ -112,13 +115,14 @@ async function searchInvestors({ domain, stage, q }) {
   let i = 1;
 
   if (domain) {
-    conditions.push(`ip.preferred_domains && $${i}::text[]`);
-    params.push(Array.isArray(domain) ? domain : [domain]);
+    const domainList = (Array.isArray(domain) ? domain : [domain]).map(d => d.toLowerCase().trim());
+    conditions.push(`EXISTS (SELECT 1 FROM unnest(ip.preferred_domains) d WHERE LOWER(d) = ANY($${i}::text[]))`);
+    params.push(domainList);
     i++;
   }
   if (stage) {
-    conditions.push(`ip.preferred_stages && $${i}::text[]`);
-    params.push([stage]);
+    conditions.push(`EXISTS (SELECT 1 FROM unnest(ip.preferred_stages) s WHERE LOWER(s) = LOWER($${i}))`);
+    params.push(stage);
     i++;
   }
   if (q) {
@@ -146,8 +150,8 @@ async function searchInvestors({ domain, stage, q }) {
 async function naturalLanguageSearchStartups(query) {
   const lower = query.toLowerCase();
 
-  const domainRows = await pool.query(`SELECT DISTINCT unnest(domain) as d FROM startups WHERE domain IS NOT NULL`);
-  const knownDomains = domainRows.rows.map(r => r.d.toLowerCase());
+  const domainRows = await pool.query(`SELECT DISTINCT LOWER(TRIM(unnest(domain))) as d FROM startups WHERE domain IS NOT NULL`);
+  const knownDomains = domainRows.rows.map(r => r.d);
   const matchedDomains = knownDomains.filter(d => lower.includes(d));
 
   const knownStages = ['idea', 'prototype', 'mvp', 'early traction'];

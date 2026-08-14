@@ -101,6 +101,28 @@ async function analyzeStartup(founderId, startupId) {
   }
 
   const d = aiResult.data;
+
+  // BUG FIX (found via Sprint 7 search testing): the LLM does not
+  // guarantee consistent casing across separate calls ("food service"
+  // on one run, "Food Service" on another for a conceptually identical
+  // domain). Left unnormalized, this silently breaks case-sensitive
+  // array-overlap search/matching and produces visible duplicates in
+  // any downstream dedup logic. Normalized once, here, at the single
+  // point of persistence — every consumer (search, matching, investor
+  // scoring) then works with consistent data instead of each needing
+  // its own defensive lowercasing.
+  const normalizeArray = (arr) => (arr || []).map(s => String(s).toLowerCase().trim());
+  d.target_users = normalizeArray(d.target_users);
+  d.domain = normalizeArray(d.domain);
+  d.business_model = normalizeArray(d.business_model);
+  d.technology_requirements = normalizeArray(d.technology_requirements);
+  d.risks = normalizeArray(d.risks);
+  if (Array.isArray(d.role_requirements)) {
+    d.role_requirements = d.role_requirements.map(r => ({
+      role: r.role, // role names stay as-is for display; matching already normalizes via normalizeRole()
+      skills: normalizeArray(r.skills)
+    }));
+  }
   const updateResult = await pool.query(
     `UPDATE startups SET
        problem = $1, solution = $2, target_users = $3, domain = $4, business_model = $5,
