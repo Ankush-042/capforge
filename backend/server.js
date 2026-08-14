@@ -7,6 +7,7 @@ const gapRoutes = require('./gaps/gapRoutes');
 const readinessRoutes = require('./readiness/readinessRoutes');
 const matchingRoutes = require('./matching/matchingRoutes');
 const connectionRoutes = require('./connections/connectionRoutes');
+const investorRoutes = require('./investors/investorRoutes');
 
 const app = express();
 app.use(express.json());
@@ -18,6 +19,7 @@ app.use('/api', gapRoutes);
 app.use('/api', readinessRoutes);
 app.use('/api', matchingRoutes);
 app.use('/api/connections', connectionRoutes);
+app.use('/api/investors', investorRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

@@ -60,6 +60,41 @@ async function sendConnectionRequest(senderId, { receiverId, startupId, sourceGa
  * SRS §44-46: contributor accepts or rejects. Acceptance is where the
  * ENTIRE propagation chain fires — this is the core system test (SRS §102).
  */
+/**
+ * App Flow §6.5, SRS §51: investor initiates a connection with a startup's
+ * founder. Reverse direction from the contributor flow (investor is the
+ * sender, founder is the receiver) but the same connections table and
+ * duplicate-prevention constraint (migration 006's partial unique index
+ * has no type filter, so it protects this flow too, for free).
+ */
+async function sendInvestorConnectionRequest(investorId, { startupId, message }) {
+  if (!startupId) return { success: false, error: 'MISSING_STARTUP_ID' };
+
+  const senderResult = await pool.query('SELECT primary_role FROM users WHERE id = $1', [investorId]);
+  if (senderResult.rows.length === 0 || senderResult.rows[0].primary_role !== 'INVESTOR') {
+    return { success: false, error: 'SENDER_NOT_AN_INVESTOR' };
+  }
+
+  const startupResult = await pool.query(
+    `SELECT founder_id FROM startups WHERE id = $1 AND status = 'ACTIVE' AND visibility = 'DISCOVERABLE'`,
+    [startupId]
+  );
+  if (startupResult.rows.length === 0) return { success: false, error: 'STARTUP_NOT_FOUND_OR_NOT_DISCOVERABLE' };
+  const founderId = startupResult.rows[0].founder_id;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO connections (sender_id, receiver_id, startup_id, type, message, status)
+       VALUES ($1, $2, $3, 'FOUNDER_INVESTOR', $4, 'PENDING') RETURNING *`,
+      [investorId, founderId, startupId, message || null]
+    );
+    return { success: true, connection: result.rows[0] };
+  } catch (err) {
+    if (err.code === '23505') return { success: false, error: 'DUPLICATE_PENDING_REQUEST' };
+    return { success: false, error: 'REQUEST_FAILED', detail: err.message };
+  }
+}
+
 async function respondToConnection(connectionId, respondingUserId, action) {
   if (!['accept', 'reject'].includes(action)) {
     return { success: false, error: 'INVALID_ACTION' };
@@ -84,7 +119,18 @@ async function respondToConnection(connectionId, respondingUserId, action) {
     return { success: true, connection: r.rows[0], propagation: null };
   }
 
-  // action === 'accept' — the full propagation chain.
+  // FOUNDER_INVESTOR acceptance: no team membership, no gap/readiness
+  // propagation — an investor connecting is not a contributor joining
+  // the venture. Simple state transition only.
+  if (connection.type === 'FOUNDER_INVESTOR') {
+    const r = await pool.query(
+      `UPDATE connections SET status = 'ACCEPTED', updated_at = now() WHERE id = $1 RETURNING *`,
+      [connectionId]
+    );
+    return { success: true, connection: r.rows[0], propagation: null };
+  }
+
+  // action === 'accept', type === FOUNDER_CONTRIBUTOR — the full propagation chain.
   // Phase 1: the transactional part (team membership, connection status,
   // recommendation status) — atomic, rolls back cleanly on failure.
   const client = await pool.connect();
@@ -184,4 +230,4 @@ async function getMyConnections(userId) {
   return { success: true, connections: result.rows };
 }
 
-module.exports = { sendConnectionRequest, respondToConnection, getMyConnections };
+module.exports = { sendConnectionRequest, sendInvestorConnectionRequest, respondToConnection, getMyConnections };
