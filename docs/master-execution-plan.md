@@ -113,7 +113,7 @@
 - [ ] UI: competitor analysis screen, milestone list
 **DONE WHEN:** both run on real startup state end-to-end; competitor output never states AI inference as verified fact; milestones persist and are fully editable.
 
-### Sprint 10 — Days 23–25: Equity Calculators + Opportunity Matching
+### Sprint 10 — Days 23–25: Equity Calculators + Opportunity Matching ✅ DONE
 - [ ] Founder equity-split calculator (rule-based, AI doc §47)
 - [ ] Contributor equity-ask calculator
 - [ ] Opportunity/grant/incubator matching (seed opportunity data, structured + semantic match)
