@@ -136,7 +136,7 @@
 - [ ] Transaction/concurrency audit on multi-entity writes (team join, connection accept)
 **DONE WHEN:** security test checklist (architecture doc §96) fully passes; no AI or DB failure anywhere in the system destroys or corrupts persisted user data.
 
-### Sprint 13 — Days 28–30: UI Completion Pass
+### Sprint 13 — Days 28–30: UI Completion Pass (started)
 - [ ] Every screen in the full inventory (doc 7 §97) exists and functions
 - [ ] Empty/loading/error states designed for every major screen (not generic "no data"/spinner)
 - [ ] Responsive behavior at desktop breakpoints (doc 7 §74)

@@ -7,4 +7,5 @@ build/
 .DS_Store
 __pycache__/
 *.pyc
-package-lock.json
+frontend/dist/
+frontend/node_modules/
