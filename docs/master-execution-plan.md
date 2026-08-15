@@ -157,13 +157,75 @@
 - [ ] Final visual QA on all 5 hero screens
 **DONE WHEN:** demo dataset drives every screen with real data — zero placeholder/lorem ipsum anywhere; acceptable performance at seeded scale.
 
-### Sprint 16 — Day 35 (buffer): Final Completion Gate
+### Sprint 16 — Day 35 (buffer): Core-Scope Completion Gate
 - [ ] Line-by-line pass of SRS §99–103 acceptance criteria (Founder/Contributor/Investor journeys + critical system test)
 - [ ] Line-by-line pass of TRD §107 technical acceptance criteria
 - [ ] Any remaining open items resolved
-**DONE WHEN:** every item in both checklists is checked. This — and only this — is the finish line.
+**DONE WHEN:** every item in both checklists is checked. This closes CORE scope (the original 16-sprint plan) — full scope continues below.
 
 ---
 
-## Definition of Final Completion
-The project is complete when SRS §102's full critical system acceptance test and TRD §107's full technical acceptance criteria both pass on real, persisted, non-fabricated data across all three personas — not when a sprint's days run out.
+## PHASE 5 — Comprehensive UI (Sprints 17–20)
+**Scope reset:** the single screen shipped mid-Sprint 13 failed the design bar entirely (generic form, no hierarchy, no restraint-with-intention) — rejected, rebuild from zero against doc 7's actual standard (Figma/Linear/Stripe/Vercel-tier, zero template look).
+
+### Sprint 17: Design System Foundation, Rebuilt
+- [ ] Component library actually built to spec: buttons, inputs, cards, tables, badges, modals, drawers, command palette, skeletons, empty states — per doc 7 §80
+- [ ] Real visual hierarchy demonstrated on ONE reference screen before any other screen is built, reviewed and approved before proceeding
+**DONE WHEN:** the reference screen is explicitly approved as matching the target bar — no further screens built until this gate passes.
+
+### Sprint 18: Founder Experience — All Screens
+- [ ] Landing, auth, onboarding, dashboard, AI idea-structuring (rebuilt), gap dashboard + detail, candidate matching + comparison, readiness, risk, competitor analysis, milestones, equity calculator, team, workspace (doc 7 §97 founder screen list)
+
+### Sprint 19: Contributor + Investor Experience — All Screens
+- [ ] Contributor: onboarding, dashboard, recommended startups, skill demand, equity ask, connections
+- [ ] Investor: onboarding, dashboard, deal flow, startup detail, readiness/risk view, portfolio, connections
+
+### Sprint 20: Shared Screens + Full Polish Pass
+- [ ] Search/discovery, notifications, settings, command palette, all empty/loading/error states
+- [ ] Anti-vibe-coding checklist (doc 7 §93) applied to every single screen
+- [ ] Responsive + accessibility pass across full inventory
+
+---
+
+## PHASE 6 — Full PRD Scope: Previously "Future Expansion" Items (Sprints 21–26)
+Per explicit instruction: every feature named anywhere in the 7 documents is in scope, not just the original 16-sprint core. Each item below gets the same live-tested discipline as every prior sprint — real endpoint, real data, real verification, not a stub.
+
+### Sprint 21: Trust & Verification + Reputation
+- [ ] Verification states (Unverified/Claimed/Verified) with real verification workflow
+- [ ] Reputation signals from real platform activity (completed collaborations, confirmed contributions)
+
+### Sprint 22: Admin & Moderation
+- [ ] User management, startup listing management, report handling, verification review queue, platform activity monitoring
+
+### Sprint 23: Investor Portfolio Intelligence
+- [ ] Portfolio-gap analysis (diversification signal from an investor's actual connected startups)
+- [ ] Co-investment/syndicate signals
+- [ ] Warm-introduction path detection
+
+### Sprint 24: Contributor-Side Advanced Features
+- [ ] Multi-offer comparison (side-by-side of a contributor's active opportunities)
+- [ ] Learning-resource recommendations tied to recurring skill gaps
+
+### Sprint 25: True Semantic Search + Auto-Refresh Triggers
+- [ ] Real vector embeddings (pgvector) for startups/contributors/investors, replacing the current keyword-based NL layer
+- [ ] Automatic recommendation-refresh wired to every TRD §69 trigger event (not just manual re-run endpoints)
+
+### Sprint 26: Advanced Analytics + Founder Agreement/NDA Scaffolding
+- [ ] Venture analytics dashboards
+- [ ] Founders-agreement / NDA document scaffolding (PRD §21) with explicit "not legal advice" framing
+
+---
+
+## PHASE 7 — Final Full-Scope Completion Gate (Sprint 27)
+- [ ] Every FR in the SRS, including previously-deferred items, checked
+- [ ] Every module named in PRD §61 "Product Scope — Complete Formulation" verified present and functioning
+- [ ] Full regression pass: core loop (Sprints 0-12) still works after all additions
+**DONE WHEN:** the product matches the PRD's full stated scope — core AND future-expansion — with nothing left unbuilt that was named in any of the 7 documents.
+
+---
+
+## Timeline note
+No fixed day count — the constraint is completeness and correctness against the full 7-document scope, not a calendar.
+
+## Definition of Final Completion (updated)
+The project is complete when: (1) SRS §102 and TRD §107 pass — core scope — AND (2) every module in PRD §61's complete product-scope list is implemented and live-verified, AND (3) the UI matches the doc 7 design bar on explicit approval, not just "exists."
