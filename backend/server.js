@@ -20,7 +20,8 @@ const workspaceRoutes = require('./workspace/workspaceRoutes');
 const app = express();
 app.use(express.json());
 
-app.use('/api/auth', authRoutes);
+const { authLimit } = require('./shared/rateLimiter');
+app.use('/api/auth', authLimit, authRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/startups', startupRoutes);
 app.use('/api', gapRoutes);

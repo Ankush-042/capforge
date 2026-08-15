@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth, requireRole } = require('../auth/authMiddleware');
+const { aiEndpointLimit } = require('../shared/rateLimiter');
 const { createStartup, analyzeStartup, confirmStartup, getStartup, listMyStartups } = require('./startupService');
 
 // SRS §13: only founders create startups.
-router.post('/', requireAuth, requireRole('FOUNDER'), async (req, res) => {
+router.post('/', requireAuth, requireRole('FOUNDER'), aiEndpointLimit, async (req, res) => {
   const { name, rawIdea } = req.body;
   const result = await createStartup(req.user.userId, { name, rawIdea });
   if (!result.success) return res.status(400).json(result);
@@ -23,7 +24,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 });
 
 // SRS §17: re-trigger structuring (e.g. after a failure, or founder wants a fresh AI pass).
-router.post('/:id/analyze', requireAuth, requireRole('FOUNDER'), async (req, res) => {
+router.post('/:id/analyze', requireAuth, requireRole('FOUNDER'), aiEndpointLimit, async (req, res) => {
   const result = await analyzeStartup(req.user.userId, req.params.id);
   if (!result.success) return res.status(400).json(result);
   res.json(result);
