@@ -214,6 +214,15 @@ Per explicit instruction: every feature named anywhere in the 7 documents is in 
 - [ ] Venture analytics dashboards
 - [ ] Founders-agreement / NDA document scaffolding (PRD §21) with explicit "not legal advice" framing
 
+### Sprint 26b: Workspace Files + UX/Privacy Gaps Found in Audit (added after explicit re-check — not caught in the first Sprint 21-26 pass)
+- [ ] Workspace file upload/storage (architecture doc §11, §40, §64 — object storage, metadata table, download/access control) — genuinely missing, tasks+discussions only were built in Sprint 11
+- [ ] Notification preferences UI + backend (doc 7 §91 — per-category on/off: connections, recommendations, team, AI analysis, platform)
+- [ ] Privacy UX (doc 7 §90 — explicit public/discoverable/connection-only/team-only/private visibility control screen)
+- [ ] Dark theme (doc 7 §11 — independent contrast/surface/shadow tuning, not a simple palette inversion)
+- [ ] Data Quality Requirements as explicit test suite (PRD §42 — required-field validation, duplicate detection, inconsistent-data flagging, silent-overwrite prevention)
+- [ ] Search Result Quality ranking factor audit (PRD §43 — relevance/requirement-satisfaction/evidence/preference/freshness/interaction-history all explicitly present and weighted, not just "search works")
+**DONE WHEN:** each item above is live-tested, same as every other sprint — this sprint exists specifically because a first "comprehensive" pass missed these, so it gets extra scrutiny before being marked done.
+
 ---
 
 ## PHASE 7 — Final Full-Scope Completion Gate (Sprint 27)
