@@ -13,6 +13,8 @@ const notificationRoutes = require('./notifications/notificationRoutes');
 const feedbackRoutes = require('./feedback/feedbackRoutes');
 const competitorRoutes = require('./competitors/competitorRoutes');
 const milestoneRoutes = require('./milestones/milestoneRoutes');
+const equityRoutes = require('./equity/equityRoutes');
+const opportunityRoutes = require('./opportunities/opportunityRoutes');
 
 const app = express();
 app.use(express.json());
@@ -30,6 +32,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api', feedbackRoutes);
 app.use('/api', competitorRoutes);
 app.use('/api', milestoneRoutes);
+app.use('/api', equityRoutes);
+app.use('/api', opportunityRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
