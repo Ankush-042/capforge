@@ -107,7 +107,7 @@
 
 ## PHASE 3 — Secondary Intelligence + Workspace (Days 21–26)
 
-### Sprint 9 — Days 21–23: Competitor Analysis + Milestones
+### Sprint 9 — Days 21–23: Competitor Analysis + Milestones ✅ DONE
 - [ ] Competitor/positioning pipeline with explicit source-vs-inference distinction (AI doc §42)
 - [ ] Milestone generation, founder-editable, never auto-committed
 - [ ] UI: competitor analysis screen, milestone list
