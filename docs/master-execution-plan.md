@@ -129,7 +129,7 @@
 
 ## PHASE 4 — Hardening, Completion, Validation (Days 26–35)
 
-### Sprint 12 — Days 26–28: Security & Reliability Hardening ✅ DONE
+### Sprint 12 — Days 26–28: Security & Reliability Hardening ✅ DONE (validated live, 5/5 checks passed)
 - [ ] Full authorization audit across every endpoint (SRS §97 test cases: cross-user access, workspace bypass, param tampering)
 - [ ] AI failure-path testing across ALL AI modules, not just idea structuring
 - [ ] Rate limiting on auth/search/AI/recommendation/connection endpoints
