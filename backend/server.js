@@ -15,6 +15,7 @@ const competitorRoutes = require('./competitors/competitorRoutes');
 const milestoneRoutes = require('./milestones/milestoneRoutes');
 const equityRoutes = require('./equity/equityRoutes');
 const opportunityRoutes = require('./opportunities/opportunityRoutes');
+const workspaceRoutes = require('./workspace/workspaceRoutes');
 
 const app = express();
 app.use(express.json());
@@ -34,6 +35,7 @@ app.use('/api', competitorRoutes);
 app.use('/api', milestoneRoutes);
 app.use('/api', equityRoutes);
 app.use('/api', opportunityRoutes);
+app.use('/api', workspaceRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
