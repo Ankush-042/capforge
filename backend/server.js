@@ -9,6 +9,8 @@ const matchingRoutes = require('./matching/matchingRoutes');
 const connectionRoutes = require('./connections/connectionRoutes');
 const investorRoutes = require('./investors/investorRoutes');
 const searchRoutes = require('./search/searchRoutes');
+const notificationRoutes = require('./notifications/notificationRoutes');
+const feedbackRoutes = require('./feedback/feedbackRoutes');
 
 const app = express();
 app.use(express.json());
@@ -22,6 +24,8 @@ app.use('/api', matchingRoutes);
 app.use('/api/connections', connectionRoutes);
 app.use('/api/investors', investorRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api', feedbackRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

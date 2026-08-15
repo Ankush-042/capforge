@@ -30,7 +30,7 @@ const WEIGHTS = {
  * @param {object} startup - needs .domain, .stage
  * @param {object} candidate - { headline, skills, preferred_domains, preferred_stage, experience_years, availability }
  */
-function scoreCandidate(gap, startup, candidate) {
+function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   const requiredSkills = (gap.required_skills || []).map(s => s.toLowerCase().trim());
   const candidateSkills = new Set((candidate.skills || []).map(s => s.toLowerCase().trim()));
 
@@ -66,9 +66,14 @@ function scoreCandidate(gap, startup, candidate) {
 
   const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit };
 
-  const finalScore = Object.keys(WEIGHTS).reduce(
+  const baseScore = Object.keys(WEIGHTS).reduce(
     (sum, key) => sum + breakdown[key] * WEIGHTS[key], 0
   );
+
+  // AI spec §50-52: feedback nudges the score, bounded, never overrides
+  // the underlying requirement fit entirely.
+  const finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
+  breakdown.feedbackAdjustment = feedbackAdjustment;
 
   return { score: Math.round(finalScore * 100) / 100, breakdown, overlap, domainOverlap };
 }
@@ -147,8 +152,12 @@ async function rankCandidatesForGap(gapId) {
     return { success: true, recommendations: [], note: 'No eligible contributors currently on the platform.' };
   }
 
+  const { getPreferenceAdjustment } = require('../feedback/feedbackService');
+  const signalKeys = [`stage:${(startup.stage || '').toLowerCase()}`, ...(startup.domain || []).map(d => `domain:${d.toLowerCase()}`)];
+  const feedbackAdjustment = await getPreferenceAdjustment(startup.founder_id, signalKeys);
+
   const ranked = candidatesResult.rows.map(candidate => {
-    const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate);
+    const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate, feedbackAdjustment);
     const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
     return { candidate, score, breakdown, explanation };
   }).sort((a, b) => b.score - a.score);
