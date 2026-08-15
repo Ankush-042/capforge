@@ -8,6 +8,7 @@
 const pool = require('../shared/db');
 const { runGapDiagnosis } = require('../gaps/gapDiagnosisService');
 const { runReadinessAndRiskAnalysis } = require('../readiness/readinessService');
+const { createNotification } = require('../notifications/notificationService');
 
 /**
  * SRS §43: founder sends a connection request to a contributor, optionally
@@ -45,6 +46,14 @@ async function sendConnectionRequest(senderId, { receiverId, startupId, sourceGa
        VALUES ($1, $2, $3, $4, 'FOUNDER_CONTRIBUTOR', $5, 'PENDING') RETURNING *`,
       [senderId, receiverId, startupId, sourceGapId || null, message || null]
     );
+    const startupNameResult = await pool.query('SELECT name FROM startups WHERE id = $1', [startupId]);
+    await createNotification(receiverId, {
+      type: 'CONNECTION_REQUEST',
+      title: 'New connection request',
+      message: `${startupNameResult.rows[0]?.name || 'A startup'} wants to connect with you.`,
+      referenceType: 'connection',
+      referenceId: result.rows[0].id
+    });
     return { success: true, connection: result.rows[0] };
   } catch (err) {
     // The partial unique index (migration 006) is the actual enforcement;
@@ -88,6 +97,14 @@ async function sendInvestorConnectionRequest(investorId, { startupId, message })
        VALUES ($1, $2, $3, 'FOUNDER_INVESTOR', $4, 'PENDING') RETURNING *`,
       [investorId, founderId, startupId, message || null]
     );
+    const startupNameResult = await pool.query('SELECT name FROM startups WHERE id = $1', [startupId]);
+    await createNotification(founderId, {
+      type: 'INVESTOR_CONNECTION_REQUEST',
+      title: 'Investor interested in your startup',
+      message: `An investor wants to connect regarding ${startupNameResult.rows[0]?.name || 'your startup'}.`,
+      referenceType: 'connection',
+      referenceId: result.rows[0].id
+    });
     return { success: true, connection: result.rows[0] };
   } catch (err) {
     if (err.code === '23505') return { success: false, error: 'DUPLICATE_PENDING_REQUEST' };
@@ -116,6 +133,13 @@ async function respondToConnection(connectionId, respondingUserId, action) {
       `UPDATE connections SET status = 'REJECTED', updated_at = now() WHERE id = $1 RETURNING *`,
       [connectionId]
     );
+    await createNotification(connection.sender_id, {
+      type: 'CONNECTION_REJECTED',
+      title: 'Connection request declined',
+      message: 'Your connection request was declined.',
+      referenceType: 'connection',
+      referenceId: connectionId
+    });
     return { success: true, connection: r.rows[0], propagation: null };
   }
 
@@ -127,6 +151,13 @@ async function respondToConnection(connectionId, respondingUserId, action) {
       `UPDATE connections SET status = 'ACCEPTED', updated_at = now() WHERE id = $1 RETURNING *`,
       [connectionId]
     );
+    await createNotification(connection.sender_id, {
+      type: 'CONNECTION_ACCEPTED',
+      title: 'Connection request accepted',
+      message: 'Your connection request was accepted.',
+      referenceType: 'connection',
+      referenceId: connectionId
+    });
     return { success: true, connection: r.rows[0], propagation: null };
   }
 
@@ -181,6 +212,14 @@ async function respondToConnection(connectionId, respondingUserId, action) {
     return { success: false, error: 'ACCEPTANCE_FAILED', detail: err.message };
   }
   client.release();
+
+  await createNotification(connection.sender_id, {
+    type: 'TEAM_MEMBER_JOINED',
+    title: 'New team member joined',
+    message: `Your connection request was accepted — they've joined the ${assignedRole} role.`,
+    referenceType: 'connection',
+    referenceId: connectionId
+  });
 
   // Phase 2: propagation (team changed -> gaps recalculate -> readiness
   // recalculates). Deliberately OUTSIDE the transaction and in its own

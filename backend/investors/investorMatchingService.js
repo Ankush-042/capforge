@@ -25,7 +25,7 @@ const WEIGHTS = {
   ticketFit: 0.10
 };
 
-function scoreStartupForInvestor(investor, startup, readiness, risks) {
+function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAdjustment = 0) {
   const investorDomains = (investor.preferred_domains || []).map(d => d.toLowerCase().trim());
   const startupDomains = (startup.domain || []).map(d => d.toLowerCase().trim());
   const domainOverlap = investorDomains.filter(d => startupDomains.includes(d));
@@ -51,9 +51,11 @@ function scoreStartupForInvestor(investor, startup, readiness, risks) {
   const ticketFit = 0.5;
 
   const breakdown = { domainFit, stageFit, readinessSignal, riskSignal, geographyFit, ticketFit };
-  const score = Object.keys(WEIGHTS).reduce((sum, k) => sum + breakdown[k] * WEIGHTS[k], 0);
+  const baseScore = Object.keys(WEIGHTS).reduce((sum, k) => sum + breakdown[k] * WEIGHTS[k], 0);
+  const finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
+  breakdown.feedbackAdjustment = feedbackAdjustment;
 
-  return { score: Math.round(score * 100) / 100, breakdown, domainOverlap };
+  return { score: Math.round(finalScore * 100) / 100, breakdown, domainOverlap };
 }
 
 function explainInvestorScore(breakdown, domainOverlap, risks) {
@@ -101,6 +103,7 @@ async function rankStartupsForInvestor(investorUserId) {
     return { success: true, recommendations: [], note: 'No active, discoverable startups on the platform yet.' };
   }
 
+  const { getPreferenceAdjustment } = require('../feedback/feedbackService');
   const ranked = [];
   for (const startup of startupsResult.rows) {
     const readinessResult = await pool.query(
@@ -109,8 +112,11 @@ async function rankStartupsForInvestor(investorUserId) {
     );
     const risksResult = await pool.query('SELECT * FROM risks WHERE startup_id = $1', [startup.id]);
 
+    const signalKeys = [`stage:${(startup.stage || '').toLowerCase()}`, ...(startup.domain || []).map(d => `domain:${d.toLowerCase()}`)];
+    const feedbackAdjustment = await getPreferenceAdjustment(investorUserId, signalKeys);
+
     const { score, breakdown, domainOverlap } = scoreStartupForInvestor(
-      investor, startup, readinessResult.rows[0], risksResult.rows
+      investor, startup, readinessResult.rows[0], risksResult.rows, feedbackAdjustment
     );
     const explanation = explainInvestorScore(breakdown, domainOverlap, risksResult.rows);
     ranked.push({ startup, score, breakdown, explanation });
