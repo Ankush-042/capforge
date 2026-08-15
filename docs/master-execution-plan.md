@@ -120,7 +120,7 @@
 - [ ] Legal/financial disclaimers present on all equity outputs
 **DONE WHEN:** both calculators produce consistent explainable output from identical inputs; opportunity matching returns relevant results against seeded programs.
 
-### Sprint 11 — Days 25–26: Workspace ✅ DONE
+### Sprint 11 — Days 25–26: Workspace ✅ DONE (validated live)
 - [ ] Workspace/task/discussion/file modules
 - [ ] Team-membership-based authorization enforced (not just startup-level)
 **DONE WHEN:** authorized team member can use all workspace features; non-member access is blocked and tested.
