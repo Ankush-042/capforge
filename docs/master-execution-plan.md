@@ -96,9 +96,9 @@
 - [ ] UI: discovery/search screens, filter panel, command palette (⌘K)
 **DONE WHEN:** semantic query test cases return correctly interpreted filters + relevant results; a private/undiscoverable startup never appears in any authenticated user's search regardless of query.
 
-### Sprint 8 — Days 19–21: Notifications, Feedback, Recommendation Refresh
-- [ ] Notification generation wired to every defined event (TRD §40)
-- [ ] Feedback capture: view/save/interest/dismiss/connect/reject
+### Sprint 8 — Days 19–21: Notifications, Feedback, Recommendation Refresh Triggers ✅ DONE (validated live)
+- [x] Notification generation wired to every defined event (TRD §40) — validated live: investor->founder connection correctly fired INVESTOR_CONNECTION_REQUEST with accurate content, delivered to the right recipient
+- [x] Feedback capture: view/save/interest/dismiss/connect/reject
 - [ ] Feedback-adjusted ranking, bounded (AI doc §50 — one rejection can't zero out a category)
 - [ ] All recommendation-refresh triggers wired (TRD §69 full list)
 **DONE WHEN:** a test sequence of repeated dismissals measurably shifts subsequent ranking without eliminating relevant candidates; every event type generates exactly one notification (idempotency tested), no duplicates.
