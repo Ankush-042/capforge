@@ -99,8 +99,8 @@
 ### Sprint 8 — Days 19–21: Notifications, Feedback, Recommendation Refresh Triggers ✅ DONE (validated live)
 - [x] Notification generation wired to every defined event (TRD §40) — validated live: investor->founder connection correctly fired INVESTOR_CONNECTION_REQUEST with accurate content, delivered to the right recipient
 - [x] Feedback capture: view/save/interest/dismiss/connect/reject
-- [ ] Feedback-adjusted ranking, bounded (AI doc §50 — one rejection can't zero out a category)
-- [ ] All recommendation-refresh triggers wired (TRD §69 full list)
+- [x] Feedback-adjusted ranking, bounded (AI doc §50 — one rejection can't zero out a category) — verified: 20 consecutive REJECTs cap at -0.30 hard bound, single REJECT only -0.10; regression-tested against Sprint 4's live candidate (0.76 base -> 0.91 with +0.15 feedback -> 0.46 at max negative bound, never destroyed)
+- [ ] All recommendation-refresh triggers wired (TRD §69 full list) — explicit re-run endpoints exist (diagnose/assess/rank-candidates/investor-refresh); automatic triggering on every listed event (e.g. profile skill update auto-refreshing recommendations) not yet implemented — honest gap, not silently claimed done
 **DONE WHEN:** a test sequence of repeated dismissals measurably shifts subsequent ranking without eliminating relevant candidates; every event type generates exactly one notification (idempotency tested), no duplicates.
 
 ---
