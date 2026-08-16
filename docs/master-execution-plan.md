@@ -163,7 +163,7 @@ Originally "Seed Data, Performance, Final Polish." Never started. Same reasoning
 - [ ] Founder Dashboard rebuilt with actual chart widgets, not text-only metrics
 **GATE: explicit user approval required before Sprint 18 proceeds.**
 
-### Sprint 18: Chart / Data-Viz Component Library
+### Sprint 18: Chart / Data-Viz Component Library ✅ DONE
 - [ ] Bar chart, line chart, donut/pie, progress ring, avatar stack, gradient stat card, trend sparkline — built once as reusable components, not improvised per-screen
 
 ### Sprint 19: Founder Screens — Full Set
