@@ -216,3 +216,12 @@ Cards must use soft PASTEL SOLID backgrounds with saturated colored text/icons �
 - Yellow/cream: bg #FFF3D1, text/icon #C58A00 / #D99A00
 - Peach: bg #FFE8DA, text/icon #E84C32 / #EF5B3A
 Sizing/padding/icon-area/bold-value treatment from the previous round is CONFIRMED CORRECT — only the fill treatment (gradient → pastel solid) changes. Apply to FounderDashboard.jsx's GradientStat cards (rename component accordingly since it's no longer a gradient) at the start of next session, before Sprint 18 proceeds.
+
+## LOCKED: Sidebar Spec (Vercel reference — was missed in the round-2 response, corrected here)
+Rebuild Shell.jsx sidebar to match Vercel's dashboard sidebar pattern:
+- Top: team/workspace switcher (e.g. startup name or "Founder"), small badge, up/down chevron — not a static logo row
+- Search: an actual styled input field ("Find...") with an inline keyboard-shortcut hint (e.g. "F"), not a button
+- Nav items: icon + label, subtle GRAY fill on active/hover (not colored/violet highlight — that was the previous, now-incorrect treatment)
+- Nested/expandable items get a right-chevron where a section has sub-items (e.g. Gaps, Connections)
+- Overall: clean, minimal, dense but not cramped — matches attached Vercel reference exactly in spirit
+Apply alongside the KPI card color fix at the start of next session, before Sprint 18.
