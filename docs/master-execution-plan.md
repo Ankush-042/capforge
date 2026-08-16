@@ -208,3 +208,11 @@ No fixed day count — the constraint is completeness and correctness against th
 
 ## Definition of Final Completion (updated)
 The project is complete when: (1) SRS §102 and TRD §107 pass — core scope — AND (2) every module in PRD §61's complete product-scope list is implemented and live-verified, AND (3) the UI matches the doc 7 design bar on explicit approval, not just "exists."
+
+## LOCKED: KPI Card Color Spec (added after Sprint 17 feedback round 2)
+Cards must use soft PASTEL SOLID backgrounds with saturated colored text/icons — NOT bold gradients (the current implementation). Exact values:
+- Blue: bg #D1EAFE, text/icon #1677E8 / #2563EB
+- Lavender: bg #EED8FF, text/icon #6D28D9 / #7C3AED
+- Yellow/cream: bg #FFF3D1, text/icon #C58A00 / #D99A00
+- Peach: bg #FFE8DA, text/icon #E84C32 / #EF5B3A
+Sizing/padding/icon-area/bold-value treatment from the previous round is CONFIRMED CORRECT — only the fill treatment (gradient → pastel solid) changes. Apply to FounderDashboard.jsx's GradientStat cards (rename component accordingly since it's no longer a gradient) at the start of next session, before Sprint 18 proceeds.
