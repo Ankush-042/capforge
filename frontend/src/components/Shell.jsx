@@ -1,23 +1,32 @@
 import React from 'react';
 
+/**
+ * App shell — sidebar rebuilt to match the Vercel dashboard reference:
+ * team/workspace switcher up top, a real search input (not a button),
+ * gray (not colored) active-state nav fill, nested items get a chevron.
+ */
+
 const NAV = [
   { label: 'Dashboard', icon: '▦' },
-  { label: 'Gaps', icon: '◈' },
+  { label: 'Gaps', icon: '◈', nested: true },
   { label: 'Team', icon: '◎' },
   { label: 'Readiness', icon: '◒' },
   { label: 'Discover', icon: '◌' },
-  { label: 'Connections', icon: '◐' },
+  { label: 'Connections', icon: '◐', nested: true },
   { label: 'Settings', icon: '⚙' },
 ];
 
-function NavItem({ label, icon, active }) {
+function NavItem({ label, icon, active, nested }) {
   return (
     <button
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
-        ${active ? 'bg-violet-50 text-violet-700 font-medium' : 'text-ink-500 hover:bg-surface-muted hover:text-ink-900'}`}
+      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
+        ${active ? 'bg-surface-muted text-ink-900 font-medium' : 'text-ink-500 hover:bg-surface-muted hover:text-ink-900'}`}
     >
-      <span className="text-[14px] w-4 text-center">{icon}</span>
-      <span>{label}</span>
+      <span className="flex items-center gap-3">
+        <span className="text-[14px] w-4 text-center opacity-70">{icon}</span>
+        <span>{label}</span>
+      </span>
+      {nested && <span className="text-ink-300 text-xs">›</span>}
     </button>
   );
 }
@@ -25,15 +34,30 @@ function NavItem({ label, icon, active }) {
 export default function Shell({ children, activeNav = 'Dashboard', title, subtitle }) {
   return (
     <div className="min-h-screen bg-canvas flex">
-      <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-6 px-4 bg-surface">
-        <div className="px-2 mb-8 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500" />
-          <span className="text-base font-semibold text-ink-900 tracking-tight">CapForge</span>
+      <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
+        <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
+          <span className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500" />
+            <span className="text-sm font-semibold text-ink-900 tracking-tight">FoodSense2</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-500 font-medium">Founder</span>
+          </span>
+          <span className="text-ink-300 text-xs">⌄</span>
+        </button>
+
+        <div className="relative mb-5">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs">⌕</span>
+          <input
+            placeholder="Find..."
+            className="w-full pl-8 pr-8 py-2 rounded-lg border border-surface-border bg-surface-muted text-sm text-ink-900 placeholder:text-ink-300 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-ink-300 border border-surface-border rounded px-1">F</span>
         </div>
-        <nav className="space-y-1">
+
+        <nav className="space-y-0.5">
           {NAV.map((n) => <NavItem key={n.label} {...n} active={n.label === activeNav} />)}
         </nav>
-        <div className="mt-auto px-2 pt-5 flex items-center gap-3 border-t border-surface-border pt-5">
+
+        <div className="mt-auto pt-4 flex items-center gap-3 border-t border-surface-border">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-sm font-medium text-white">F</div>
           <div>
             <p className="text-sm font-medium text-ink-900">Founder</p>
@@ -47,11 +71,6 @@ export default function Shell({ children, activeNav = 'Dashboard', title, subtit
           <div>
             <p className="text-base font-semibold text-ink-900">{title}</p>
             {subtitle && <p className="text-sm text-ink-500">{subtitle}</p>}
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="text-sm text-ink-500 px-4 py-2 rounded-lg border border-surface-border hover:bg-surface-muted transition-colors">
-              Search  ⌘K
-            </button>
           </div>
         </header>
         <main className="flex-1 px-10 py-9 max-w-[1440px] w-full mx-auto">{children}</main>
