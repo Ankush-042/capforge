@@ -136,32 +136,20 @@
 - [ ] Transaction/concurrency audit on multi-entity writes (team join, connection accept)
 **DONE WHEN:** security test checklist (architecture doc §96) fully passes; no AI or DB failure anywhere in the system destroys or corrupts persisted user data.
 
-### Sprint 13 — Days 28–30: UI Completion Pass (started)
-- [ ] Every screen in the full inventory (doc 7 §97) exists and functions
-- [ ] Empty/loading/error states designed for every major screen (not generic "no data"/spinner)
-- [ ] Responsive behavior at desktop breakpoints (doc 7 §74)
-- [ ] Accessibility pass: keyboard nav, focus states, contrast, labels
-- [ ] Anti-vibe-coding checklist (doc 7 §93) applied to every screen at least once
-**DONE WHEN:** full screen inventory complete and consistent with the design system; no screen fails the anti-vibe-coding checklist.
+### Sprint 13 — SUPERSEDED
+Originally "UI Completion Pass." Only output was the rejected single screen (plain form, no hierarchy) — never finished, never reused. Superseded entirely by the redone Sprint 17-21 UI phase below.
 
-### Sprint 14 — Days 30–32: Full Integration Testing & Edge Cases
-- [ ] Re-run all 3 critical persona journeys against the COMPLETE feature set (not the Day-15 minimal version)
-- [ ] Edge cases explicitly tested (AI doc §76): no gaps, no candidates, incomplete startup, conflicting info, overly broad requirement, duplicate profiles
-- [ ] Cross-dashboard consistency check — identical readiness/gap/score numbers everywhere they appear (SRS §76)
-**DONE WHEN:** zero state-inconsistency bugs found; every listed edge case is handled per spec (no fabrication, no crash).
+### Sprint 14 — MERGED INTO Sprint 21
+Originally "Full Integration Testing & Edge Cases." Never started. Its checklist (re-run all 3 persona journeys against the complete feature set, AI spec §76 edge cases, cross-dashboard consistency) now correctly belongs AFTER the full UI exists, not before — folded into Sprint 21's polish pass rather than left as a dangling unstarted sprint. See Sprint 21 for the actual checklist.
 
-### Sprint 15 — Days 32–34: Seed Data, Performance, Final Polish
-- [ ] Full realistic seed dataset (multiple founders/contributors/investors/startups, expanded from AI doc §75 scenarios)
-- [ ] Search/recommendation performance check at seeded scale, pagination verified
-- [ ] Microcopy pass against doc 7 §83–84 voice guidelines; every empty/error state reviewed
-- [ ] Final visual QA on all 5 hero screens
-**DONE WHEN:** demo dataset drives every screen with real data — zero placeholder/lorem ipsum anywhere; acceptable performance at seeded scale.
+### Sprint 15 — MERGED INTO Sprint 21
+Originally "Seed Data, Performance, Final Polish." Never started. Same reasoning as Sprint 14 — seed data and performance checks are only meaningful once real screens exist to display them. Folded into Sprint 21.
 
 ### Sprint 16 — Day 35 (buffer): Core-Scope Completion Gate
 - [ ] Line-by-line pass of SRS §99–103 acceptance criteria (Founder/Contributor/Investor journeys + critical system test)
 - [ ] Line-by-line pass of TRD §107 technical acceptance criteria
 - [ ] Any remaining open items resolved
-**DONE WHEN:** every item in both checklists is checked. This closes CORE scope (the original 16-sprint plan) — full scope continues below.
+**DONE WHEN:** every item in both checklists is checked. This closes CORE scope (the original 16-sprint plan, backend only) — full scope continues below. This sprint's checklist is about BACKEND acceptance criteria specifically and stays valid/unaffected by the UI restart — no merge needed here.
 
 ---
 
@@ -184,8 +172,14 @@
 ### Sprint 20: Contributor + Investor Screens — Full Set
 - [ ] Both onboarding flows, both dashboards, recommended-startups/deal-flow, skill demand, equity ask, connections
 
-### Sprint 21: Shared Screens + Full Polish Pass
-- [ ] Search/discovery, notifications, settings, privacy, command palette, every empty/loading/error state, anti-vibe-coding checklist applied per screen, responsive + accessibility pass
+### Sprint 21: Shared Screens + Full Polish Pass + Merged Testing/Seed Data (formerly Sprints 14-15)
+- [ ] Search/discovery, notifications, settings, privacy, command palette, every empty/loading/error state
+- [ ] Anti-vibe-coding checklist applied per screen, responsive + accessibility pass
+- [ ] Re-run all 3 critical persona journeys against the COMPLETE feature set (SRS §102) — now meaningful since real UI exists
+- [ ] Edge cases (AI doc §76): no gaps, no candidates, incomplete startup, conflicting info, overly broad requirement, duplicate profiles
+- [ ] Cross-dashboard consistency check — identical readiness/gap/score numbers everywhere they appear (SRS §76)
+- [ ] Full realistic seed dataset driving every screen — zero placeholder/lorem ipsum anywhere
+- [ ] Search/recommendation performance check at seeded scale
 
 ---
 
