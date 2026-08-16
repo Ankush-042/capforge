@@ -1,24 +1,25 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 /**
- * App shell — sidebar rebuilt to match the Vercel dashboard reference:
- * team/workspace switcher up top, a real search input (not a button),
- * gray (not colored) active-state nav fill, nested items get a chevron.
+ * App shell — sidebar per the Vercel dashboard reference: team/workspace
+ * switcher up top, a real search input, gray active-state nav fill,
+ * nested items get a chevron. Nav items are real router links (Sprint 19).
  */
 
 const NAV = [
-  { label: 'Dashboard', icon: '▦' },
-  { label: 'Gaps', icon: '◈', nested: true },
-  { label: 'Team', icon: '◎' },
-  { label: 'Readiness', icon: '◒' },
-  { label: 'Discover', icon: '◌' },
-  { label: 'Connections', icon: '◐', nested: true },
-  { label: 'Settings', icon: '⚙' },
+  { label: 'Dashboard', icon: '▦', path: '/' },
+  { label: 'Gaps', icon: '◈', path: '/gaps', nested: true },
+  { label: 'Team', icon: '◎', path: '/team' },
+  { label: 'Readiness', icon: '◒', path: '/readiness' },
+  { label: 'Risk', icon: '◑', path: '/risk' },
+  { label: 'Milestones', icon: '◇', path: '/milestones' },
 ];
 
-function NavItem({ label, icon, active, nested }) {
+function NavItem({ label, icon, path, active, nested }) {
   return (
-    <button
+    <Link
+      to={path}
       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[15px] transition-colors
         ${active ? 'bg-surface-muted text-ink-900 font-medium' : 'text-ink-500 hover:bg-surface-muted hover:text-ink-900'}`}
     >
@@ -27,11 +28,12 @@ function NavItem({ label, icon, active, nested }) {
         <span>{label}</span>
       </span>
       {nested && <span className="text-ink-300 text-xs">›</span>}
-    </button>
+    </Link>
   );
 }
 
-export default function Shell({ children, activeNav = 'Dashboard', title, subtitle }) {
+export default function Shell({ children, title, subtitle }) {
+  const location = useLocation();
   return (
     <div className="min-h-screen bg-canvas flex">
       <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
@@ -54,7 +56,7 @@ export default function Shell({ children, activeNav = 'Dashboard', title, subtit
         </div>
 
         <nav className="space-y-0.5">
-          {NAV.map((n) => <NavItem key={n.label} {...n} active={n.label === activeNav} />)}
+          {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== '/' && location.pathname.startsWith(n.path))} />)}
         </nav>
 
         <div className="mt-auto pt-4 flex items-center gap-3 border-t border-surface-border">
