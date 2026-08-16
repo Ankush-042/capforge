@@ -21,12 +21,19 @@ const readinessData = [
   { name: 'Market', value: 100, color: '#F0A84E' },
 ];
 
-function GradientStat({ label, value, sub, from, to }) {
+function GradientStat({ label, value, sub, icon, from, to }) {
   return (
-    <div className={`rounded-lg p-5 text-white bg-gradient-to-br ${from} ${to} shadow-card`}>
-      <p className="text-xs opacity-80 mb-2">{label}</p>
-      <p className="text-2xl font-semibold">{value}</p>
-      <p className="text-xs opacity-70 mt-1">{sub}</p>
+    <div className={`rounded-xl p-6 min-h-[132px] text-white bg-gradient-to-br ${from} ${to} shadow-card flex flex-col justify-between`}>
+      <div className="flex items-start justify-between">
+        <p className="text-sm opacity-85">{label}</p>
+        <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center text-base backdrop-blur-sm">
+          {icon}
+        </div>
+      </div>
+      <div>
+        <p className="text-4xl font-bold leading-none mb-2">{value}</p>
+        <p className="text-xs opacity-75">{sub}</p>
+      </div>
     </div>
   );
 }
@@ -37,29 +44,29 @@ export default function FounderDashboard() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-xs text-ink-500 mb-1">Good evening, Founder</p>
-          <h1 className="text-[22px] font-semibold text-ink-900 tracking-tight">FoodSense2</h1>
+          <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">FoodSense2</h1>
         </div>
         <button className="text-sm bg-ink-900 hover:bg-ink-700 text-white px-4 py-2.5 rounded-lg shadow-card transition-colors">
           + Discover talent
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <GradientStat label="Readiness" value="62" sub="↑ from 50 last week" from="from-violet-500" to="to-violet-700" />
-        <GradientStat label="Team coverage" value="33%" sub="1 of 3 roles filled" from="from-blue-500" to="to-violet-600" />
-        <GradientStat label="Pending requests" value="1" sub="Awaiting response" from="from-amber-500" to="to-rose-500" />
-        <GradientStat label="Milestones" value="6" sub="AI-suggested" from="from-mint-500" to="to-blue-500" />
+      <div className="grid grid-cols-4 gap-5 mb-7">
+        <GradientStat label="Readiness" value="62" sub="↑ from 50 last week" icon="◒" from="from-violet-500" to="to-violet-700" />
+        <GradientStat label="Team coverage" value="33%" sub="1 of 3 roles filled" icon="◎" from="from-blue-500" to="to-violet-600" />
+        <GradientStat label="Pending requests" value="1" sub="Awaiting response" icon="◐" from="from-amber-500" to="to-rose-500" />
+        <GradientStat label="Milestones" value="6" sub="AI-suggested" icon="◈" from="from-mint-500" to="to-blue-500" />
       </div>
 
-      <div className="grid grid-cols-3 gap-5 mb-5">
-        <div className="col-span-2 bg-surface rounded-lg border border-surface-border shadow-card p-6">
+      <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="col-span-2 bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="text-sm font-semibold text-ink-900">Team coverage by role</p>
               <p className="text-xs text-ink-500">2 critical gaps remaining</p>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={230}>
             <BarChart data={gapData}>
               <XAxis dataKey="role" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6E7079' }} />
               <Tooltip cursor={{ fill: '#FAFAFB' }} contentStyle={{ borderRadius: 10, border: '1px solid #EDEDF1', fontSize: 12 }} />
@@ -87,12 +94,12 @@ export default function FounderDashboard() {
           </div>
         </div>
 
-        <div className="bg-surface rounded-lg border border-surface-border shadow-card p-6">
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <p className="text-sm font-semibold text-ink-900 mb-1">Readiness breakdown</p>
           <p className="text-xs text-ink-500 mb-2">By dimension</p>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={230}>
             <PieChart>
-              <Pie data={readinessData} dataKey="value" innerRadius={45} outerRadius={70} paddingAngle={3}>
+              <Pie data={readinessData} dataKey="value" innerRadius={55} outerRadius={85} paddingAngle={3}>
                 {readinessData.map((d, i) => <Cell key={i} fill={d.color} />)}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #EDEDF1', fontSize: 12 }} />
@@ -112,7 +119,7 @@ export default function FounderDashboard() {
         </div>
       </div>
 
-      <div className="bg-surface rounded-lg border border-surface-border shadow-card p-6">
+      <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
         <p className="text-sm font-semibold text-ink-900 mb-3">Top risk</p>
         <div className="flex items-start gap-3">
           <span className="text-xs font-medium px-2 py-1 rounded-md bg-rose-50 text-rose-500 shrink-0">TEAM · HIGH</span>
