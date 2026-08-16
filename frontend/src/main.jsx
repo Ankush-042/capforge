@@ -8,6 +8,9 @@ import Readiness from './pages/Readiness.jsx';
 import RiskPage from './pages/RiskPage.jsx';
 import Team from './pages/Team.jsx';
 import Milestones from './pages/Milestones.jsx';
+import CompetitorAnalysis from './pages/CompetitorAnalysis.jsx';
+import EquityCalculator from './pages/EquityCalculator.jsx';
+import Workspace from './pages/Workspace.jsx';
 import './styles/index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -21,6 +24,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/risk" element={<RiskPage />} />
         <Route path="/team" element={<Team />} />
         <Route path="/milestones" element={<Milestones />} />
+        <Route path="/competitors" element={<CompetitorAnalysis />} />
+        <Route path="/equity" element={<EquityCalculator />} />
+        <Route path="/workspace" element={<Workspace />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
