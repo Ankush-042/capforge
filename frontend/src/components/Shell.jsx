@@ -19,7 +19,7 @@ const NAV = [
 function NavItem({ label, icon, active, nested }) {
   return (
     <button
-      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
+      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[15px] transition-colors
         ${active ? 'bg-surface-muted text-ink-900 font-medium' : 'text-ink-500 hover:bg-surface-muted hover:text-ink-900'}`}
     >
       <span className="flex items-center gap-3">
@@ -38,7 +38,7 @@ export default function Shell({ children, activeNav = 'Dashboard', title, subtit
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500" />
-            <span className="text-sm font-semibold text-ink-900 tracking-tight">FoodSense2</span>
+            <span className="text-[15px] font-semibold text-ink-900 tracking-tight">FoodSense2</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-500 font-medium">Founder</span>
           </span>
           <span className="text-ink-300 text-xs">⌄</span>
@@ -60,7 +60,7 @@ export default function Shell({ children, activeNav = 'Dashboard', title, subtit
         <div className="mt-auto pt-4 flex items-center gap-3 border-t border-surface-border">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-sm font-medium text-white">F</div>
           <div>
-            <p className="text-sm font-medium text-ink-900">Founder</p>
+            <p className="text-[15px] font-medium text-ink-900">Founder</p>
             <p className="text-xs text-ink-300">test@test.com</p>
           </div>
         </div>

@@ -25,14 +25,14 @@ function StatCard({ label, value, sub, icon, bg, fg }) {
   return (
     <div className="rounded-xl p-6 min-h-[132px] shadow-card flex flex-col justify-between" style={{ backgroundColor: bg }}>
       <div className="flex items-start justify-between">
-        <p className="text-sm font-medium" style={{ color: fg }}>{label}</p>
+        <p className="text-[15px] font-medium" style={{ color: fg }}>{label}</p>
         <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base" style={{ backgroundColor: `${fg}22`, color: fg }}>
           {icon}
         </div>
       </div>
       <div>
         <p className="text-4xl font-bold leading-none mb-2" style={{ color: fg }}>{value}</p>
-        <p className="text-xs opacity-70" style={{ color: fg }}>{sub}</p>
+        <p className="text-[13px] opacity-70" style={{ color: fg }}>{sub}</p>
       </div>
     </div>
   );
@@ -62,8 +62,8 @@ export default function FounderDashboard() {
         <div className="col-span-2 bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-sm font-semibold text-ink-900">Team coverage by role</p>
-              <p className="text-xs text-ink-500">2 critical gaps remaining</p>
+              <p className="text-[15px] font-semibold text-ink-900">Team coverage by role</p>
+              <p className="text-[13px] text-ink-500">2 critical gaps remaining</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={230}>
@@ -77,12 +77,12 @@ export default function FounderDashboard() {
           </ResponsiveContainer>
 
           <div className="mt-5 pt-5 border-t border-surface-border">
-            <p className="text-sm font-medium text-ink-900 mb-3">Recommended for Full Stack Engineer</p>
+            <p className="text-[15px] font-medium text-ink-900 mb-3">Recommended for Full Stack Engineer</p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-xs font-medium text-white">P</div>
                 <div>
-                  <p className="text-sm font-medium text-ink-900">Priya Data</p>
+                  <p className="text-[15px] font-medium text-ink-900">Priya Data</p>
                   <p className="text-xs text-ink-500">Full-stack · 4 yrs · part-time</p>
                 </div>
               </div>
@@ -95,7 +95,7 @@ export default function FounderDashboard() {
         </div>
 
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
-          <p className="text-sm font-semibold text-ink-900 mb-1">Readiness breakdown</p>
+          <p className="text-[15px] font-semibold text-ink-900 mb-1">Readiness breakdown</p>
           <p className="text-xs text-ink-500 mb-2">By dimension</p>
           <ResponsiveContainer width="100%" height={230}>
             <PieChart>
@@ -120,10 +120,10 @@ export default function FounderDashboard() {
       </div>
 
       <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
-        <p className="text-sm font-semibold text-ink-900 mb-3">Top risk</p>
+        <p className="text-[15px] font-semibold text-ink-900 mb-3">Top risk</p>
         <div className="flex items-start gap-3">
           <span className="text-xs font-medium px-2 py-1 rounded-md bg-rose-50 text-rose-500 shrink-0">TEAM · HIGH</span>
-          <p className="text-sm text-ink-700">2 critical roles unfilled — Full Stack Engineer, UX/UI Designer.</p>
+          <p className="text-[15px] text-ink-700">2 critical roles unfilled — Full Stack Engineer, UX/UI Designer.</p>
         </div>
       </div>
     </Shell>
