@@ -165,71 +165,47 @@
 
 ---
 
-## PHASE 5 — Comprehensive UI (Sprints 17–20)
-**Scope reset:** the single screen shipped mid-Sprint 13 failed the design bar entirely (generic form, no hierarchy, no restraint-with-intention) — rejected, rebuild from zero against doc 7's actual standard (Figma/Linear/Stripe/Vercel-tier, zero template look).
+## PHASE 5 — Comprehensive UI (Sprints 17–21) — REVISED after 2 rejected attempts
+**LOCKED DIRECTION (do not deviate without explicit re-confirmation):**
+- **Light theme ONLY. Never dark mode.** First two attempts were both rejected — one generic form, one dark-mode misread of "restraint." Neither gets reused.
+- Reference set: Linear (shell/nav restraint) + Raycast (search/AI interaction) + Attio (data richness, attio.com/platform as the site-level polish benchmark) + Wellfound (startup-context structure) — but the internal page ENERGY must match the light, card-based, chart-rich dashboard references (gradient stat tiles, real bar/line/pie charts, progress rings, avatar stacks) — not sparse minimalism.
 
-### Sprint 17: Design System Foundation, Rebuilt
-- [ ] Component library actually built to spec: buttons, inputs, cards, tables, badges, modals, drawers, command palette, skeletons, empty states — per doc 7 §80
-- [ ] Real visual hierarchy demonstrated on ONE reference screen before any other screen is built, reviewed and approved before proceeding
-**DONE WHEN:** the reference screen is explicitly approved as matching the target bar — no further screens built until this gate passes.
+### Sprint 17: Design System v2 (light) + Reference Screen, redone
+- [ ] Tokens rebuilt: soft white/off-white surfaces, warm neutral grays, confident accent + gradient-accent stat cards, real elevation/shadow system
+- [ ] Founder Dashboard rebuilt with actual chart widgets, not text-only metrics
+**GATE: explicit user approval required before Sprint 18 proceeds.**
 
-### Sprint 18: Founder Experience — All Screens
-- [ ] Landing, auth, onboarding, dashboard, AI idea-structuring (rebuilt), gap dashboard + detail, candidate matching + comparison, readiness, risk, competitor analysis, milestones, equity calculator, team, workspace (doc 7 §97 founder screen list)
+### Sprint 18: Chart / Data-Viz Component Library
+- [ ] Bar chart, line chart, donut/pie, progress ring, avatar stack, gradient stat card, trend sparkline — built once as reusable components, not improvised per-screen
 
-### Sprint 19: Contributor + Investor Experience — All Screens
-- [ ] Contributor: onboarding, dashboard, recommended startups, skill demand, equity ask, connections
-- [ ] Investor: onboarding, dashboard, deal flow, startup detail, readiness/risk view, portfolio, connections
+### Sprint 19: Founder Screens — Full Set
+- [ ] Landing, auth, onboarding, dashboard, gap dashboard + detail, candidate matching + comparison, readiness, risk, competitor analysis, milestones, equity calculator, team, workspace
 
-### Sprint 20: Shared Screens + Full Polish Pass
-- [ ] Search/discovery, notifications, settings, command palette, all empty/loading/error states
-- [ ] Anti-vibe-coding checklist (doc 7 §93) applied to every single screen
-- [ ] Responsive + accessibility pass across full inventory
+### Sprint 20: Contributor + Investor Screens — Full Set
+- [ ] Both onboarding flows, both dashboards, recommended-startups/deal-flow, skill demand, equity ask, connections
 
----
-
-## PHASE 6 — Full PRD Scope: Previously "Future Expansion" Items (Sprints 21–26)
-Per explicit instruction: every feature named anywhere in the 7 documents is in scope, not just the original 16-sprint core. Each item below gets the same live-tested discipline as every prior sprint — real endpoint, real data, real verification, not a stub.
-
-### Sprint 21: Trust & Verification + Reputation
-- [ ] Verification states (Unverified/Claimed/Verified) with real verification workflow
-- [ ] Reputation signals from real platform activity (completed collaborations, confirmed contributions)
-
-### Sprint 22: Admin & Moderation
-- [ ] User management, startup listing management, report handling, verification review queue, platform activity monitoring
-
-### Sprint 23: Investor Portfolio Intelligence
-- [ ] Portfolio-gap analysis (diversification signal from an investor's actual connected startups)
-- [ ] Co-investment/syndicate signals
-- [ ] Warm-introduction path detection
-
-### Sprint 24: Contributor-Side Advanced Features
-- [ ] Multi-offer comparison (side-by-side of a contributor's active opportunities)
-- [ ] Learning-resource recommendations tied to recurring skill gaps
-
-### Sprint 25: True Semantic Search + Auto-Refresh Triggers
-- [ ] Real vector embeddings (pgvector) for startups/contributors/investors, replacing the current keyword-based NL layer
-- [ ] Automatic recommendation-refresh wired to every TRD §69 trigger event (not just manual re-run endpoints)
-
-### Sprint 26: Advanced Analytics + Founder Agreement/NDA Scaffolding
-- [ ] Venture analytics dashboards
-- [ ] Founders-agreement / NDA document scaffolding (PRD §21) with explicit "not legal advice" framing
-
-### Sprint 26b: Workspace Files + UX/Privacy Gaps Found in Audit (added after explicit re-check — not caught in the first Sprint 21-26 pass)
-- [ ] Workspace file upload/storage (architecture doc §11, §40, §64 — object storage, metadata table, download/access control) — genuinely missing, tasks+discussions only were built in Sprint 11
-- [ ] Notification preferences UI + backend (doc 7 §91 — per-category on/off: connections, recommendations, team, AI analysis, platform)
-- [ ] Privacy UX (doc 7 §90 — explicit public/discoverable/connection-only/team-only/private visibility control screen)
-- [ ] Dark theme (doc 7 §11 — independent contrast/surface/shadow tuning, not a simple palette inversion)
-- [ ] Data Quality Requirements as explicit test suite (PRD §42 — required-field validation, duplicate detection, inconsistent-data flagging, silent-overwrite prevention)
-- [ ] Search Result Quality ranking factor audit (PRD §43 — relevance/requirement-satisfaction/evidence/preference/freshness/interaction-history all explicitly present and weighted, not just "search works")
-**DONE WHEN:** each item above is live-tested, same as every other sprint — this sprint exists specifically because a first "comprehensive" pass missed these, so it gets extra scrutiny before being marked done.
+### Sprint 21: Shared Screens + Full Polish Pass
+- [ ] Search/discovery, notifications, settings, privacy, command palette, every empty/loading/error state, anti-vibe-coding checklist applied per screen, responsive + accessibility pass
 
 ---
 
-## PHASE 7 — Final Full-Scope Completion Gate (Sprint 27)
+## PHASE 6 — Full PRD Scope: Previously "Future Expansion" Items (Sprints 22–27)
+
+### Sprint 22: Trust & Verification + Reputation
+### Sprint 23: Admin & Moderation
+### Sprint 24: Investor Portfolio Intelligence (portfolio-gap, co-investment signals, warm-intro paths)
+### Sprint 25: Contributor Advanced (multi-offer comparison, learning-resource recommendations)
+### Sprint 26: True Semantic Search (real pgvector embeddings, replacing keyword NL layer) + Auto-Refresh Triggers (TRD §69 full list)
+### Sprint 27: Advanced Analytics + Founders Agreement/NDA Scaffolding + remaining audit-gap items (workspace file uploads, notification preferences UI, data-quality test suite, search-ranking-factor audit)
+
+---
+
+## PHASE 7 — Final Full-Scope Completion Gate (Sprint 28)
 - [ ] Every FR in the SRS, including previously-deferred items, checked
-- [ ] Every module named in PRD §61 "Product Scope — Complete Formulation" verified present and functioning
-- [ ] Full regression pass: core loop (Sprints 0-12) still works after all additions
-**DONE WHEN:** the product matches the PRD's full stated scope — core AND future-expansion — with nothing left unbuilt that was named in any of the 7 documents.
+- [ ] Every module in PRD §61 "Product Scope — Complete Formulation" verified present and functioning
+- [ ] UI matches the approved light/data-rich bar across the full screen inventory
+- [ ] Full regression: original core loop (Sprints 0-12) still works after every addition
+**DONE WHEN:** the product matches the full 7-document scope, core and future-expansion, with a UI that was explicitly approved, not just built.
 
 ---
 
