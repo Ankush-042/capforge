@@ -21,18 +21,18 @@ const readinessData = [
   { name: 'Market', value: 100, color: '#F0A84E' },
 ];
 
-function GradientStat({ label, value, sub, icon, from, to }) {
+function StatCard({ label, value, sub, icon, bg, fg }) {
   return (
-    <div className={`rounded-xl p-6 min-h-[132px] text-white bg-gradient-to-br ${from} ${to} shadow-card flex flex-col justify-between`}>
+    <div className="rounded-xl p-6 min-h-[132px] shadow-card flex flex-col justify-between" style={{ backgroundColor: bg }}>
       <div className="flex items-start justify-between">
-        <p className="text-sm opacity-85">{label}</p>
-        <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center text-base backdrop-blur-sm">
+        <p className="text-sm font-medium" style={{ color: fg }}>{label}</p>
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base" style={{ backgroundColor: `${fg}22`, color: fg }}>
           {icon}
         </div>
       </div>
       <div>
-        <p className="text-4xl font-bold leading-none mb-2">{value}</p>
-        <p className="text-xs opacity-75">{sub}</p>
+        <p className="text-4xl font-bold leading-none mb-2" style={{ color: fg }}>{value}</p>
+        <p className="text-xs opacity-70" style={{ color: fg }}>{sub}</p>
       </div>
     </div>
   );
@@ -52,10 +52,10 @@ export default function FounderDashboard() {
       </div>
 
       <div className="grid grid-cols-4 gap-5 mb-7">
-        <GradientStat label="Readiness" value="62" sub="↑ from 50 last week" icon="◒" from="from-violet-500" to="to-violet-700" />
-        <GradientStat label="Team coverage" value="33%" sub="1 of 3 roles filled" icon="◎" from="from-blue-500" to="to-violet-600" />
-        <GradientStat label="Pending requests" value="1" sub="Awaiting response" icon="◐" from="from-amber-500" to="to-rose-500" />
-        <GradientStat label="Milestones" value="6" sub="AI-suggested" icon="◈" from="from-mint-500" to="to-blue-500" />
+        <StatCard label="Readiness" value="62" sub="↑ from 50 last week" icon="◒" bg="#EED8FF" fg="#6D28D9" />
+        <StatCard label="Team coverage" value="33%" sub="1 of 3 roles filled" icon="◎" bg="#D1EAFE" fg="#1677E8" />
+        <StatCard label="Pending requests" value="1" sub="Awaiting response" icon="◐" bg="#FFE8DA" fg="#E84C32" />
+        <StatCard label="Milestones" value="6" sub="AI-suggested" icon="◈" bg="#FFF3D1" fg="#C58A00" />
       </div>
 
       <div className="grid grid-cols-3 gap-6 mb-6">
