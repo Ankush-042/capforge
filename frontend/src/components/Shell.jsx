@@ -1,64 +1,60 @@
 import React from 'react';
 
-/**
- * App shell: sidebar + top bar. Design language directly applies Linear's
- * documented refresh principles (linear.app/now/behind-the-latest-design-refresh):
- *  - Sidebar is deliberately dimmer than main content ("don't compete for
- *    attention you haven't earned") — muted icons/text, content area carries
- *    the visual weight.
- *  - Structure "felt not seen" — near-invisible borders (border-soft),
- *    separation via spacing and subtle surface-level shifts, not hard lines.
- *  - Compact chrome: small icon sizing, tight vertical rhythm in nav.
- */
-
 const NAV = [
-  { label: 'Overview', icon: '◇' },
+  { label: 'Dashboard', icon: '▦' },
   { label: 'Gaps', icon: '◈' },
   { label: 'Team', icon: '◎' },
   { label: 'Readiness', icon: '◒' },
   { label: 'Discover', icon: '◌' },
   { label: 'Connections', icon: '◐' },
+  { label: 'Settings', icon: '⚙' },
 ];
 
 function NavItem({ label, icon, active }) {
   return (
     <button
-      className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded text-sm transition-colors
-        ${active ? 'bg-surface-1 text-text-primary' : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-1/50'}`}
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+        ${active ? 'bg-violet-50 text-violet-700 font-medium' : 'text-ink-500 hover:bg-surface-muted hover:text-ink-900'}`}
     >
-      <span className="text-[13px] opacity-70 w-4 text-center">{icon}</span>
+      <span className="text-[14px] w-4 text-center">{icon}</span>
       <span>{label}</span>
     </button>
   );
 }
 
-export default function Shell({ children, activeNav = 'Overview', title }) {
+export default function Shell({ children, activeNav = 'Dashboard', title, subtitle }) {
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-[220px] shrink-0 border-r border-surface-border-soft flex flex-col py-4 px-3">
-        <div className="px-2 mb-6 flex items-center gap-2">
-          <div className="w-5 h-5 rounded bg-accent/90" />
-          <span className="text-sm font-medium text-text-secondary tracking-tight">CapForge</span>
+    <div className="min-h-screen bg-canvas flex">
+      <aside className="w-[240px] shrink-0 border-r border-surface-border flex flex-col py-5 px-3 bg-surface">
+        <div className="px-2 mb-7 flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500" />
+          <span className="text-[15px] font-semibold text-ink-900 tracking-tight">CapForge</span>
         </div>
-        <nav className="space-y-[2px]">
+        <nav className="space-y-1">
           {NAV.map((n) => <NavItem key={n.label} {...n} active={n.label === activeNav} />)}
         </nav>
-        <div className="mt-auto px-2 pt-4">
-          <div className="flex items-center gap-2 px-1">
-            <div className="w-6 h-6 rounded-full bg-surface-2 flex items-center justify-center text-[11px] text-text-tertiary">F</div>
-            <span className="text-xs text-text-tertiary">Founder</span>
+        <div className="mt-auto px-2 pt-4 flex items-center gap-2.5 border-t border-surface-border pt-4">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-xs font-medium text-white">F</div>
+          <div>
+            <p className="text-xs font-medium text-ink-900">Founder</p>
+            <p className="text-[11px] text-ink-300">test@test.com</p>
           </div>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-12 shrink-0 border-b border-surface-border-soft flex items-center justify-between px-6">
-          <h1 className="text-sm text-text-secondary font-medium">{title}</h1>
-          <button className="text-xs text-text-tertiary px-2.5 py-1 rounded border border-surface-border-soft hover:text-text-secondary hover:border-surface-border transition-colors">
-            ⌘K
-          </button>
+        <header className="h-16 shrink-0 border-b border-surface-border flex items-center justify-between px-8 bg-surface">
+          <div>
+            <p className="text-[15px] font-semibold text-ink-900">{title}</p>
+            {subtitle && <p className="text-xs text-ink-500">{subtitle}</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="text-xs text-ink-500 px-3 py-1.5 rounded-lg border border-surface-border hover:bg-surface-muted transition-colors">
+              Search  ⌘K
+            </button>
+          </div>
         </header>
-        <main className="flex-1 px-6 py-6 max-w-5xl w-full mx-auto">{children}</main>
+        <main className="flex-1 px-8 py-7 max-w-6xl w-full mx-auto">{children}</main>
       </div>
     </div>
   );
