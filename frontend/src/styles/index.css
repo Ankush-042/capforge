@@ -2,6 +2,4 @@
 @tailwind components;
 @tailwind utilities;
 
-* { border-color: theme('colors.surface.border-soft'); }
-body { @apply bg-canvas text-text-primary font-sans antialiased text-base; -webkit-font-smoothing: antialiased; }
-::selection { background: theme('colors.accent.soft'); }
+body { @apply bg-canvas text-ink-900 font-sans antialiased; }

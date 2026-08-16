@@ -1,137 +1,122 @@
 import React from 'react';
+import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, Tooltip } from 'recharts';
 import Shell from '../components/Shell.jsx';
 
 /**
- * Founder Dashboard — the Sprint 17 reference screen. Chosen deliberately
- * because it has to prove hierarchy under real density (readiness, gaps,
- * team, actions all competing for space at once) — the hardest honest test
- * of the design language before committing to 49 more screens.
- *
- * Static/mock data here ONLY to establish the visual bar for approval —
- * this gets wired to the real API in the next pass once direction is confirmed.
+ * Founder Dashboard — Sprint 17 reference screen, rebuilt in the corrected
+ * light/gradient/chart-rich direction after two rejected attempts.
+ * Static/mock data for visual approval; wired to the real API in Sprint 19.
  */
 
-const SIGNAL_COLOR = { CRITICAL: 'text-signal-critical', HIGH: 'text-signal-high', MEDIUM: 'text-signal-medium', LOW: 'text-signal-low' };
+const gapData = [
+  { role: 'Full Stack', coverage: 0, fill: '#E15C4D' },
+  { role: 'UX/UI', coverage: 0, fill: '#E15C4D' },
+  { role: 'Data Sci.', coverage: 100, fill: '#3FB081' },
+];
 
-function ReadinessRing({ score }) {
-  const circumference = 2 * Math.PI * 26;
-  const offset = circumference - (score / 100) * circumference;
-  return (
-    <div className="relative w-16 h-16 shrink-0">
-      <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-        <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="4" fill="none" className="text-surface-2" />
-        <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="4" fill="none"
-          strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-accent transition-all duration-700" />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-text-primary">{score}</div>
-    </div>
-  );
-}
+const readinessData = [
+  { name: 'Team', value: 33, color: '#7C5CFC' },
+  { name: 'Problem', value: 90, color: '#4C86F9' },
+  { name: 'Solution', value: 90, color: '#3FB081' },
+  { name: 'Market', value: 100, color: '#F0A84E' },
+];
 
-function GapRow({ role, priority, coverage }) {
+function GradientStat({ label, value, sub, from, to }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-surface-border-soft last:border-0">
-      <div className="flex items-center gap-2.5 min-w-0">
-        <span className={`text-[10px] font-medium tracking-wide ${SIGNAL_COLOR[priority]}`}>●</span>
-        <span className="text-sm text-text-primary truncate">{role}</span>
-      </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <span className="text-xs text-text-tertiary">{coverage}% covered</span>
-        <span className={`text-[11px] px-1.5 py-0.5 rounded ${SIGNAL_COLOR[priority]} bg-surface-2`}>{priority}</span>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub }) {
-  return (
-    <div className="bg-surface-1 rounded-md border border-surface-border-soft px-4 py-3">
-      <p className="text-xs text-text-tertiary mb-1">{label}</p>
-      <p className="text-xl text-text-primary font-medium tabular-nums">{value}</p>
-      {sub && <p className="text-xs text-text-tertiary mt-0.5">{sub}</p>}
+    <div className={`rounded-lg p-5 text-white bg-gradient-to-br ${from} ${to} shadow-card`}>
+      <p className="text-xs opacity-80 mb-2">{label}</p>
+      <p className="text-2xl font-semibold">{value}</p>
+      <p className="text-xs opacity-70 mt-1">{sub}</p>
     </div>
   );
 }
 
 export default function FounderDashboard() {
   return (
-    <Shell title="FoodSense2" activeNav="Overview">
-      <div className="mb-8 flex items-start justify-between">
+    <Shell title="FoodSense2" subtitle="AI-powered demand forecasting" activeNav="Dashboard">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-xs text-text-tertiary mb-1">Good evening</p>
-          <h1 className="text-2xl text-text-primary font-medium tracking-tight">FoodSense2</h1>
-          <p className="text-sm text-text-secondary mt-1 max-w-lg">AI-powered demand forecasting for small restaurants, reducing food waste through predictive inventory.</p>
+          <p className="text-xs text-ink-500 mb-1">Good evening, Founder</p>
+          <h1 className="text-[22px] font-semibold text-ink-900 tracking-tight">FoodSense2</h1>
         </div>
-        <button className="text-sm bg-surface-1 hover:bg-surface-2 text-text-primary px-3.5 py-2 rounded border border-surface-border-soft transition-colors shrink-0">
-          Discover talent
+        <button className="text-sm bg-ink-900 hover:bg-ink-700 text-white px-4 py-2.5 rounded-lg shadow-card transition-colors">
+          + Discover talent
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <StatCard label="Team coverage" value="33%" sub="1 of 3 roles filled" />
-        <StatCard label="Pending requests" value="1" sub="Awaiting response" />
-        <StatCard label="Open milestones" value="6" sub="AI-suggested" />
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <GradientStat label="Readiness" value="62" sub="↑ from 50 last week" from="from-violet-500" to="to-violet-700" />
+        <GradientStat label="Team coverage" value="33%" sub="1 of 3 roles filled" from="from-blue-500" to="to-violet-600" />
+        <GradientStat label="Pending requests" value="1" sub="Awaiting response" from="from-amber-500" to="to-rose-500" />
+        <GradientStat label="Milestones" value="6" sub="AI-suggested" from="from-mint-500" to="to-blue-500" />
       </div>
 
-      <div className="grid grid-cols-[1fr_320px] gap-4">
-        <div className="space-y-4">
-          <div className="bg-surface-1 rounded-md border border-surface-border-soft p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium text-text-primary">Unresolved gaps</h2>
-              <span className="text-xs text-text-tertiary">2 critical</span>
+      <div className="grid grid-cols-3 gap-5 mb-5">
+        <div className="col-span-2 bg-surface rounded-lg border border-surface-border shadow-card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-sm font-semibold text-ink-900">Team coverage by role</p>
+              <p className="text-xs text-ink-500">2 critical gaps remaining</p>
             </div>
-            <GapRow role="Full Stack Engineer" priority="CRITICAL" coverage={0} />
-            <GapRow role="UX/UI Designer" priority="CRITICAL" coverage={0} />
-            <GapRow role="Data Scientist" priority="LOW" coverage={100} />
           </div>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={gapData}>
+              <XAxis dataKey="role" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6E7079' }} />
+              <Tooltip cursor={{ fill: '#FAFAFB' }} contentStyle={{ borderRadius: 10, border: '1px solid #EDEDF1', fontSize: 12 }} />
+              <Bar dataKey="coverage" radius={[8, 8, 0, 0]} barSize={48}>
+                {gapData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
 
-          <div className="bg-surface-1 rounded-md border border-surface-border-soft p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium text-text-primary">Recommended for Full Stack Engineer</h2>
-            </div>
-            <div className="flex items-center justify-between py-1">
+          <div className="mt-5 pt-5 border-t border-surface-border">
+            <p className="text-sm font-medium text-ink-900 mb-3">Recommended for Full Stack Engineer</p>
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center text-xs text-text-secondary">P</div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-xs font-medium text-white">P</div>
                 <div>
-                  <p className="text-sm text-text-primary">Priya Data</p>
-                  <p className="text-xs text-text-tertiary">Full-stack · 4 yrs · part-time</p>
+                  <p className="text-sm font-medium text-ink-900">Priya Data</p>
+                  <p className="text-xs text-ink-500">Full-stack · 4 yrs · part-time</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-text-secondary tabular-nums">76%</span>
-                <button className="text-xs text-accent hover:text-text-primary transition-colors">Connect</button>
+                <span className="text-sm font-medium text-violet-600">76%</span>
+                <button className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">Connect</button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-surface-1 rounded-md border border-surface-border-soft p-5">
-            <div className="flex items-center gap-4 mb-4">
-              <ReadinessRing score={62} />
-              <div>
-                <p className="text-sm text-text-primary font-medium">Readiness</p>
-                <p className="text-xs text-text-tertiary">Up from 50 last week</p>
+        <div className="bg-surface rounded-lg border border-surface-border shadow-card p-6">
+          <p className="text-sm font-semibold text-ink-900 mb-1">Readiness breakdown</p>
+          <p className="text-xs text-ink-500 mb-2">By dimension</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie data={readinessData} dataKey="value" innerRadius={45} outerRadius={70} paddingAngle={3}>
+                {readinessData.map((d, i) => <Cell key={i} fill={d.color} />)}
+              </Pie>
+              <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #EDEDF1', fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="space-y-1.5 mt-2">
+            {readinessData.map((d) => (
+              <div key={d.name} className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 text-ink-500">
+                  <span className="w-2 h-2 rounded-full" style={{ background: d.color }} />
+                  {d.name}
+                </span>
+                <span className="text-ink-900 font-medium">{d.value}%</span>
               </div>
-            </div>
-            <div className="space-y-2">
-              {[['Team', 33], ['Problem', 90], ['Solution', 90], ['Market', 100]].map(([k, v]) => (
-                <div key={k} className="flex items-center gap-2">
-                  <span className="text-xs text-text-tertiary w-14 shrink-0">{k}</span>
-                  <div className="flex-1 h-1 bg-surface-2 rounded-full overflow-hidden">
-                    <div className="h-full bg-accent/70 rounded-full" style={{ width: `${v}%` }} />
-                  </div>
-                  <span className="text-xs text-text-tertiary tabular-nums w-7 text-right">{v}</span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
+        </div>
+      </div>
 
-          <div className="bg-surface-1 rounded-md border border-surface-border-soft p-5">
-            <h2 className="text-sm font-medium text-text-primary mb-3">Top risk</h2>
-            <p className="text-xs text-signal-high mb-1">TEAM · HIGH</p>
-            <p className="text-sm text-text-secondary leading-relaxed">2 critical roles unfilled — Full Stack Engineer, UX/UI Designer.</p>
-          </div>
+      <div className="bg-surface rounded-lg border border-surface-border shadow-card p-6">
+        <p className="text-sm font-semibold text-ink-900 mb-3">Top risk</p>
+        <div className="flex items-start gap-3">
+          <span className="text-xs font-medium px-2 py-1 rounded-md bg-rose-50 text-rose-500 shrink-0">TEAM · HIGH</span>
+          <p className="text-sm text-ink-700">2 critical roles unfilled — Full Stack Engineer, UX/UI Designer.</p>
         </div>
       </div>
     </Shell>
