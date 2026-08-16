@@ -14,6 +14,9 @@ const NAV = [
   { label: 'Readiness', icon: '◒', path: '/readiness' },
   { label: 'Risk', icon: '◑', path: '/risk' },
   { label: 'Milestones', icon: '◇', path: '/milestones' },
+  { label: 'Competitors', icon: '◌', path: '/competitors' },
+  { label: 'Equity', icon: '◍', path: '/equity' },
+  { label: 'Workspace', icon: '◫', path: '/workspace' },
 ];
 
 function NavItem({ label, icon, path, active, nested }) {
