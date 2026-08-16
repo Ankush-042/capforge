@@ -29,7 +29,7 @@ const readinessData = [
 
 export default function FounderDashboard() {
   return (
-    <Shell title="FoodSense2" subtitle="AI-powered demand forecasting" activeNav="Dashboard">
+    <Shell title="FoodSense2" subtitle="AI-powered demand forecasting">
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-xs text-ink-500 mb-1">Good evening, Founder</p>
