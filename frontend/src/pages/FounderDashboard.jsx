@@ -1,17 +1,23 @@
 import React from 'react';
-import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, Tooltip } from 'recharts';
 import Shell from '../components/Shell.jsx';
+import StatCard, { STAT_PALETTE } from '../components/charts/StatCard.jsx';
+import GapBarChart from '../components/charts/GapBarChart.jsx';
+import DonutChart from '../components/charts/DonutChart.jsx';
+import AvatarRow from '../components/charts/AvatarRow.jsx';
+import Badge from '../components/charts/Badge.jsx';
 
 /**
- * Founder Dashboard — Sprint 17 reference screen, rebuilt in the corrected
- * light/gradient/chart-rich direction after two rejected attempts.
- * Static/mock data for visual approval; wired to the real API in Sprint 19.
+ * Founder Dashboard — Sprint 18: refactored to use the shared chart
+ * component library (StatCard, GapBarChart, DonutChart, AvatarRow, Badge)
+ * instead of one-off inline implementations. This is also the proof that
+ * the shared components actually work before Sprint 19 builds 15 more
+ * screens on top of them.
  */
 
-const gapData = [
-  { role: 'Full Stack', coverage: 0, fill: '#E15C4D' },
-  { role: 'UX/UI', coverage: 0, fill: '#E15C4D' },
-  { role: 'Data Sci.', coverage: 100, fill: '#3FB081' },
+const gaps = [
+  { role: 'Full Stack', coverage: 0, priority_level: 'CRITICAL' },
+  { role: 'UX/UI', coverage: 0, priority_level: 'CRITICAL' },
+  { role: 'Data Sci.', coverage: 100, priority_level: 'LOW' },
 ];
 
 const readinessData = [
@@ -20,23 +26,6 @@ const readinessData = [
   { name: 'Solution', value: 90, color: '#3FB081' },
   { name: 'Market', value: 100, color: '#F0A84E' },
 ];
-
-function StatCard({ label, value, sub, icon, bg, fg }) {
-  return (
-    <div className="rounded-xl p-6 min-h-[132px] shadow-card flex flex-col justify-between" style={{ backgroundColor: bg }}>
-      <div className="flex items-start justify-between">
-        <p className="text-[15px] font-medium" style={{ color: fg }}>{label}</p>
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base" style={{ backgroundColor: `${fg}22`, color: fg }}>
-          {icon}
-        </div>
-      </div>
-      <div>
-        <p className="text-4xl font-bold leading-none mb-2" style={{ color: fg }}>{value}</p>
-        <p className="text-[13px] opacity-70" style={{ color: fg }}>{sub}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function FounderDashboard() {
   return (
@@ -52,10 +41,10 @@ export default function FounderDashboard() {
       </div>
 
       <div className="grid grid-cols-4 gap-5 mb-7">
-        <StatCard label="Readiness" value="62" sub="↑ from 50 last week" icon="◒" bg="#EED8FF" fg="#6D28D9" />
-        <StatCard label="Team coverage" value="33%" sub="1 of 3 roles filled" icon="◎" bg="#D1EAFE" fg="#1677E8" />
-        <StatCard label="Pending requests" value="1" sub="Awaiting response" icon="◐" bg="#FFE8DA" fg="#E84C32" />
-        <StatCard label="Milestones" value="6" sub="AI-suggested" icon="◈" bg="#FFF3D1" fg="#C58A00" />
+        <StatCard label="Readiness" value="62" sub="↑ from 50 last week" icon="◒" {...STAT_PALETTE.lavender} />
+        <StatCard label="Team coverage" value="33%" sub="1 of 3 roles filled" icon="◎" {...STAT_PALETTE.blue} />
+        <StatCard label="Pending requests" value="1" sub="Awaiting response" icon="◐" {...STAT_PALETTE.peach} />
+        <StatCard label="Milestones" value="6" sub="AI-suggested" icon="◈" {...STAT_PALETTE.cream} />
       </div>
 
       <div className="grid grid-cols-3 gap-6 mb-6">
@@ -66,63 +55,33 @@ export default function FounderDashboard() {
               <p className="text-[13px] text-ink-500">2 critical gaps remaining</p>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={230}>
-            <BarChart data={gapData}>
-              <XAxis dataKey="role" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6E7079' }} />
-              <Tooltip cursor={{ fill: '#FAFAFB' }} contentStyle={{ borderRadius: 10, border: '1px solid #EDEDF1', fontSize: 12 }} />
-              <Bar dataKey="coverage" radius={[8, 8, 0, 0]} barSize={48}>
-                {gapData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <GapBarChart gaps={gaps} />
 
           <div className="mt-5 pt-5 border-t border-surface-border">
             <p className="text-[15px] font-medium text-ink-900 mb-3">Recommended for Full Stack Engineer</p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-xs font-medium text-white">P</div>
-                <div>
-                  <p className="text-[15px] font-medium text-ink-900">Priya Data</p>
-                  <p className="text-xs text-ink-500">Full-stack · 4 yrs · part-time</p>
+            <AvatarRow
+              initial="P" name="Priya Data" subtitle="Full-stack · 4 yrs · part-time"
+              trailing={
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-violet-600">76%</span>
+                  <button className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">Connect</button>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-violet-600">76%</span>
-                <button className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">Connect</button>
-              </div>
-            </div>
+              }
+            />
           </div>
         </div>
 
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <p className="text-[15px] font-semibold text-ink-900 mb-1">Readiness breakdown</p>
-          <p className="text-xs text-ink-500 mb-2">By dimension</p>
-          <ResponsiveContainer width="100%" height={230}>
-            <PieChart>
-              <Pie data={readinessData} dataKey="value" innerRadius={55} outerRadius={85} paddingAngle={3}>
-                {readinessData.map((d, i) => <Cell key={i} fill={d.color} />)}
-              </Pie>
-              <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #EDEDF1', fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-1.5 mt-2">
-            {readinessData.map((d) => (
-              <div key={d.name} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-ink-500">
-                  <span className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-                  {d.name}
-                </span>
-                <span className="text-ink-900 font-medium">{d.value}%</span>
-              </div>
-            ))}
-          </div>
+          <p className="text-[13px] text-ink-500 mb-2">By dimension</p>
+          <DonutChart data={readinessData} />
         </div>
       </div>
 
       <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
         <p className="text-[15px] font-semibold text-ink-900 mb-3">Top risk</p>
         <div className="flex items-start gap-3">
-          <span className="text-xs font-medium px-2 py-1 rounded-md bg-rose-50 text-rose-500 shrink-0">TEAM · HIGH</span>
+          <Badge label="TEAM · HIGH" priority="HIGH" />
           <p className="text-[15px] text-ink-700">2 critical roles unfilled — Full Stack Engineer, UX/UI Designer.</p>
         </div>
       </div>
