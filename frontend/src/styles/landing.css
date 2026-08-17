@@ -1,6 +1,6 @@
 
 /* Ported from the provided reference design — teal/off-white editorial system */
-:root { color-scheme: light; --background: #f8f8f5; --foreground: #1e2523; --card: #ffffff; --card-foreground: #1e2523; --popover: #ffffff; --popover-foreground: #1e2523; --primary: #155d58; --primary-foreground: #f8f8f5; --secondary: #eceee9; --secondary-foreground: #1e2523; --muted: #f0f1ed; --muted-foreground: #6c7571; --accent: #d8e6df; --accent-foreground: #155d58; --border: #dfe3de; --input: #dfe3de; --ring: #155d58; --destructive: #b84d3b; --font-sans: 'Geist', Arial, sans-serif; --font-mono: 'Geist Mono', 'Courier New', monospace; }
+:root { color-scheme: light; --background: #f8f8f5; --foreground: #1e2523; --card: #ffffff; --card-foreground: #1e2523; --popover: #ffffff; --popover-foreground: #1e2523; --primary: #155d58; --primary-foreground: #f8f8f5; --secondary: #eceee9; --secondary-foreground: #1e2523; --muted: #f0f1ed; --muted-foreground: #6c7571; --accent: #d8e6df; --accent-foreground: #155d58; --border: #dfe3de; --input: #dfe3de; --ring: #155d58; --destructive: #b84d3b; --font-sans: 'Geist Sans', Arial, sans-serif; --font-mono: 'Geist Mono', 'Courier New', monospace; }
 * { box-sizing: border-box; border-color: var(--border); }
 html { scroll-behavior: smooth; background: var(--background); }
 body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-sans), Arial, sans-serif; font-size: 15px; line-height: 1.5; }

@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownRight, ArrowUpRight, Check, Menu, Plus, X } from 'lucide-react';
+import '@fontsource/geist-sans/400.css';
+import '@fontsource/geist-sans/500.css';
+import '@fontsource/geist-sans/600.css';
+import '@fontsource/geist-sans/700.css';
+import '@fontsource/geist-mono/400.css';
+import '@fontsource/geist-mono/500.css';
 import '../styles/landing.css';
 
 /**
@@ -17,7 +23,7 @@ const navItems = [
 ];
 
 function Logo() {
-  return <Link to="/" className="brand-mark" aria-label="CapForge home"><span className="brand-wordmark">C</span><span>CAPFORGE</span></Link>;
+  return <a href="#top" className="brand-mark" aria-label="CapForge home"><span className="brand-wordmark">C</span><span>CAPFORGE</span></a>;
 }
 
 function SectionLabel({ children }) {
