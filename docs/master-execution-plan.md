@@ -166,7 +166,7 @@ Originally "Seed Data, Performance, Final Polish." Never started. Same reasoning
 ### Sprint 18: Chart / Data-Viz Component Library ✅ DONE
 - [ ] Bar chart, line chart, donut/pie, progress ring, avatar stack, gradient stat card, trend sparkline — built once as reusable components, not improvised per-screen
 
-### Sprint 19: Founder Screens — Full Set ✅ 9 of 13 screens done
+### Sprint 19: Founder Screens — Full Set ✅ DONE (13/13)
 - [ ] Landing, auth, onboarding, dashboard, gap dashboard + detail, candidate matching + comparison, readiness, risk, competitor analysis, milestones, equity calculator, team, workspace
 
 ### Sprint 20: Contributor + Investor Screens — Full Set
