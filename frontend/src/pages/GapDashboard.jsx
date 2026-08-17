@@ -11,7 +11,7 @@ const gaps = [
 
 function GapRow({ gap }) {
   return (
-    <Link to={`/gaps/${gap.id}`} className="flex items-center justify-between py-4 px-1 border-b border-surface-border last:border-0 hover:bg-surface-muted/50 -mx-1 rounded-lg transition-colors">
+    <Link to={`/app/gaps/${gap.id}`} className="flex items-center justify-between py-4 px-1 border-b border-surface-border last:border-0 hover:bg-surface-muted/50 -mx-1 rounded-lg transition-colors">
       <div className="min-w-0">
         <p className="text-[15px] font-medium text-ink-900">{gap.role}</p>
         <p className="text-[13px] text-ink-500 mt-0.5 max-w-md truncate">{gap.reason}</p>

@@ -8,15 +8,15 @@ import { Link, useLocation } from 'react-router-dom';
  */
 
 const NAV = [
-  { label: 'Dashboard', icon: '▦', path: '/' },
-  { label: 'Gaps', icon: '◈', path: '/gaps', nested: true },
-  { label: 'Team', icon: '◎', path: '/team' },
-  { label: 'Readiness', icon: '◒', path: '/readiness' },
-  { label: 'Risk', icon: '◑', path: '/risk' },
-  { label: 'Milestones', icon: '◇', path: '/milestones' },
-  { label: 'Competitors', icon: '◌', path: '/competitors' },
-  { label: 'Equity', icon: '◍', path: '/equity' },
-  { label: 'Workspace', icon: '◫', path: '/workspace' },
+  { label: 'Dashboard', icon: '▦', path: '/app' },
+  { label: 'Gaps', icon: '◈', path: '/app/gaps', nested: true },
+  { label: 'Team', icon: '◎', path: '/app/team' },
+  { label: 'Readiness', icon: '◒', path: '/app/readiness' },
+  { label: 'Risk', icon: '◑', path: '/app/risk' },
+  { label: 'Milestones', icon: '◇', path: '/app/milestones' },
+  { label: 'Competitors', icon: '◌', path: '/app/competitors' },
+  { label: 'Equity', icon: '◍', path: '/app/equity' },
+  { label: 'Workspace', icon: '◫', path: '/app/workspace' },
 ];
 
 function NavItem({ label, icon, path, active, nested }) {
@@ -59,7 +59,7 @@ export default function Shell({ children, title, subtitle }) {
         </div>
 
         <nav className="space-y-0.5">
-          {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== '/' && location.pathname.startsWith(n.path))} />)}
+          {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== '/app' && location.pathname.startsWith(n.path))} />)}
         </nav>
 
         <div className="mt-auto pt-4 flex items-center gap-3 border-t border-surface-border">
