@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Check, LockKeyhole } from 'lucide-react';
 import { apiFetch } from '../services/api.js';
+import '@fontsource/geist-sans/400.css';
+import '@fontsource/geist-sans/500.css';
+import '@fontsource/geist-sans/600.css';
+import '@fontsource/geist-sans/700.css';
+import '@fontsource/geist-mono/400.css';
+import '@fontsource/geist-mono/500.css';
 import '../styles/landing.css';
 
 /**
@@ -17,7 +23,6 @@ export function AuthShell({ mode }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('FOUNDER');
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -34,7 +39,7 @@ export function AuthShell({ mode }) {
     setLoading(true);
     const endpoint = isSignUp ? '/auth/register' : '/auth/login';
     const body = isSignUp
-      ? { displayName: name, email, password, primaryRole: role }
+      ? { displayName: name, email, password, primaryRole: 'FOUNDER' }
       : { email, password };
 
     const { ok, data } = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
@@ -78,13 +83,6 @@ export function AuthShell({ mode }) {
           <form className="auth-form" onSubmit={handleSubmit}>
             {isSignUp && (
               <label>Full name<input name="name" type="text" autoComplete="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required /></label>
-            )}
-            {isSignUp && (
-              <label>I am a<select value={role} onChange={(e) => setRole(e.target.value)} style={{ border: '1px solid var(--border)', background: 'var(--background)', padding: '14px 13px', color: 'var(--foreground)', font: '13px var(--font-sans)', outline: 'none' }}>
-                <option value="FOUNDER">Founder</option>
-                <option value="CONTRIBUTOR">Contributor</option>
-                <option value="INVESTOR">Investor</option>
-              </select></label>
             )}
             <label>Email address<input name="email" type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
             <label>Password<input name="password" type="password" autoComplete={isSignUp ? 'new-password' : 'current-password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={isSignUp ? 8 : undefined} /></label>
