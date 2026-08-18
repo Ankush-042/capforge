@@ -2,4 +2,5 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-canvas text-ink-900 font-sans antialiased; }
+body { @apply bg-canvas antialiased; }
+.app-shell { @apply text-ink-900 font-sans; }
