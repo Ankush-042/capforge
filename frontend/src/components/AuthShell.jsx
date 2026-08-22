@@ -6,15 +6,10 @@ import '@fontsource/geist-sans/400.css';
 import '@fontsource/geist-sans/500.css';
 import '@fontsource/geist-sans/600.css';
 import '@fontsource/geist-sans/700.css';
-import '@fontsource/geist-mono/400.css';
-import '@fontsource/geist-mono/500.css';
-import '../styles/landing.css';
 
 /**
- * Auth shell — ported from the reference design. The form was a stub
- * (event.preventDefault() only) in the source; now wired to the REAL
- * backend auth endpoints, with real loading/error states and redirect
- * on success.
+ * Auth shell — rebuilt in pure Tailwind, matching the rebuilt Landing page.
+ * Real backend wiring preserved exactly as before (login/register).
  */
 export function AuthShell({ mode }) {
   const isSignUp = mode === 'sign-up';
@@ -59,44 +54,79 @@ export function AuthShell({ mode }) {
   }
 
   return (
-    <main className="auth-page">
-      <div className="auth-orbit auth-orbit-one" />
-      <div className="auth-orbit auth-orbit-two" />
-      <header className="auth-header">
-        <Link to="/" className="brand-mark" aria-label="CapForge home">
-          <span className="brand-wordmark">C</span>
-          <span>CAPFORGE</span>
+    <div className="min-h-screen bg-canvas font-sans flex flex-col">
+      <header className="px-6 lg:px-10 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full border border-ink-900 flex items-center justify-center font-display text-sm font-semibold text-ink-900">C</div>
+          <span className="font-display font-semibold text-[15px] tracking-tight text-ink-900">CAPFORGE</span>
         </Link>
-        <Link to="/" className="auth-back"><ArrowLeft size={14} /> Back to home</Link>
+        <Link to="/" className="text-sm text-ink-500 hover:text-ink-900 flex items-center gap-1.5 transition-colors">
+          <ArrowLeft size={14} /> Back to home
+        </Link>
       </header>
 
-      <section className="auth-layout">
-        <div className="auth-pitch">
-          <p className="eyebrow">{isSignUp ? 'Build your edge' : 'Welcome back'}</p>
-          <h1>{isSignUp ? <>The right people make <em>the impossible</em> feel inevitable.</> : <>Your next breakthrough is already <em>in motion.</em></>}</h1>
-          <p className="auth-intro">{isSignUp ? 'Join the intelligence layer for founders, contributors, and investors building what matters next.' : 'Return to the workspace where startup needs, human capability, and aligned capital connect.'}</p>
-          <div className="auth-proof"><span className="proof-icon"><Check size={14} /></span><span>Founder → Talent → Capital</span><span className="proof-line" /></div>
-        </div>
+      <div className="flex-1 flex items-center justify-center px-6 py-10">
+        <div className="grid lg:grid-cols-2 gap-16 max-w-4xl w-full items-center">
+          <div className="hidden lg:block">
+            <p className="text-xs font-medium tracking-[0.14em] uppercase text-forest-600 mb-4">{isSignUp ? 'Build your edge' : 'Welcome back'}</p>
+            <h1 className="font-display text-4xl font-semibold text-ink-950 leading-tight">
+              {isSignUp
+                ? <>The right people make <span className="italic font-normal text-forest-600">the impossible</span> feel inevitable.</>
+                : <>Your next breakthrough is already <span className="italic font-normal text-forest-600">in motion.</span></>}
+            </h1>
+            <p className="text-ink-500 mt-5 text-[15px] leading-relaxed max-w-sm">
+              {isSignUp
+                ? 'Join the intelligence layer for founders, contributors, and investors building what matters next.'
+                : 'Return to the workspace where startup needs, human capability, and aligned capital connect.'}
+            </p>
+            <div className="flex items-center gap-2 mt-8 text-sm text-forest-600">
+              <span className="w-6 h-6 rounded-full bg-forest-50 flex items-center justify-center"><Check size={13} /></span>
+              Founder → Talent → Capital
+            </div>
+          </div>
 
-        <div className="auth-card">
-          <div className="auth-card-top"><span className="auth-card-label">{isSignUp ? 'Create your account' : 'Sign in to CapForge'}</span><LockKeyhole size={15} /></div>
-          <form className="auth-form" onSubmit={handleSubmit}>
-            {isSignUp && (
-              <label>Full name<input name="name" type="text" autoComplete="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required /></label>
-            )}
-            <label>Email address<input name="email" type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-            <label>Password<input name="password" type="password" autoComplete={isSignUp ? 'new-password' : 'current-password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={isSignUp ? 8 : undefined} /></label>
-            {isSignUp && (
-              <label className="auth-check"><input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /> <span>I agree to the CapForge terms and privacy policy.</span></label>
-            )}
-            {error && <p style={{ color: 'var(--destructive)', fontSize: 12 }}>{error}</p>}
-            <button type="submit" className="button button-dark auth-submit" disabled={loading}>
-              {loading ? (isSignUp ? 'Creating account…' : 'Signing in…') : (isSignUp ? 'Create account' : 'Sign in')} <ArrowUpRight size={16} />
-            </button>
-          </form>
-          <p className="auth-switch">{isSignUp ? 'Already have an account?' : 'New to CapForge?'} <Link to={isSignUp ? '/sign-in' : '/sign-up'}>{isSignUp ? 'Sign in' : 'Create an account'}</Link></p>
+          <div className="bg-white rounded-2xl border border-surface-border shadow-elevated p-8">
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-sm font-medium text-ink-900">{isSignUp ? 'Create your account' : 'Sign in to CapForge'}</span>
+              <LockKeyhole size={16} className="text-ink-300" />
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <label className="text-xs font-medium text-ink-500 mb-1.5 block">Full name</label>
+                  <input value={name} onChange={(e) => setName(e.target.value)} required
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-forest-500/20 focus:border-forest-500" />
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-medium text-ink-500 mb-1.5 block">Email address</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-forest-500/20 focus:border-forest-500" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-500 mb-1.5 block">Password</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={isSignUp ? 8 : undefined}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-forest-500/20 focus:border-forest-500" />
+              </div>
+              {isSignUp && (
+                <label className="flex items-center gap-2 text-[13px] text-ink-500">
+                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="rounded border-surface-border" />
+                  I agree to the CapForge terms and privacy policy.
+                </label>
+              )}
+              {error && <p className="text-[13px] text-rose-500">{error}</p>}
+              <button type="submit" disabled={loading}
+                className="w-full bg-ink-900 hover:bg-ink-700 text-white py-3 rounded-lg text-[15px] font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                {loading ? (isSignUp ? 'Creating account…' : 'Signing in…') : (isSignUp ? 'Create account' : 'Sign in')} <ArrowUpRight size={15} />
+              </button>
+            </form>
+            <p className="text-center text-[13px] text-ink-500 mt-6">
+              {isSignUp ? 'Already have an account?' : 'New to CapForge?'}{' '}
+              <Link to={isSignUp ? '/sign-in' : '/sign-up'} className="text-forest-600 font-medium">{isSignUp ? 'Sign in' : 'Create an account'}</Link>
+            </p>
+          </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
