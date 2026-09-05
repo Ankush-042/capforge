@@ -29,6 +29,9 @@ import Connections from './pages/Connections.jsx';
 import InvestorDashboard from './pages/InvestorDashboard.jsx';
 import InvestorDealFlow from './pages/InvestorDealFlow.jsx';
 import InvestorPortfolio from './pages/InvestorPortfolio.jsx';
+import Search from './pages/Search.jsx';
+import Notifications from './pages/Notifications.jsx';
+import Settings from './pages/Settings.jsx';
 
 import './styles/index.css';
 
@@ -78,6 +81,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/investor/deal-flow" element={<ProtectedRoute><InvestorDealFlow /></ProtectedRoute>} />
         <Route path="/app/investor/portfolio" element={<ProtectedRoute><InvestorPortfolio /></ProtectedRoute>} />
         <Route path="/app/investor/connections" element={<ProtectedRoute><Connections persona="INVESTOR" /></ProtectedRoute>} />
+
+        {/* Shared */}
+        <Route path="/app/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+        <Route path="/app/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/app/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
