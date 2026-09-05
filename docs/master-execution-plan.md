@@ -225,3 +225,24 @@ Rebuild Shell.jsx sidebar to match Vercel's dashboard sidebar pattern:
 - Nested/expandable items get a right-chevron where a section has sub-items (e.g. Gaps, Connections)
 - Overall: clean, minimal, dense but not cramped — matches attached Vercel reference exactly in spirit
 Apply alongside the KPI card color fix at the start of next session, before Sprint 18.
+
+## LOCKED: Project PPT — Vision, Objectives, Scope, Methodology (source of truth alongside the 7 docs)
+Vision: "Turn a raw idea into an investable, team-ready venture through AI-guided diagnosis, matching and investor intelligence."
+Core claim: closes the loop as ONE connected system (diagnosis -> matching -> investor intelligence), localised for Indian founders — existing tools solve only one piece each.
+
+5 Objectives with explicit completion criteria:
+1. Gap-diagnosis engine, structured multi-criteria output — 4 NAMED DIMENSIONS: team composition, market positioning, product readiness, funding readiness. Schema-valid diagnosis every time, per-dimension score + written justification.
+2. Each diagnosed gap -> contributor match via SEMANTIC RETRIEVAL / VECTOR SIMILARITY over contributor skill profiles (explicitly NOT preference/browsing-based). Every ranked result carries the specific gap it closes.
+3. Diagnosis-backed venture summaries to investors — SAME 4 dimensions rendered for every venture, enabling side-by-side comparability (replaces the pitch deck).
+4. Validate consistency on real startup examples — repeat-run agreement on a fixed test set; diagnosis must not drift on identical inputs. Explicitly checks for the zero-shot LLM over-prediction bias found in literature (21.28% precision at 100% recall).
+5. Ship all 3 roles end-to-end, no manual intervention in the diagnosis->matching->investor pipeline.
+
+Scope: explicitly OUT — payment/equity/cap-table mechanics, legal contract generation (regulatory/liability exposure, doesn't break the closed loop).
+
+Methodology pipeline (4 steps, explicit): Structure idea -> venture profile. Diagnose gaps -> ranked gap set (4 dimensions). Match to close it -> embed the highest-priority gap, VECTOR SIMILARITY against contributor skill profiles -> ranked contributors. Publish to investors -> venture summary, same 4 criteria every venture.
+
+## Real gaps found between PPT claims and current build (identified via direct comparison, not assumed)
+1. Matching is NOT currently semantic/vector-based as claimed in Objective 2 — it's deterministic attribute-overlap scoring. Real embeddings exist (this session, Sprint 26) but only for startup search, never wired into gap->contributor matching.
+2. Readiness computes 7 dimensions (Team/Problem/Solution/Market/Execution/Technical/Business), not the 4 explicitly named in the PPT (team composition/market positioning/product readiness/funding readiness) — funding readiness has no dedicated scored dimension anywhere.
+3. No unified "diagnosis-backed venture summary" artifact exists — the exact side-by-side-comparable, same-4-dimensions-every-venture object Objective 3 requires. Investor views are currently scattered across separate screens/components.
+4. Objective 4 (repeat-run consistency validation) has never been tested — a real, stated, falsifiable success criterion with zero evidence either way.
