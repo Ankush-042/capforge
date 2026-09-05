@@ -17,6 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { callGroq, parseJsonResponse } = require('../shared/aiClient');
 
 const GROQ_MODEL = 'openai/gpt-oss-120b';
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
@@ -116,50 +117,39 @@ async function structureIdea(rawIdea, apiKey) {
   const systemPrompt = loadPromptTemplate();
   const userMessage = `Raw idea:\n"""\n${rawIdea.trim()}\n"""\n\nReturn the JSON object now.`;
 
-  let apiResponse;
-  try {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2
-      })
-    });
+  const callResult = await callGroq(GROQ_MODEL, [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userMessage }
+  ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.2 });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return { success: false, errors: [`Groq API error ${res.status}: ${errText}`] };
+  if (!callResult.success) {
+    return { success: false, errors: [callResult.detail || callResult.error] };
+  }
+
+  let parseResult = parseJsonResponse(callResult.content);
+
+  // Phase 0 robustness: if the model's output isn't valid JSON despite
+  // response_format instructing it to be, retry ONCE with an explicit
+  // correction prompt rather than failing outright on a fixable mistake.
+  if (!parseResult.success) {
+    const retryResult = await callGroq(GROQ_MODEL, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage },
+      { role: 'assistant', content: callResult.content },
+      { role: 'user', content: 'That was not valid JSON. Return ONLY the raw JSON object, no markdown formatting, no extra text.' }
+    ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.1 });
+
+    if (!retryResult.success) return { success: false, errors: [retryResult.detail || retryResult.error] };
+    parseResult = parseJsonResponse(retryResult.content);
+    if (!parseResult.success) {
+      return { success: false, errors: [`Response was not valid JSON even after correction retry: ${parseResult.detail}`], rawResponse: parseResult.rawContent };
     }
-
-    apiResponse = await res.json();
-  } catch (err) {
-    return { success: false, errors: [`Network/request failure: ${err.message}`] };
   }
 
-  const textOutput = apiResponse?.choices?.[0]?.message?.content;
-  if (!textOutput) {
-    return { success: false, errors: ['No text output in Groq response'], rawResponse: JSON.stringify(apiResponse) };
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(textOutput);
-  } catch (err) {
-    return { success: false, errors: [`Response was not valid JSON: ${err.message}`], rawResponse: textOutput };
-  }
-
+  const parsed = parseResult.data;
   const validation = validateStructuredOutput(parsed);
   if (!validation.valid) {
-    return { success: false, errors: validation.errors, rawResponse: textOutput, data: parsed };
+    return { success: false, errors: validation.errors, rawResponse: JSON.stringify(parsed), data: parsed };
   }
 
   return { success: true, data: parsed };

@@ -7,9 +7,9 @@
 const fs = require('fs');
 const path = require('path');
 const pool = require('../shared/db');
+const { callGroq, parseJsonResponse } = require('../shared/aiClient');
 
 const GROQ_MODEL = 'openai/gpt-oss-120b';
-const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const PROMPT_PATH = path.join(__dirname, '..', '..', 'prompts', 'milestone_generation_v1.md');
 
 function loadPrompt() {
@@ -32,33 +32,16 @@ async function generateMilestones(startupId) {
   const systemPrompt = loadPrompt();
   const userMessage = `Startup:\nProblem: ${startup.problem}\nSolution: ${startup.solution}\nDomain: ${(startup.domain || []).join(', ')}\nStage: ${startup.stage}\nCurrent known gaps: ${gapsSummary}\n\nReturn the JSON object now.`;
 
-  let apiResponse;
-  try {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
-        response_format: { type: 'json_object' },
-        temperature: 0.3
-      })
-    });
-    if (!res.ok) return { success: false, error: 'AI_CALL_FAILED', detail: `${res.status}: ${await res.text()}` };
-    apiResponse = await res.json();
-  } catch (err) {
-    return { success: false, error: 'NETWORK_FAILURE', detail: err.message };
-  }
+  const callResult = await callGroq(GROQ_MODEL, [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userMessage }
+  ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.3 });
 
-  const textOutput = apiResponse?.choices?.[0]?.message?.content;
-  if (!textOutput) return { success: false, error: 'EMPTY_AI_RESPONSE' };
+  if (!callResult.success) return { success: false, error: 'AI_CALL_FAILED', detail: callResult.detail };
 
-  let parsed;
-  try {
-    parsed = JSON.parse(textOutput);
-  } catch (err) {
-    return { success: false, error: 'INVALID_JSON', detail: err.message, rawResponse: textOutput };
-  }
+  const parseResult = parseJsonResponse(callResult.content);
+  if (!parseResult.success) return { success: false, error: 'INVALID_JSON', detail: parseResult.detail, rawResponse: parseResult.rawContent };
+  const parsed = parseResult.data;
 
   if (!Array.isArray(parsed.milestones) || parsed.milestones.length === 0) {
     return { success: false, error: 'SCHEMA_VALIDATION_FAILED', detail: 'milestones must be a non-empty array' };
