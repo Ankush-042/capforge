@@ -90,10 +90,16 @@ async function seedFounders() {
     if (!create.ok || !create.data.success) { console.log(`  ✗ ${f.startup}: creation/AI structuring failed —`, create.data.detail || create.data.error); continue; }
     const startupId = create.data.startup.id;
 
-    await post(`/startups/${startupId}/confirm`, {}, token);
-    await post(`/startups/${startupId}/diagnose`, {}, token);
-    await post(`/startups/${startupId}/assess`, {}, token);
-    console.log(`  ✓ ${f.startup} — created, structured, diagnosed, assessed`);
+    const confirmRes = await post(`/startups/${startupId}/confirm`, {}, token);
+    if (!confirmRes.ok || !confirmRes.data.success) { console.log(`  ✗ ${f.startup}: confirm failed —`, confirmRes.data.error); continue; }
+
+    const diagRes = await post(`/startups/${startupId}/diagnose`, {}, token);
+    if (!diagRes.ok || !diagRes.data.success) { console.log(`  ✗ ${f.startup}: diagnosis failed —`, diagRes.data.error, diagRes.data.detail); continue; }
+
+    const assessRes = await post(`/startups/${startupId}/assess`, {}, token);
+    if (!assessRes.ok || !assessRes.data.success) { console.log(`  ✗ ${f.startup}: assessment failed —`, assessRes.data.error); continue; }
+
+    console.log(`  ✓ ${f.startup} — created, structured, ${diagRes.data.gaps?.length || 0} gaps diagnosed, assessed`);
     await sleep(500); // gentle pacing against the AI rate limiter
   }
 }
