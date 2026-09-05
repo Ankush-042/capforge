@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 /**
  * Phase 6 — real comparison against a naive zero-shot baseline, on the
  * same fixed test ideas used in consistency-tests.js.
