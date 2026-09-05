@@ -9,6 +9,7 @@ export const analyzeStartup = (id) => apiFetch(`/startups/${id}/analyze`, { meth
 export const confirmStartup = (id, edits) => apiFetch(`/startups/${id}/confirm`, { method: 'PATCH', body: JSON.stringify(edits) });
 
 export const getGaps = (startupId) => apiFetch(`/startups/${startupId}/gaps`);
+export const getTeamMembers = (startupId) => apiFetch(`/startups/${startupId}/team`);
 export const diagnoseGaps = (startupId) => apiFetch(`/startups/${startupId}/diagnose`, { method: 'POST' });
 export const rankCandidates = (gapId) => apiFetch(`/gaps/${gapId}/rank-candidates`, { method: 'POST' });
 export const getRecommendationsForStartup = (startupId) => apiFetch(`/startups/${startupId}/recommendations`);
