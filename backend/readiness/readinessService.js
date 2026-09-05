@@ -7,13 +7,24 @@
  */
 const pool = require('../shared/db');
 
+/**
+ * Phase 1 rebuild: the exact 4 dimensions named in the project's own
+ * PPT (Objective 1) — team composition, market positioning, product
+ * readiness, funding readiness. The previous 7-dimension model
+ * (team/problem/solution/market/execution/technical/business) never
+ * matched what the project claims to measure, and funding readiness
+ * had no dedicated signal at all until now.
+ */
 const READINESS_WEIGHTS = {
-  team: 0.25, problem: 0.15, solution: 0.15,
-  market: 0.15, execution: 0.15, technical: 0.10, business: 0.05
+  team_composition: 0.30,
+  market_positioning: 0.20,
+  product_readiness: 0.25,
+  funding_readiness: 0.25
 };
 
 const CONFIDENCE_TO_SCORE = { high: 0.9, medium: 0.6, low: 0.3 };
 const STAGE_TO_EXECUTION_SCORE = { 'Idea': 0.3, 'Prototype': 0.5, 'MVP': 0.7, 'Early Traction': 0.9, 'Unclear': 0.2 };
+const FUNDING_STAGE_SCORE = { 'Bootstrapped': 0.3, 'Pre-seed': 0.5, 'Seed': 0.7, 'Series A+': 0.9 };
 
 /**
  * Pure function: computes readiness dimensions from structured startup
@@ -22,33 +33,40 @@ const STAGE_TO_EXECUTION_SCORE = { 'Idea': 0.3, 'Prototype': 0.5, 'MVP': 0.7, 'E
 function computeReadiness(startup, gaps) {
   const confidence = startup.confidence || {};
 
-  // TEAM: average coverage across all diagnosed role requirements.
-  const teamScore = gaps.length > 0
+  // --- TEAM COMPOSITION: average coverage across all diagnosed role requirements. ---
+  const teamCoverage = gaps.length > 0
     ? gaps.reduce((sum, g) => sum + parseFloat(g.coverage), 0) / gaps.length
     : 0.5; // no gaps diagnosed yet — neutral, not fabricated confidence
 
-  const problemScore = CONFIDENCE_TO_SCORE[confidence.problem] ?? 0.5;
-  const solutionScore = CONFIDENCE_TO_SCORE[confidence.solution] ?? 0.5;
-
-  // MARKET: heuristic v1 — presence of defined target users + domain.
-  // Documented approximation, not a claim of market validation (AI spec §74).
+  // --- MARKET POSITIONING: target-user clarity + domain clarity + solution confidence. ---
   const hasTargetUsers = (startup.target_users || []).length > 0;
   const hasDomain = (startup.domain || []).length > 0;
-  const marketScore = (hasTargetUsers ? 0.5 : 0) + (hasDomain ? 0.5 : 0);
+  const solutionScore = CONFIDENCE_TO_SCORE[confidence.solution] ?? 0.5;
+  const marketPositioning = (hasTargetUsers ? 0.4 : 0) + (hasDomain ? 0.3 : 0) + (solutionScore * 0.3);
 
+  // --- PRODUCT READINESS: stage progress + solution confidence + technical role coverage. ---
   const executionScore = STAGE_TO_EXECUTION_SCORE[startup.stage] ?? 0.3;
-
-  // TECHNICAL: coverage specifically of technically-flagged roles, if any
-  // technology_requirements exist; otherwise neutral (non-technical venture).
   const hasTechRequirements = (startup.technology_requirements || []).length > 0;
-  const technicalScore = hasTechRequirements ? teamScore : 0.6;
+  const technicalCoverage = hasTechRequirements ? teamCoverage : 0.6;
+  const productReadiness = (executionScore * 0.4) + (solutionScore * 0.3) + (technicalCoverage * 0.3);
 
-  const businessScore = (startup.business_model || []).length > 0 ? 0.7 : 0.3;
+  // --- FUNDING READINESS (real dimension, previously did not exist): ---
+  // business model defined + funding stage progress + Indian DPIIT
+  // recognition (real localized signal — DPIIT status affects tax/
+  // compliance benefits and investor perception in the Indian market,
+  // per the project's own Gap 04) + a stated target timeline (shows
+  // real planning, not just an idea).
+  const hasBusinessModel = (startup.business_model || []).length > 0;
+  const fundingStageScore = FUNDING_STAGE_SCORE[startup.funding_stage] ?? 0.3;
+  const dpiitBonus = startup.dpiit_recognized ? 0.2 : 0;
+  const hasTimeline = !!startup.target_timeline;
+  const fundingReadiness = (hasBusinessModel ? 0.3 : 0) + (fundingStageScore * 0.3) + dpiitBonus + (hasTimeline ? 0.2 : 0);
 
   const dimensions = {
-    team: round2(teamScore), problem: round2(problemScore), solution: round2(solutionScore),
-    market: round2(marketScore), execution: round2(executionScore),
-    technical: round2(technicalScore), business: round2(businessScore)
+    team_composition: round2(teamCoverage),
+    market_positioning: round2(Math.min(marketPositioning, 1)),
+    product_readiness: round2(Math.min(productReadiness, 1)),
+    funding_readiness: round2(Math.min(fundingReadiness, 1))
   };
 
   const overall = Object.keys(READINESS_WEIGHTS).reduce(
@@ -56,9 +74,10 @@ function computeReadiness(startup, gaps) {
   );
 
   const criticalIssues = [];
-  if (dimensions.team < 0.4) criticalIssues.push('Team lacks coverage for one or more critical roles.');
-  if (dimensions.business < 0.4) criticalIssues.push('Business model is not yet defined.');
-  if (dimensions.market < 0.4) criticalIssues.push('Target users or domain are not yet clearly defined.');
+  if (dimensions.team_composition < 0.4) criticalIssues.push('Team composition lacks coverage for one or more critical roles.');
+  if (dimensions.funding_readiness < 0.4) criticalIssues.push('Funding readiness is low — business model and funding plan need clarity.');
+  if (dimensions.market_positioning < 0.4) criticalIssues.push('Market positioning is unclear — target users or domain are not well-defined.');
+  if (dimensions.product_readiness < 0.4) criticalIssues.push('Product readiness is early-stage relative to the venture\'s other dimensions.');
 
   const topActions = gaps
     .filter(g => g.priority_level === 'CRITICAL' || g.priority_level === 'HIGH')
