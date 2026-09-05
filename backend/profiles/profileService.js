@@ -80,17 +80,26 @@ async function updateBaseProfile(userId, updates) {
   // since Sprint 26 but was never actually populated — a real gap,
   // closed here. Non-fatal on failure — the base profile update itself
   // has already succeeded.
+  //
+  // REAL BUG FIX: this used to be awaited, which meant the HTTP
+  // response waited for a full local ML model inference to complete
+  // before returning — causing real client-side timeouts (confirmed:
+  // HeadersTimeoutError during ecosystem seeding). Embedding generation
+  // now runs genuinely in the background — fire-and-forget, never
+  // blocks the response the caller is waiting on.
   if (fields.includes('headline') || fields.includes('skills') || fields.includes('bio')) {
-    try {
-      const { generateEmbedding } = require('../shared/embeddings');
-      const embeddingText = `${profile.headline || ''} ${(profile.skills || []).join(' ')} ${profile.bio || ''}`;
-      const embedding = await generateEmbedding(embeddingText);
-      if (embedding) {
-        await pool.query('UPDATE profiles SET embedding = $1 WHERE user_id = $2', [JSON.stringify(embedding), userId]);
+    (async () => {
+      try {
+        const { generateEmbedding } = require('../shared/embeddings');
+        const embeddingText = `${profile.headline || ''} ${(profile.skills || []).join(' ')} ${profile.bio || ''}`;
+        const embedding = await generateEmbedding(embeddingText);
+        if (embedding) {
+          await pool.query('UPDATE profiles SET embedding = $1 WHERE user_id = $2', [JSON.stringify(embedding), userId]);
+        }
+      } catch (embErr) {
+        console.error('Profile embedding generation failed (non-fatal, background):', embErr.message);
       }
-    } catch (embErr) {
-      console.error('Profile embedding generation failed (non-fatal):', embErr.message);
-    }
+    })();
   }
 
   return { success: true, profile };
