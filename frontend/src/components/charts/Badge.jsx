@@ -5,6 +5,7 @@ const PRIORITY_STYLE = {
   HIGH: { bg: '#FEF3E8', fg: '#F0A84E' },
   MEDIUM: { bg: '#FFF9E8', fg: '#C5A93A' },
   LOW: { bg: '#EAF7F0', fg: '#3FB081' },
+  CO_FOUNDER: { bg: '#F1EEFE', fg: '#6845F0' },
 };
 
 /** Reusable priority/status pill — Attio-style small action/status badge. */

@@ -62,6 +62,7 @@ export default function GapDetail() {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"><Target size={18} /></div>
           <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">{gap.role}</h1>
+          {gap.seeking_type === 'CO_FOUNDER' && <Badge label="Co-founder search" priority="CO_FOUNDER" />}
           <Badge label={gap.priority_level} priority={gap.priority_level} />
         </div>
       </div>
@@ -98,7 +99,9 @@ export default function GapDetail() {
                 trailing={
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-violet-600">{Math.round(c.score * 100)}%</span>
-                    <button onClick={() => handleConnect(c)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">Connect</button>
+                    <button onClick={() => handleConnect(c)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">
+                      {gap.seeking_type === 'CO_FOUNDER' ? 'Explore co-founder match' : 'Connect'}
+                    </button>
                   </div>
                 } />
               <div className="mt-3 pl-12 space-y-1">
