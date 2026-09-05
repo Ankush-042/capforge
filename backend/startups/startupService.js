@@ -50,12 +50,25 @@ async function createStartup(founderId, { name, rawIdea, currentTeamSize, fundin
     [startup.id, founderId, founderProfile?.headline || 'Founder', founderProfile?.skills || []]
   );
 
-  // Auto-trigger structuring (App Flow §4.2). Caller gets the draft
-  // immediately; analysis result is attached to the response if it
-  // completes fast enough, but the draft itself is already durable.
+  // Auto-trigger structuring (App Flow §4.2). The raw idea/draft is
+  // already durable at this point regardless of what happens next
+  // (TRD §101 — AI failure must never destroy founder input).
   const analysisResult = await analyzeStartup(founderId, startup.id);
 
-  return { success: true, startup: analysisResult.success ? analysisResult.startup : startup, analysis: analysisResult };
+  // BUG FIX (found via seed-ecosystem testing — real gaps came back
+  // empty for all 6 seeded startups despite this function reporting
+  // success every time): this used to unconditionally return
+  // success:true even when analysisResult.success was false, silently
+  // masking AI structuring failures as success. The draft is still
+  // safely persisted and returned either way, but the response now
+  // honestly reflects whether structuring actually completed.
+  return {
+    success: analysisResult.success,
+    startup: analysisResult.success ? analysisResult.startup : startup,
+    analysis: analysisResult,
+    error: analysisResult.success ? undefined : (analysisResult.error || 'ANALYSIS_FAILED'),
+    detail: analysisResult.success ? undefined : (Array.isArray(analysisResult.detail) ? analysisResult.detail.join('; ') : analysisResult.detail)
+  };
 }
 
 /**
