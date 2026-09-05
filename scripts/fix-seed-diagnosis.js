@@ -32,6 +32,14 @@ async function run() {
     console.log(`role_requirements: ${JSON.stringify(startup.role_requirements)}`);
     console.log(`status: ${startup.status}, founder_confirmed: ${startup.founder_confirmed}`);
 
+    const analyzeRes = await fetch(`${BASE}/startups/${startup.id}/analyze`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    const analyzeData = await analyzeRes.json();
+    console.log(`analyze result: success=${analyzeData.success}, error=${analyzeData.error || 'none'}, detail=${JSON.stringify(analyzeData.detail) || 'none'}`);
+    if (!analyzeData.success) continue;
+
+    const confirmRes = await fetch(`${BASE}/startups/${startup.id}/confirm`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: '{}' });
+    console.log(`confirm result: ${(await confirmRes.json()).success}`);
+
     const diagRes = await fetch(`${BASE}/startups/${startup.id}/diagnose`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
     const diagData = await diagRes.json();
     console.log(`diagnose result: success=${diagData.success}, gaps=${diagData.gaps?.length}, error=${diagData.error || 'none'}, detail=${diagData.detail || 'none'}`);
