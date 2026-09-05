@@ -4,6 +4,7 @@ import { Target, RefreshCw } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import Badge from '../components/charts/Badge.jsx';
 import { getMyStartups, getGaps, diagnoseGaps } from '../services/startups.js';
+import { useToast } from '../components/Toast.jsx';
 
 function GapRow({ gap, startupId }) {
   return (
@@ -48,12 +49,23 @@ export default function GapDashboard() {
     load();
   }, []);
 
+  const showToast = useToast();
+
   async function handleDiagnose() {
-    if (!startup) return;
+    if (!startup) {
+      showToast('No startup found — complete onboarding first.', 'error');
+      return;
+    }
     setDiagnosing(true);
-    await diagnoseGaps(startup.id);
+    const { ok, data } = await diagnoseGaps(startup.id);
+    if (!ok || !data.success) {
+      showToast(data.detail || data.error || 'Diagnosis failed — try again.', 'error');
+      setDiagnosing(false);
+      return;
+    }
     await loadGaps(startup.id);
     setDiagnosing(false);
+    showToast('Gap diagnosis updated.');
   }
 
   if (loading) return <Shell title="Gaps"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;

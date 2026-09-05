@@ -3,6 +3,7 @@ import { Gauge, RefreshCw } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import DonutChart from '../components/charts/DonutChart.jsx';
 import { getMyStartups, getReadiness, assessReadinessRisk } from '../services/startups.js';
+import { useToast } from '../components/Toast.jsx';
 
 const COLORS = ['#7C5CFC', '#4C86F9', '#3FB081', '#F0A84E', '#EF6E85', '#C58A00', '#6D28D9'];
 
@@ -29,12 +30,23 @@ export default function Readiness() {
     load();
   }, []);
 
+  const showToast = useToast();
+
   async function handleAssess() {
-    if (!startup) return;
+    if (!startup) {
+      showToast('No startup found — complete onboarding first.', 'error');
+      return;
+    }
     setAssessing(true);
-    await assessReadinessRisk(startup.id);
+    const { ok, data } = await assessReadinessRisk(startup.id);
+    if (!ok || !data.success) {
+      showToast(data.detail || data.error || 'Assessment failed — try again.', 'error');
+      setAssessing(false);
+      return;
+    }
     await loadReadiness(startup.id);
     setAssessing(false);
+    showToast('Readiness assessment updated.');
   }
 
   if (loading) return <Shell title="Readiness"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;

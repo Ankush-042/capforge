@@ -33,6 +33,7 @@ import Search from './pages/Search.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Settings from './pages/Settings.jsx';
 import StartupDetail from './pages/StartupDetail.jsx';
+import { ToastProvider } from './components/Toast.jsx';
 
 import './styles/index.css';
 
@@ -49,6 +50,7 @@ import './styles/index.css';
  */
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <ToastProvider>
     <BrowserRouter>
       <Routes>
         {/* Public */}
@@ -90,5 +92,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
+    </ToastProvider>
   </React.StrictMode>
 );

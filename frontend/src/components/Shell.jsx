@@ -78,8 +78,10 @@ export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }
       <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500" />
-            <span className="text-[15px] font-semibold text-ink-900 tracking-tight">CapForge</span>
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 via-violet-600 to-blue-600 flex items-center justify-center shadow-sm">
+              <span className="text-white text-[13px] font-bold font-display leading-none">C</span>
+            </div>
+            <span className="text-[16px] font-bold font-display text-ink-900 tracking-[-0.02em]">CapForge</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-500 font-medium">{identity.name.split(' ')[0]}</span>
           </span>
           <span className="text-ink-300 text-xs">⌄</span>
