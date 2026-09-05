@@ -49,3 +49,4 @@ export const getMyProfile = () => apiFetch('/profiles/me');
 export const getMyRecommendationsAsContributor = () => apiFetch('/recommendations/mine');
 export const refreshInvestorRecommendations = () => apiFetch('/investors/recommendations/refresh', { method: 'POST' });
 export const getInvestorRecommendations = () => apiFetch('/investors/recommendations');
+export const getSkillDemand = () => apiFetch('/skill-demand');
