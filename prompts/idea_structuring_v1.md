@@ -40,6 +40,8 @@ Your job is to extract a structured representation of the venture. You must:
 
 `role_requirements` is a list of the distinct roles this venture needs, each paired with ONLY the skills specifically relevant to that role — do not repeat unrelated skills across roles. For example, a "Backend Engineer" role should list backend-relevant skills (e.g. "Node.js", "PostgreSQL"), not marketing or design skills, even if the venture needs those elsewhere. This pairing is critical — it is used downstream to calculate exactly how well each specific role is covered by the current team, so vague or cross-contaminated skill lists will produce incorrect results.
 
+IMPORTANT — `role_requirements` should almost NEVER be an empty array. Infer the roles needed to actually BUILD the described venture from what the venture does — this is different from inventing unstated facts about the founder's current team or situation. A cross-border payments platform needs backend/compliance/infrastructure roles to exist, whether or not the founder mentioned needing help — the roles are implied by the nature of the venture itself, not by an explicit request. Only return an empty array if the raw idea is so vague that no venture type can be inferred at all (e.g. a single sentence with no domain or product described).
+
 For `seeking_type`, infer from context rather than defaulting blindly:
 - "CO_FOUNDER": a foundational, high-stakes, long-term role central to the venture's direction (e.g. a technical co-founder for a solo non-technical founder). Use sparingly — most ventures need at most 1-2 of these.
 - "CORE_HIRE": an important ongoing role that isn't founder-level (most roles should default here if unclear).

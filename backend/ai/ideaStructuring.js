@@ -152,6 +152,34 @@ async function structureIdea(rawIdea, apiKey) {
     return { success: false, errors: validation.errors, rawResponse: JSON.stringify(parsed), data: parsed };
   }
 
+  // Real bug found via baseline-benchmark.js and consistency-tests.js:
+  // the model occasionally returns an empty role_requirements array even
+  // for ventures that clearly need roles to be built (e.g. a payments
+  // platform with no stated team). Schema validation alone can't catch
+  // this — an empty array is technically valid. Retry ONCE with an
+  // explicit correction before accepting it, since this directly
+  // undermines gap diagnosis (nothing to diagnose against).
+  if (Array.isArray(parsed.role_requirements) && parsed.role_requirements.length === 0) {
+    const retryResult = await callGroq(GROQ_MODEL, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage },
+      { role: 'assistant', content: JSON.stringify(parsed) },
+      { role: 'user', content: 'role_requirements was empty. Every venture needs roles to be built, even if the founder did not explicitly ask for help — infer them from what the venture DOES (e.g. a payments platform needs backend/compliance/infrastructure roles). Return the corrected JSON object now, with at least the core roles this venture would need to exist.' }
+    ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.2 });
+
+    if (retryResult.success) {
+      const retryParse = parseJsonResponse(retryResult.content);
+      if (retryParse.success) {
+        const retryValidation = validateStructuredOutput(retryParse.data);
+        if (retryValidation.valid && Array.isArray(retryParse.data.role_requirements) && retryParse.data.role_requirements.length > 0) {
+          return { success: true, data: retryParse.data };
+        }
+      }
+    }
+    // Retry didn't produce a better result — proceed with the original,
+    // honestly empty output rather than silently failing the whole request.
+  }
+
   return { success: true, data: parsed };
 }
 
