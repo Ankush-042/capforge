@@ -1,0 +1,42 @@
+import { apiFetch } from './api.js';
+
+export const createStartup = (name, rawIdea) =>
+  apiFetch('/startups', { method: 'POST', body: JSON.stringify({ name, rawIdea }) });
+
+export const getMyStartups = () => apiFetch('/startups/mine');
+export const getStartup = (id) => apiFetch(`/startups/${id}`);
+export const analyzeStartup = (id) => apiFetch(`/startups/${id}/analyze`, { method: 'POST' });
+export const confirmStartup = (id, edits) => apiFetch(`/startups/${id}/confirm`, { method: 'PATCH', body: JSON.stringify(edits) });
+
+export const getGaps = (startupId) => apiFetch(`/startups/${startupId}/gaps`);
+export const diagnoseGaps = (startupId) => apiFetch(`/startups/${startupId}/diagnose`, { method: 'POST' });
+export const rankCandidates = (gapId) => apiFetch(`/gaps/${gapId}/rank-candidates`, { method: 'POST' });
+export const getRecommendationsForStartup = (startupId) => apiFetch(`/startups/${startupId}/recommendations`);
+
+export const assessReadinessRisk = (startupId) => apiFetch(`/startups/${startupId}/assess`, { method: 'POST' });
+export const getReadiness = (startupId) => apiFetch(`/startups/${startupId}/readiness`);
+export const getRisks = (startupId) => apiFetch(`/startups/${startupId}/risks`);
+
+export const generateMilestones = (startupId) => apiFetch(`/startups/${startupId}/milestones/generate`, { method: 'POST' });
+export const getMilestones = (startupId) => apiFetch(`/startups/${startupId}/milestones`);
+export const updateMilestone = (id, updates) => apiFetch(`/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+
+export const runCompetitorAnalysis = (startupId) => apiFetch(`/startups/${startupId}/competitor-analysis`, { method: 'POST' });
+export const getCompetitorAnalysis = (startupId) => apiFetch(`/startups/${startupId}/competitor-analysis`);
+
+export const calculateEquity = (payload) => apiFetch('/equity/calculate', { method: 'POST', body: JSON.stringify(payload) });
+
+export const getWorkspace = (startupId) => apiFetch(`/startups/${startupId}/workspace`);
+export const createTask = (startupId, task) => apiFetch(`/startups/${startupId}/workspace/tasks`, { method: 'POST', body: JSON.stringify(task) });
+export const postDiscussion = (startupId, content) => apiFetch(`/startups/${startupId}/workspace/discussions`, { method: 'POST', body: JSON.stringify({ content }) });
+
+export const sendConnection = (payload) => apiFetch('/connections', { method: 'POST', body: JSON.stringify(payload) });
+export const respondToConnection = (id, action) => apiFetch(`/connections/${id}/respond`, { method: 'PATCH', body: JSON.stringify({ action }) });
+export const getMyConnections = () => apiFetch('/connections');
+
+export const searchStartups = (params) => apiFetch(`/search/startups?${new URLSearchParams(params)}`);
+export const searchContributors = (params) => apiFetch(`/search/contributors?${new URLSearchParams(params)}`);
+
+export const getNotifications = (unreadOnly) => apiFetch(`/notifications${unreadOnly ? '?unread=true' : ''}`);
+export const markNotificationRead = (id) => apiFetch(`/notifications/${id}/read`, { method: 'PATCH' });
+export const markAllNotificationsRead = () => apiFetch('/notifications/read-all', { method: 'PATCH' });
