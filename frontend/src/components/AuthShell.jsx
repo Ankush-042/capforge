@@ -52,7 +52,12 @@ export function AuthShell({ mode }) {
 
     localStorage.setItem('capforge_token', data.token);
     const userRole = data.user?.primaryRole;
-    const destination = userRole === 'CONTRIBUTOR' ? '/app/contributor' : userRole === 'INVESTOR' ? '/app/investor' : '/app';
+    let destination;
+    if (isSignUp) {
+      destination = userRole === 'CONTRIBUTOR' ? '/app/contributor/onboarding' : userRole === 'INVESTOR' ? '/app/investor/onboarding' : '/app/onboarding';
+    } else {
+      destination = userRole === 'CONTRIBUTOR' ? '/app/contributor' : userRole === 'INVESTOR' ? '/app/investor' : '/app';
+    }
     navigate(destination);
   }
 

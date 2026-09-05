@@ -7,6 +7,8 @@ import Landing from './pages/Landing.jsx';
 import SignIn from './pages/SignIn.jsx';
 import SignUp from './pages/SignUp.jsx';
 import Onboarding from './pages/Onboarding.jsx';
+import ContributorOnboarding from './pages/ContributorOnboarding.jsx';
+import InvestorOnboarding from './pages/InvestorOnboarding.jsx';
 
 import FounderDashboard from './pages/FounderDashboard.jsx';
 import GapDashboard from './pages/GapDashboard.jsx';
@@ -74,6 +76,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
         {/* Authenticated app — Contributor */}
         <Route path="/app/contributor" element={<ProtectedRoute><ContributorDashboard /></ProtectedRoute>} />
+        <Route path="/app/contributor/onboarding" element={<ProtectedRoute><ContributorOnboarding /></ProtectedRoute>} />
         <Route path="/app/contributor/opportunities" element={<ProtectedRoute><ContributorOpportunities /></ProtectedRoute>} />
         <Route path="/app/contributor/skill-demand" element={<ProtectedRoute><SkillDemand /></ProtectedRoute>} />
         <Route path="/app/contributor/equity-ask" element={<ProtectedRoute><ContributorEquityAsk /></ProtectedRoute>} />
@@ -81,6 +84,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
         {/* Authenticated app — Investor */}
         <Route path="/app/investor" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
+        <Route path="/app/investor/onboarding" element={<ProtectedRoute><InvestorOnboarding /></ProtectedRoute>} />
         <Route path="/app/investor/deal-flow" element={<ProtectedRoute><InvestorDealFlow /></ProtectedRoute>} />
         <Route path="/app/investor/portfolio" element={<ProtectedRoute><InvestorPortfolio /></ProtectedRoute>} />
         <Route path="/app/investor/connections" element={<ProtectedRoute><Connections persona="INVESTOR" /></ProtectedRoute>} />

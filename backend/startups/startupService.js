@@ -18,7 +18,7 @@ const RETRY_LIMIT = 2;
  * If AI structuring fails, the founder's raw idea is NEVER lost —
  * this is the exact failure mode the AI spec Rule 8 forbids destroying.
  */
-async function createStartup(founderId, { name, rawIdea }) {
+async function createStartup(founderId, { name, rawIdea, currentTeamSize, fundingRaised, fundingStage, targetTimeline, equityOfferedRange, founderDomainExpertise, founderPriorExperience }) {
   if (!name || name.trim().length === 0) {
     return { success: false, error: 'MISSING_NAME' };
   }
@@ -27,8 +27,10 @@ async function createStartup(founderId, { name, rawIdea }) {
   }
 
   const result = await pool.query(
-    `INSERT INTO startups (founder_id, name, raw_idea, status) VALUES ($1, $2, $3, 'DRAFT') RETURNING *`,
-    [founderId, name.trim(), rawIdea.trim()]
+    `INSERT INTO startups (founder_id, name, raw_idea, status, current_team_size, funding_raised, funding_stage, target_timeline, equity_offered_range, founder_domain_expertise, founder_prior_experience)
+     VALUES ($1, $2, $3, 'DRAFT', $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+    [founderId, name.trim(), rawIdea.trim(), currentTeamSize || null, fundingRaised || null, fundingStage || null,
+     targetTimeline || null, equityOfferedRange || null, founderDomainExpertise || [], founderPriorExperience || null]
   );
   const startup = result.rows[0];
 

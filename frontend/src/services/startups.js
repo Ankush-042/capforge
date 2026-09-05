@@ -1,7 +1,7 @@
 import { apiFetch } from './api.js';
 
-export const createStartup = (name, rawIdea) =>
-  apiFetch('/startups', { method: 'POST', body: JSON.stringify({ name, rawIdea }) });
+export const createStartup = (payload) =>
+  apiFetch('/startups', { method: 'POST', body: JSON.stringify(payload) });
 
 export const getMyStartups = () => apiFetch('/startups/mine');
 export const getStartup = (id) => apiFetch(`/startups/${id}`);
@@ -41,3 +41,8 @@ export const searchContributors = (params) => apiFetch(`/search/contributors?${n
 export const getNotifications = (unreadOnly) => apiFetch(`/notifications${unreadOnly ? '?unread=true' : ''}`);
 export const markNotificationRead = (id) => apiFetch(`/notifications/${id}/read`, { method: 'PATCH' });
 export const markAllNotificationsRead = () => apiFetch('/notifications/read-all', { method: 'PATCH' });
+
+export const upsertContributorProfile = (payload) => apiFetch('/profiles/contributor', { method: 'POST', body: JSON.stringify(payload) });
+export const upsertInvestorProfile = (payload) => apiFetch('/profiles/investor', { method: 'POST', body: JSON.stringify(payload) });
+export const updateBaseProfile = (payload) => apiFetch('/profiles/me', { method: 'PATCH', body: JSON.stringify(payload) });
+export const getMyProfile = () => apiFetch('/profiles/me');
