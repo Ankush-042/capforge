@@ -44,9 +44,19 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   const requiredSkills = (gap.required_skills || []).map(s => s.toLowerCase().trim());
   const candidateSkills = new Set((candidate.skills || []).map(s => s.toLowerCase().trim()));
 
-  // --- Skill fit: overlap of candidate's skills against THIS gap's specific skills ---
+  // --- Skill fit: blend of deterministic skill-string overlap AND real
+  // semantic (vector embedding) similarity — this is the actual fix for
+  // Objective 2's claim that matching is "driven by semantic retrieval /
+  // vector similarity," which the deterministic-only version never was.
+  // Falls back cleanly to pure deterministic scoring when either side
+  // lacks an embedding yet (candidate.semantic_similarity is null),
+  // rather than treating a missing embedding as zero similarity.
   const overlap = requiredSkills.filter(s => candidateSkills.has(s));
-  const skillFit = requiredSkills.length > 0 ? overlap.length / requiredSkills.length : 0;
+  const deterministicSkillFit = requiredSkills.length > 0 ? overlap.length / requiredSkills.length : 0;
+  const hasSemanticSignal = candidate.semantic_similarity !== null && candidate.semantic_similarity !== undefined;
+  const skillFit = hasSemanticSignal
+    ? (deterministicSkillFit * 0.5) + (candidate.semantic_similarity * 0.5)
+    : deterministicSkillFit;
 
   // --- Role fit: does the candidate's stated headline match the gap's role? ---
   const roleFit = (candidate.headline && normalizeRole(candidate.headline) === normalizeRole(gap.role)) ? 1.0 : 0.0;
@@ -93,7 +103,7 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
     compatibilityFit = candidate.availability === 'full-time' ? 0.8 : candidate.availability === 'part-time' ? 0.6 : 0.4;
   }
 
-  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit };
+  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null };
 
   const weights = getWeights(seekingType);
   const baseScore = Object.keys(weights).reduce(
@@ -174,16 +184,22 @@ async function rankCandidatesForGap(gapId) {
 
   // Hard filters: must be a CONTRIBUTOR, profile must be discoverable,
   // and must not already be on this startup's team.
+  // Phase 2: real semantic similarity via pgvector cosine distance,
+  // computed alongside the deterministic attributes in one query —
+  // NULL when either side lacks an embedding yet, handled explicitly
+  // below rather than silently treated as zero similarity.
   const candidatesResult = await pool.query(
     `SELECT u.id as user_id, p.headline, p.skills, cp.availability, cp.preferred_domains,
-            cp.preferred_stage, cp.experience_years, cp.equity_preference
+            cp.preferred_stage, cp.experience_years, cp.equity_preference,
+            CASE WHEN p.embedding IS NOT NULL AND $2::vector IS NOT NULL
+                 THEN 1 - (p.embedding <=> $2::vector) ELSE NULL END as semantic_similarity
      FROM users u
      JOIN profiles p ON p.user_id = u.id
      JOIN contributor_profiles cp ON cp.profile_id = p.id
      WHERE u.primary_role = 'CONTRIBUTOR'
        AND p.visibility = 'DISCOVERABLE'
        AND u.id NOT IN (SELECT user_id FROM startup_team_members WHERE startup_id = $1)`,
-    [startup.id]
+    [startup.id, gap.embedding || null]
   );
 
   if (candidatesResult.rows.length === 0) {

@@ -157,6 +157,26 @@ async function runGapDiagnosis(startupId) {
       inserted.push(r.rows[0]);
     }
     await client.query('COMMIT');
+
+    // Phase 2 — real semantic matching foundation: generate an embedding
+    // for each gap from its role + required skills + reason, so real
+    // vector similarity can drive matching (Objective 2), not just
+    // deterministic attribute overlap. Non-fatal on failure — diagnosis
+    // itself has already succeeded and must not be rolled back over an
+    // enhancement feature.
+    try {
+      const { generateEmbedding } = require('../shared/embeddings');
+      for (const gap of inserted) {
+        const embeddingText = `${gap.role} ${(gap.required_skills || []).join(' ')} ${gap.reason}`;
+        const embedding = await generateEmbedding(embeddingText);
+        if (embedding) {
+          await pool.query('UPDATE gaps SET embedding = $1 WHERE id = $2', [JSON.stringify(embedding), gap.id]);
+        }
+      }
+    } catch (embErr) {
+      console.error('Gap embedding generation failed (non-fatal):', embErr.message);
+    }
+
     return { success: true, gaps: inserted };
   } catch (err) {
     await client.query('ROLLBACK');

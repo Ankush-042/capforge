@@ -73,7 +73,27 @@ async function updateBaseProfile(userId, updates) {
     [userId, ...values]
   );
   if (result.rows.length === 0) return { success: false, error: 'PROFILE_NOT_FOUND' };
-  return { success: true, profile: result.rows[0] };
+  const profile = result.rows[0];
+
+  // Phase 2 — real semantic matching: (re)generate the profile embedding
+  // whenever headline/skills/bio change. This schema column existed
+  // since Sprint 26 but was never actually populated — a real gap,
+  // closed here. Non-fatal on failure — the base profile update itself
+  // has already succeeded.
+  if (fields.includes('headline') || fields.includes('skills') || fields.includes('bio')) {
+    try {
+      const { generateEmbedding } = require('../shared/embeddings');
+      const embeddingText = `${profile.headline || ''} ${(profile.skills || []).join(' ')} ${profile.bio || ''}`;
+      const embedding = await generateEmbedding(embeddingText);
+      if (embedding) {
+        await pool.query('UPDATE profiles SET embedding = $1 WHERE user_id = $2', [JSON.stringify(embedding), userId]);
+      }
+    } catch (embErr) {
+      console.error('Profile embedding generation failed (non-fatal):', embErr.message);
+    }
+  }
+
+  return { success: true, profile };
 }
 
 /**
