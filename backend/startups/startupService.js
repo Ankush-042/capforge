@@ -84,7 +84,7 @@ async function analyzeStartup(founderId, startupId) {
 
   const jobResult = await pool.query(
     `INSERT INTO ai_jobs (user_id, startup_id, job_type, status, model, prompt_version)
-     VALUES ($1, $2, 'IDEA_STRUCTURING', 'PROCESSING', 'groq/llama-3.3-70b-versatile', 'idea_structuring_v1')
+     VALUES ($1, $2, 'IDEA_STRUCTURING', 'PROCESSING', 'groq/openai-gpt-oss-120b', 'idea_structuring_v1')
      RETURNING id`,
     [founderId, startupId]
   );

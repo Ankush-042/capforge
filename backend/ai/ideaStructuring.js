@@ -18,7 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 const PROMPT_TEMPLATE_PATH = path.join(__dirname, '..', '..', 'prompts', 'idea_structuring_v1.md');
