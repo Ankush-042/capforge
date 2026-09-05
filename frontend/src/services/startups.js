@@ -44,6 +44,7 @@ export const getWorkspaceFiles = (startupId) => apiFetch(`/startups/${startupId}
 export const addWorkspaceFile = (startupId, payload) => apiFetch(`/startups/${startupId}/workspace/files`, { method: 'POST', body: JSON.stringify(payload) });
 export const generateLegalDocument = (startupId, documentType) => apiFetch(`/startups/${startupId}/legal-documents`, { method: 'POST', body: JSON.stringify({ documentType }) });
 export const getLegalDocuments = (startupId) => apiFetch(`/startups/${startupId}/legal-documents`);
+export const getVentureSummary = (startupId) => apiFetch(`/startups/${startupId}/venture-summary`);
 export const searchContributors = (params) => apiFetch(`/search/contributors?${new URLSearchParams(params)}`);
 
 export const getNotifications = (unreadOnly) => apiFetch(`/notifications${unreadOnly ? '?unread=true' : ''}`);
