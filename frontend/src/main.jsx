@@ -36,6 +36,8 @@ import Notifications from './pages/Notifications.jsx';
 import Settings from './pages/Settings.jsx';
 import StartupDetail from './pages/StartupDetail.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
+import MultiOfferComparison from './pages/MultiOfferComparison.jsx';
+import LearningRecommendations from './pages/LearningRecommendations.jsx';
 import { ToastProvider } from './components/Toast.jsx';
 
 import './styles/index.css';
@@ -96,6 +98,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/app/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
         <Route path="/app/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+        <Route path="/app/contributor/offers" element={<ProtectedRoute><MultiOfferComparison /></ProtectedRoute>} />
+        <Route path="/app/contributor/learning" element={<ProtectedRoute><LearningRecommendations /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
     </ToastProvider>

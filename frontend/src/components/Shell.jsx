@@ -23,7 +23,9 @@ const NAV_BY_PERSONA = {
   CONTRIBUTOR: [
     { label: 'Dashboard', icon: '▦', path: '/app/contributor' },
     { label: 'Opportunities', icon: '◈', path: '/app/contributor/opportunities' },
+    { label: 'Compare offers', icon: '◎', path: '/app/contributor/offers' },
     { label: 'Skill Demand', icon: '◒', path: '/app/contributor/skill-demand' },
+    { label: 'Learning', icon: '◇', path: '/app/contributor/learning' },
     { label: 'Equity Ask', icon: '◍', path: '/app/contributor/equity-ask' },
     { label: 'Connections', icon: '◐', path: '/app/contributor/connections' },
   ],
