@@ -1,16 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Shell from '../components/Shell.jsx';
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../services/startups.js';
 
-const notifications = [
-  { id: 1, title: 'New connection request', message: 'FoodSense2 wants to connect with you.', time: '2h ago', read: false, group: 'Today' },
-  { id: 2, title: 'Connection accepted', message: 'Priya Data accepted your connection.', time: '5h ago', read: false, group: 'Today' },
-  { id: 3, title: 'AI analysis completed', message: 'Gap diagnosis finished for FoodSense2.', time: 'Yesterday', read: true, group: 'Earlier' },
-];
+function groupByDay(notifications) {
+  const today = new Date().toDateString();
+  const groups = { Today: [], Earlier: [] };
+  for (const n of notifications) {
+    const isToday = new Date(n.created_at).toDateString() === today;
+    groups[isToday ? 'Today' : 'Earlier'].push(n);
+  }
+  return groups;
+}
 
 export default function Notifications() {
-  const [items, setItems] = useState(notifications);
-  const markAllRead = () => setItems(items.map((n) => ({ ...n, read: true })));
-  const groups = [...new Set(items.map((n) => n.group))];
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+
+  async function load() {
+    const { ok, data } = await getNotifications();
+    if (ok && data.success) setItems(data.notifications);
+  }
+
+  useEffect(() => { load().then(() => setLoading(false)); }, []);
+
+  async function markAllRead() {
+    await markAllNotificationsRead();
+    await load();
+  }
+
+  async function handleClick(n) {
+    if (!n.is_read) { await markNotificationRead(n.id); await load(); }
+  }
+
+  if (loading) return <Shell title="Notifications"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+
+  const groups = groupByDay(items);
 
   return (
     <Shell title="Notifications">
@@ -18,20 +42,23 @@ export default function Notifications() {
         <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Notifications</h1>
         <button onClick={markAllRead} className="text-xs text-violet-600 font-medium hover:text-violet-700 transition-colors">Mark all read</button>
       </div>
-      {groups.map((g) => (
+      {items.length === 0 ? (
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">
+          <p className="text-[15px] text-ink-500">No notifications yet.</p>
+        </div>
+      ) : Object.entries(groups).map(([g, list]) => list.length > 0 && (
         <div key={g} className="mb-6">
           <p className="text-[13px] font-medium text-ink-500 mb-2">{g}</p>
           <div className="bg-surface rounded-xl border border-surface-border shadow-card">
-            {items.filter((n) => n.group === g).map((n) => (
-              <div key={n.id} className={`flex items-start gap-3 p-5 border-b border-surface-border last:border-0 ${!n.read ? 'bg-violet-50/40' : ''}`}>
-                {!n.read && <span className="w-2 h-2 rounded-full bg-violet-500 mt-1.5 shrink-0" />}
-                {n.read && <span className="w-2 h-2 shrink-0" />}
+            {list.map((n) => (
+              <button key={n.id} onClick={() => handleClick(n)} className={`w-full text-left flex items-start gap-3 p-5 border-b border-surface-border last:border-0 ${!n.is_read ? 'bg-violet-50/40' : ''}`}>
+                {!n.is_read ? <span className="w-2 h-2 rounded-full bg-violet-500 mt-1.5 shrink-0" /> : <span className="w-2 h-2 shrink-0" />}
                 <div className="flex-1">
                   <p className="text-[15px] font-medium text-ink-900">{n.title}</p>
                   <p className="text-[13px] text-ink-500 mt-0.5">{n.message}</p>
                 </div>
-                <span className="text-xs text-ink-300 shrink-0">{n.time}</span>
-              </div>
+                <span className="text-xs text-ink-300 shrink-0">{new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </button>
             ))}
           </div>
         </div>
