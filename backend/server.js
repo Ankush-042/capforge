@@ -37,6 +37,12 @@ app.use('/api', milestoneRoutes);
 app.use('/api', equityRoutes);
 app.use('/api', opportunityRoutes);
 app.use('/api', workspaceRoutes);
+const trustRoutes = require('./trust/trustRoutes');
+const reputationRoutes = require('./reputation/reputationRoutes');
+const adminRoutes = require('./admin/adminRoutes');
+app.use('/api', trustRoutes);
+app.use('/api', reputationRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
