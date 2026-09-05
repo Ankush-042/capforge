@@ -81,9 +81,14 @@ export default function GapDetail() {
         <div className="col-span-2 bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <div className="flex items-center justify-between mb-4">
             <p className="text-[15px] font-semibold text-ink-900">Recommended candidates</p>
-            <button onClick={handleRank} disabled={ranking} className="text-xs bg-ink-900 hover:bg-ink-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50">
-              {ranking ? 'Ranking…' : 'Rank real candidates'}
-            </button>
+            <div className="flex gap-2">
+              {candidates.length > 0 && (
+                <Link to={`/app/gaps/${id}/compare?gap=${id}&startup=${startupId}`} className="text-xs border border-surface-border text-ink-500 px-3 py-1.5 rounded-lg font-medium hover:bg-surface-muted transition-colors">Compare all</Link>
+              )}
+              <button onClick={handleRank} disabled={ranking} className="text-xs bg-ink-900 hover:bg-ink-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50">
+                {ranking ? 'Ranking…' : 'Rank real candidates'}
+              </button>
+            </div>
           </div>
           {candidates.length === 0 ? (
             <p className="text-[13px] text-ink-500 py-10 text-center">Click "Rank real candidates" to score the actual contributor pool against this gap.</p>
