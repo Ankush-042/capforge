@@ -6,9 +6,9 @@
 const fs = require('fs');
 const path = require('path');
 const pool = require('../shared/db');
+const { callGroq } = require('../shared/aiClient');
 
 const GROQ_MODEL = 'openai/gpt-oss-120b';
-const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const PROMPT_PATH = path.join(__dirname, '..', '..', 'prompts', 'legal_scaffolding_v1.md');
 
 const HARDCODED_DISCLAIMER = `⚠️ TEMPLATE ONLY — NOT LEGAL ADVICE. This is a generic starting-point scaffold, not a substitute for a qualified lawyer. Have this reviewed and customized by legal counsel before using it for anything binding.\n\n`;
@@ -30,21 +30,13 @@ async function generateLegalDocument(startupId, documentType) {
   const systemPrompt = loadPrompt();
   const userMessage = `Document type: ${documentType}\nStartup: ${startup.name}\nContext: ${startup.problem} ${startup.solution}\n\nGenerate the document scaffold now.`;
 
-  let apiResponse;
-  try {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }] })
-    });
-    if (!res.ok) return { success: false, error: 'AI_CALL_FAILED', detail: await res.text() };
-    apiResponse = await res.json();
-  } catch (err) {
-    return { success: false, error: 'NETWORK_FAILURE', detail: err.message };
-  }
+  const callResult = await callGroq(GROQ_MODEL, [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userMessage }
+  ], apiKey);
 
-  const content = apiResponse?.choices?.[0]?.message?.content;
-  if (!content) return { success: false, error: 'EMPTY_AI_RESPONSE' };
+  if (!callResult.success) return { success: false, error: 'AI_CALL_FAILED', detail: callResult.detail };
+  const content = callResult.content;
 
   const fullContent = HARDCODED_DISCLAIMER + content;
   const result = await pool.query(
