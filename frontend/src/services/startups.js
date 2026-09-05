@@ -50,3 +50,9 @@ export const getMyRecommendationsAsContributor = () => apiFetch('/recommendation
 export const refreshInvestorRecommendations = () => apiFetch('/investors/recommendations/refresh', { method: 'POST' });
 export const getInvestorRecommendations = () => apiFetch('/investors/recommendations');
 export const getSkillDemand = () => apiFetch('/skill-demand');
+export const requestVerification = (startupId) => apiFetch(`/startups/${startupId}/request-verification`, { method: 'POST' });
+export const getMyReputation = () => apiFetch('/reputation/me');
+export const getAdminUsers = () => apiFetch('/admin/users');
+export const getAdminStartups = () => apiFetch('/admin/startups');
+export const getAdminStats = () => apiFetch('/admin/stats');
+export const setStartupVerification = (startupId, status) => apiFetch(`/admin/startups/${startupId}/verification`, { method: 'PATCH', body: JSON.stringify({ status }) });
