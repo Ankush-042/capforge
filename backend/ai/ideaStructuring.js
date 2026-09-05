@@ -109,7 +109,7 @@ function validateStructuredOutput(obj) {
  * @param {string} apiKey - Groq API key
  * @returns {Promise<{success: boolean, data?: object, errors?: string[], rawResponse?: string}>}
  */
-async function structureIdea(rawIdea, apiKey) {
+async function structureIdea(rawIdea) {
   if (!rawIdea || typeof rawIdea !== 'string' || rawIdea.trim().length < 5) {
     return { success: false, errors: ['Raw idea input is empty or too short'] };
   }
@@ -120,7 +120,7 @@ async function structureIdea(rawIdea, apiKey) {
   const callResult = await callGroq(GROQ_MODEL, [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userMessage }
-  ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.2 });
+  ], { response_format: { type: 'json_object' }, temperature: 0.2 });
 
   if (!callResult.success) {
     return { success: false, errors: [callResult.detail || callResult.error] };
@@ -137,7 +137,7 @@ async function structureIdea(rawIdea, apiKey) {
       { role: 'user', content: userMessage },
       { role: 'assistant', content: callResult.content },
       { role: 'user', content: 'That was not valid JSON. Return ONLY the raw JSON object, no markdown formatting, no extra text.' }
-    ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.1 });
+    ], { response_format: { type: 'json_object' }, temperature: 0.1 });
 
     if (!retryResult.success) return { success: false, errors: [retryResult.detail || retryResult.error] };
     parseResult = parseJsonResponse(retryResult.content);
@@ -165,7 +165,7 @@ async function structureIdea(rawIdea, apiKey) {
       { role: 'user', content: userMessage },
       { role: 'assistant', content: JSON.stringify(parsed) },
       { role: 'user', content: 'role_requirements was empty. Every venture needs roles to be built, even if the founder did not explicitly ask for help — infer them from what the venture DOES (e.g. a payments platform needs backend/compliance/infrastructure roles). Return the corrected JSON object now, with at least the core roles this venture would need to exist.' }
-    ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.2 });
+    ], { response_format: { type: 'json_object' }, temperature: 0.2 });
 
     if (retryResult.success) {
       const retryParse = parseJsonResponse(retryResult.content);
