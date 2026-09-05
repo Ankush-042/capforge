@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
-const { rankCandidatesForGap, getRecommendationsForStartup } = require('./matchingService');
+const { rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor } = require('./matchingService');
 const pool = require('../shared/db');
 
 async function assertOwnership(startupId, userId) {
@@ -30,6 +30,12 @@ router.get('/startups/:id/recommendations', requireAuth, async (req, res) => {
   if (!own.ok) return res.status(own.code).json({ error: own.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
 
   const result = await getRecommendationsForStartup(req.params.id);
+  res.json(result);
+});
+
+// A contributor's own recommendations across all startups (not startup-scoped).
+router.get('/recommendations/mine', requireAuth, async (req, res) => {
+  const result = await getMyRecommendationsAsContributor(req.user.userId);
   res.json(result);
 });
 
