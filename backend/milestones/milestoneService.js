@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const pool = require('../shared/db');
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const PROMPT_PATH = path.join(__dirname, '..', '..', 'prompts', 'milestone_generation_v1.md');
 
