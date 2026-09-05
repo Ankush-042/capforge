@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import CommandPalette from './CommandPalette.jsx';
 
 /**
  * App shell — persona-aware sidebar (Sprint 20). Same Vercel-style nav
@@ -58,12 +59,22 @@ function NavItem({ label, icon, path, active, nested }) {
 
 export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }) {
   const location = useLocation();
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const NAV = NAV_BY_PERSONA[persona];
   const identity = IDENTITY_BY_PERSONA[persona];
   const homePath = NAV[0].path;
 
+  React.useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setPaletteOpen((o) => !o); }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className="app-shell min-h-screen bg-canvas flex">
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">
@@ -74,14 +85,11 @@ export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }
           <span className="text-ink-300 text-xs">⌄</span>
         </button>
 
-        <div className="relative mb-5">
+        <button onClick={() => setPaletteOpen(true)} className="relative mb-5 w-full text-left">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs">⌕</span>
-          <input
-            placeholder="Find..."
-            className="w-full pl-8 pr-8 py-2 rounded-lg border border-surface-border bg-surface-muted text-sm text-ink-900 placeholder:text-ink-300 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300"
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-ink-300 border border-surface-border rounded px-1">F</span>
-        </div>
+          <span className="block w-full pl-8 pr-14 py-2 rounded-lg border border-surface-border bg-surface-muted text-sm text-ink-300">Find...</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-ink-300 border border-surface-border rounded px-1.5">⌘K</span>
+        </button>
 
         <nav className="space-y-0.5">
           {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== homePath && location.pathname.startsWith(n.path))} />)}
