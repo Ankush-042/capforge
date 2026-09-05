@@ -51,7 +51,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function run() {
   console.log(`=== Expanding contributor pool: ${CONTRIBUTORS.length} more, genuinely varied ===\n`);
   for (const c of CONTRIBUTORS) {
-    await sleep(400);
+    await sleep(3200); // stay comfortably under the 20/min auth rate limit
     const reg = await post('/auth/register', { email: c.email, password: PASSWORD, primaryRole: 'CONTRIBUTOR', displayName: c.name });
     if (!reg.ok) { console.log(`  ✗ ${c.name}: registration failed — ${reg.data.error}`); continue; }
     const token = reg.data.token;
