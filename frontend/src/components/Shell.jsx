@@ -17,6 +17,7 @@ const NAV_BY_PERSONA = {
     { label: 'Risk', icon: '◑', path: '/app/risk' },
     { label: 'Milestones', icon: '◇', path: '/app/milestones' },
     { label: 'Analytics', icon: '◆', path: '/app/analytics' },
+    { label: 'Investability', icon: '◉', path: '/app/investability' },
     { label: 'Competitors', icon: '◌', path: '/app/competitors' },
     { label: 'Equity', icon: '◍', path: '/app/equity' },
     { label: 'Workspace', icon: '◫', path: '/app/workspace' },
