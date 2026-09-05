@@ -49,7 +49,7 @@ export default function FounderDashboard() {
   const coveragePct = gaps.length > 0 ? Math.round((filledCount / gaps.length) * 100) : 0;
 
   const readinessDims = readiness ? Object.entries(readiness.dimensions).map(([name, value], i) => ({
-    name: name[0].toUpperCase() + name.slice(1),
+    name: name.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' '),
     value: Math.round(value * 100),
     color: ['#7C5CFC', '#4C86F9', '#3FB081', '#F0A84E', '#EF6E85', '#C58A00', '#6D28D9'][i % 7]
   })) : [];

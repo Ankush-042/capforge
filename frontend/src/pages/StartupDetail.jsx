@@ -32,7 +32,7 @@ export default function StartupDetail() {
   if (!startup) return <Shell title="Startup profile"><div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center"><p className="text-[15px] text-ink-500">This startup isn't discoverable, or doesn't exist.</p></div></Shell>;
 
   const dims = readiness ? Object.entries(readiness.dimensions).map(([name, value], i) => ({
-    name: name[0].toUpperCase() + name.slice(1), value: Math.round(value * 100), color: COLORS[i % COLORS.length]
+    name: name.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' '), value: Math.round(value * 100), color: COLORS[i % COLORS.length]
   })) : [];
 
   return (

@@ -28,6 +28,8 @@ export default function Onboarding() {
   const [targetTimeline, setTargetTimeline] = useState('');
   const [equityOfferedRange, setEquityOfferedRange] = useState('');
   const [founderPriorExperience, setFounderPriorExperience] = useState('');
+  const [dpiitRecognized, setDpiitRecognized] = useState(false);
+  const [cityTier, setCityTier] = useState('');
 
   async function handleAnalyze() {
     if (!name.trim() || rawIdea.trim().length < 10) {
@@ -46,6 +48,8 @@ export default function Onboarding() {
       targetTimeline: targetTimeline || undefined,
       equityOfferedRange: equityOfferedRange || undefined,
       founderPriorExperience: founderPriorExperience || undefined,
+      dpiitRecognized,
+      cityTier: cityTier || undefined,
     });
     clearInterval(stepTimer);
 
@@ -124,6 +128,22 @@ export default function Onboarding() {
                   <label className="text-[13px] font-medium text-ink-500 mb-1.5 block">Your relevant prior experience</label>
                   <textarea value={founderPriorExperience} onChange={(e) => setFounderPriorExperience(e.target.value)} rows={2} placeholder="e.g. 5 years in fintech product management, ran a previous startup..."
                     className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20 resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[13px] font-medium text-ink-500 mb-1.5 block">City tier (India)</label>
+                    <select value={cityTier} onChange={(e) => setCityTier(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+                      <option value="">Not specified</option>
+                      <option value="Tier I">Tier I</option>
+                      <option value="Tier II">Tier II</option>
+                      <option value="Tier III">Tier III</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 mt-6 text-[13px] text-ink-700">
+                    <input type="checkbox" checked={dpiitRecognized} onChange={(e) => setDpiitRecognized(e.target.checked)} />
+                    DPIIT-recognized startup
+                  </label>
                 </div>
               </div>
             )}
