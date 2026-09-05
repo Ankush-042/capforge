@@ -190,4 +190,23 @@ async function listMyStartups(founderId) {
   return { success: true, startups: result.rows };
 }
 
-module.exports = { createStartup, analyzeStartup, confirmStartup, getStartup, listMyStartups };
+/**
+ * Real team-listing endpoint — was genuinely missing (found while wiring
+ * the frontend to real data, not previously flagged). Joins team
+ * membership with user/profile info so the UI can show actual names,
+ * not just user IDs.
+ */
+async function getTeamMembers(startupId) {
+  const result = await pool.query(
+    `SELECT stm.id, stm.user_id, stm.role, stm.skills, stm.is_founder, stm.joined_at,
+            p.display_name, p.headline
+     FROM startup_team_members stm
+     JOIN profiles p ON p.user_id = stm.user_id
+     WHERE stm.startup_id = $1
+     ORDER BY stm.is_founder DESC, stm.joined_at ASC`,
+    [startupId]
+  );
+  return { success: true, members: result.rows };
+}
+
+module.exports = { createStartup, analyzeStartup, confirmStartup, getStartup, listMyStartups, getTeamMembers };

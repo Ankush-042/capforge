@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireRole } = require('../auth/authMiddleware');
 const { aiEndpointLimit } = require('../shared/rateLimiter');
-const { createStartup, analyzeStartup, confirmStartup, getStartup, listMyStartups } = require('./startupService');
+const { createStartup, analyzeStartup, confirmStartup, getStartup, listMyStartups, getTeamMembers } = require('./startupService');
 
 // SRS §13: only founders create startups.
 router.post('/', requireAuth, requireRole('FOUNDER'), aiEndpointLimit, async (req, res) => {
@@ -34,6 +34,12 @@ router.post('/:id/analyze', requireAuth, requireRole('FOUNDER'), aiEndpointLimit
 router.patch('/:id/confirm', requireAuth, requireRole('FOUNDER'), async (req, res) => {
   const result = await confirmStartup(req.user.userId, req.params.id, req.body);
   if (!result.success) return res.status(400).json(result);
+  res.json(result);
+});
+
+// SRS §46: real team roster listing — was missing, added when wiring frontend to real data.
+router.get('/:id/team', requireAuth, async (req, res) => {
+  const result = await getTeamMembers(req.params.id);
   res.json(result);
 });
 
