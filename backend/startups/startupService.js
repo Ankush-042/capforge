@@ -93,9 +93,9 @@ async function analyzeStartup(founderId, startupId) {
 
   await pool.query(`UPDATE startups SET status = 'ANALYZING', updated_at = now() WHERE id = $1`, [startupId]);
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    await failJob(jobId, 'GROQ_API_KEY not configured on server');
+  const { getConfiguredKeys } = require('../shared/aiClient');
+  if (getConfiguredKeys().length === 0) {
+    await failJob(jobId, 'No Groq API key configured on server');
     await pool.query(`UPDATE startups SET status = 'DRAFT', updated_at = now() WHERE id = $1`, [startupId]);
     return { success: false, error: 'AI_NOT_CONFIGURED' };
   }
@@ -104,7 +104,7 @@ async function analyzeStartup(founderId, startupId) {
   let attempts = 0;
   do {
     attempts++;
-    aiResult = await structureIdea(startup.raw_idea, apiKey);
+    aiResult = await structureIdea(startup.raw_idea);
   } while (!aiResult.success && attempts <= RETRY_LIMIT);
 
   await pool.query('UPDATE ai_jobs SET attempt_count = $1 WHERE id = $2', [attempts, jobId]);

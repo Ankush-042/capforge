@@ -26,16 +26,13 @@ async function generateMilestones(startupId) {
   const gapsResult = await pool.query('SELECT role, status FROM gaps WHERE startup_id = $1', [startupId]);
   const gapsSummary = gapsResult.rows.map(g => `${g.role} (${g.status})`).join(', ') || 'none diagnosed yet';
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return { success: false, error: 'AI_NOT_CONFIGURED' };
-
   const systemPrompt = loadPrompt();
   const userMessage = `Startup:\nProblem: ${startup.problem}\nSolution: ${startup.solution}\nDomain: ${(startup.domain || []).join(', ')}\nStage: ${startup.stage}\nCurrent known gaps: ${gapsSummary}\n\nReturn the JSON object now.`;
 
   const callResult = await callGroq(GROQ_MODEL, [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userMessage }
-  ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.3 });
+  ], { response_format: { type: 'json_object' }, temperature: 0.3 });
 
   if (!callResult.success) return { success: false, error: 'AI_CALL_FAILED', detail: callResult.detail };
 

@@ -34,16 +34,13 @@ async function runCompetitorAnalysis(startupId) {
   if (startupResult.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
   const startup = startupResult.rows[0];
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return { success: false, error: 'AI_NOT_CONFIGURED' };
-
   const systemPrompt = loadPrompt();
   const userMessage = `Startup:\nProblem: ${startup.problem}\nSolution: ${startup.solution}\nDomain: ${(startup.domain || []).join(', ')}\nStage: ${startup.stage}\n\nReturn the JSON object now.`;
 
   const callResult = await callGroq(GROQ_MODEL, [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userMessage }
-  ], apiKey, { response_format: { type: 'json_object' }, temperature: 0.2 });
+  ], { response_format: { type: 'json_object' }, temperature: 0.2 });
 
   if (!callResult.success) return { success: false, error: 'AI_CALL_FAILED', detail: callResult.detail };
 

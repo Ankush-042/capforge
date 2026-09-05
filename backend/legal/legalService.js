@@ -24,16 +24,13 @@ async function generateLegalDocument(startupId, documentType) {
   if (startupResult.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
   const startup = startupResult.rows[0];
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return { success: false, error: 'AI_NOT_CONFIGURED' };
-
   const systemPrompt = loadPrompt();
   const userMessage = `Document type: ${documentType}\nStartup: ${startup.name}\nContext: ${startup.problem} ${startup.solution}\n\nGenerate the document scaffold now.`;
 
   const callResult = await callGroq(GROQ_MODEL, [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userMessage }
-  ], apiKey);
+  ]);
 
   if (!callResult.success) return { success: false, error: 'AI_CALL_FAILED', detail: callResult.detail };
   const content = callResult.content;
