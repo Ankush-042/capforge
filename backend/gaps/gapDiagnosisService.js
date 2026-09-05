@@ -174,4 +174,17 @@ async function getGaps(startupId) {
   return { success: true, gaps: result.rows };
 }
 
-module.exports = { diagnoseGaps, runGapDiagnosis, getGaps, normalizeRole, scoreToLevel };
+/**
+ * Sprint 26 — auto-refresh trigger support. Real gap identified via
+ * direct feedback: a contributor completing rich onboarding got zero
+ * recommendations unless a founder had already manually clicked
+ * "rank candidates" on a matching gap — backwards from how real
+ * platforms (Wellfound, Indeed) work, where completing your profile
+ * itself triggers matching immediately.
+ */
+async function getOpenGapIds() {
+  const result = await pool.query(`SELECT id FROM gaps WHERE status != 'FILLED'`);
+  return result.rows.map(r => r.id);
+}
+
+module.exports = { diagnoseGaps, runGapDiagnosis, getGaps, normalizeRole, scoreToLevel, getOpenGapIds };
