@@ -104,9 +104,13 @@ export default function GapDetail() {
                     </button>
                   </div>
                 } />
-              <div className="mt-3 pl-12 space-y-1">
-                {(c.explanation?.strengths || []).map((s) => <p key={s} className="text-[13px] text-mint-500 flex gap-1.5"><span>✓</span>{s}</p>)}
-                {(c.explanation?.limitations || []).map((s) => <p key={s} className="text-[13px] text-amber-500 flex gap-1.5"><span>△</span>{s}</p>)}
+              <div className="mt-3 pl-12">
+                {c.causal_narrative ? (
+                  <p className="text-[13px] text-ink-700 leading-relaxed">{c.causal_narrative}</p>
+                ) : (
+                  (c.explanation?.strengths || []).map((s) => <p key={s} className="text-[13px] text-mint-500 flex gap-1.5"><span>✓</span>{s}</p>)
+                )}
+                {(c.explanation?.limitations || []).map((s) => <p key={s} className="text-[13px] text-amber-500 flex gap-1.5 mt-1"><span>△</span>{s}</p>)}
               </div>
             </div>
           ))}

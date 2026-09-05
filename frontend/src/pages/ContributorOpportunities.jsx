@@ -43,8 +43,12 @@ export default function ContributorOpportunities() {
                 <span className="text-lg font-semibold text-violet-600">{Math.round(r.score * 100)}%</span>
               </div>
               <div className="space-y-1 mb-4">
-                {(r.explanation?.strengths || []).map((s) => <p key={s} className="text-[13px] text-ink-700 flex gap-1.5"><span className="text-mint-500">✓</span>{s}</p>)}
-                {(r.explanation?.limitations || []).map((s) => <p key={s} className="text-[13px] text-amber-500 flex gap-1.5"><span>△</span>{s}</p>)}
+                {r.causal_narrative ? (
+                  <p className="text-[13px] text-ink-700 leading-relaxed">{r.causal_narrative}</p>
+                ) : (
+                  (r.explanation?.strengths || []).map((s) => <p key={s} className="text-[13px] text-ink-700 flex gap-1.5"><span className="text-mint-500">✓</span>{s}</p>)
+                )}
+                {(r.explanation?.limitations || []).map((s) => <p key={s} className="text-[13px] text-amber-500 flex gap-1.5 mt-1"><span>△</span>{s}</p>)}
               </div>
               <button onClick={() => handleInterest(r)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">
                 Express interest
