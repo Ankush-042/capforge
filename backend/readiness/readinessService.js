@@ -30,6 +30,25 @@ const FUNDING_STAGE_SCORE = { 'Bootstrapped': 0.3, 'Pre-seed': 0.5, 'Seed': 0.7,
  * Pure function: computes readiness dimensions from structured startup
  * state + gap coverage. Testable in isolation (TRD §92).
  */
+/**
+ * Real, evidence-based written justification per dimension — required
+ * by Objective 1's own completion criterion ("per-dimension score AND
+ * a written justification"), which Phase 1's dimension rebuild fixed
+ * the scores for but never added the justification text for. Built
+ * directly from the same sub-factors that produced the score, never
+ * a separate free-form claim.
+ */
+function buildJustifications(dimensions, factors) {
+  return {
+    team_composition: factors.gapsCount === 0
+      ? 'No gaps have been diagnosed yet, so team coverage is unscored — run gap diagnosis first.'
+      : `Based on ${factors.gapsCount} diagnosed role${factors.gapsCount !== 1 ? 's' : ''}, ${Math.round(dimensions.team_composition * 100)}% average coverage across required roles.`,
+    market_positioning: `${factors.hasTargetUsers ? 'Target users are defined' : 'Target users are not yet defined'}; ${factors.hasDomain ? 'domain is specified' : 'domain is not yet specified'}; solution-fit confidence is ${factors.solutionConfidenceLevel}.`,
+    product_readiness: `Venture is at "${factors.stage}" stage; solution-fit confidence is ${factors.solutionConfidenceLevel}; ${factors.hasTechRequirements ? `technical role coverage is ${Math.round(dimensions.product_readiness * 100)}%` : 'no technical requirements have been specified yet'}.`,
+    funding_readiness: `${factors.hasBusinessModel ? 'Business model is defined' : 'Business model is not yet defined'}; funding stage is "${factors.fundingStage || 'not specified'}"; ${factors.dpiitRecognized ? 'DPIIT-recognized' : 'not yet DPIIT-recognized'}; ${factors.hasTimeline ? 'a target timeline is stated' : 'no target timeline stated'}.`
+  };
+}
+
 function computeReadiness(startup, gaps) {
   const confidence = startup.confidence || {};
 
@@ -84,9 +103,22 @@ function computeReadiness(startup, gaps) {
     .slice(0, 3)
     .map(g => `Address the "${g.role}" gap (${g.priority_level.toLowerCase()} priority).`);
 
+  const justifications = buildJustifications(dimensions, {
+    gapsCount: gaps.length,
+    hasTargetUsers, hasDomain,
+    solutionConfidenceLevel: confidence.solution || 'unstated',
+    stage: startup.stage || 'Unclear',
+    hasTechRequirements,
+    hasBusinessModel,
+    fundingStage: startup.funding_stage,
+    dpiitRecognized: !!startup.dpiit_recognized,
+    hasTimeline
+  });
+
   return {
     overall_score: Math.round(overall * 100),
     dimensions,
+    dimension_justifications: justifications,
     critical_issues: criticalIssues,
     top_actions: topActions
   };

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { runReadinessAndRiskAnalysis, getLatestReadiness, getRisks, getReadinessHistory } = require('./readinessService');
+const { getVentureSummary } = require('./ventureSummaryService');
 const pool = require('../shared/db');
 
 async function assertOwnership(startupId, userId) {
@@ -38,6 +39,17 @@ router.get('/startups/:id/risks', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+
+router.get('/startups/:id/venture-summary', requireAuth, async (req, res) => {
+  const startupResult = await pool.query('SELECT founder_id, status, visibility FROM startups WHERE id = $1', [req.params.id]);
+  if (startupResult.rows.length === 0) return res.status(404).json({ error: 'NOT_FOUND' });
+  const s = startupResult.rows[0];
+  const isOwner = s.founder_id === req.user.userId;
+  const isDiscoverable = s.status === 'ACTIVE' && s.visibility === 'DISCOVERABLE';
+  if (!isOwner && !isDiscoverable) return res.status(403).json({ error: 'FORBIDDEN' });
+
+  res.json(await getVentureSummary(req.params.id));
+});
 
 router.get('/startups/:id/readiness-history', requireAuth, async (req, res) => {
   const own = await assertOwnership(req.params.id, req.user.userId);
