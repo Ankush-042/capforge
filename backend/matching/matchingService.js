@@ -171,6 +171,26 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
 }
 
 /**
+ * Phase 4 — the causal narrative (real fix, not decoration). Before
+ * this, "why this gap exists" and "why this candidate scores well"
+ * were two disconnected explanations shown on separate parts of the
+ * screen. This builds ONE continuous, deterministic sentence — built
+ * entirely from real fields (gap.reason, the candidate's own top
+ * evidence), never AI-generated free text, consistent with every
+ * other explanation in this engine.
+ */
+function buildCausalNarrative(gap, candidateName, explanation) {
+  const topStrength = explanation.strengths[0] || 'their profile aligns with what this role needs';
+  const additionalStrengths = explanation.strengths.slice(1, 2); // one more, keep it a single readable sentence
+  const strengthClause = additionalStrengths.length > 0
+    ? `${topStrength.replace(/\.$/, '')}, and ${additionalStrengths[0].charAt(0).toLowerCase()}${additionalStrengths[0].slice(1).replace(/\.$/, '')}`
+    : topStrength.replace(/\.$/, '');
+
+  const verb = candidateName === 'You' ? 'close' : 'closes';
+  return `This venture needs a ${gap.role} because ${gap.reason.charAt(0).toLowerCase()}${gap.reason.slice(1).replace(/\.$/, '')}. ${candidateName} ${verb} exactly that — ${strengthClause}.`;
+}
+
+/**
  * Retrieves eligible candidates (hard filters, TRD §23) and ranks them
  * against a specific gap. Persists results as recommendations.
  */
@@ -213,7 +233,8 @@ async function rankCandidatesForGap(gapId) {
   const ranked = candidatesResult.rows.map(candidate => {
     const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate, feedbackAdjustment);
     const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
-    return { candidate, score, breakdown, explanation };
+    const causalNarrative = buildCausalNarrative(gap, candidate.headline || 'This candidate', explanation);
+    return { candidate, score, breakdown, explanation, causalNarrative };
   }).sort((a, b) => b.score - a.score);
 
   const client = await pool.connect();
@@ -229,7 +250,7 @@ async function rankCandidatesForGap(gapId) {
          VALUES ($1, $2, $3, 'CONTRIBUTOR', $4, $5, $6, $7) RETURNING *`,
         [startup.id, r.candidate.user_id, gapId, r.score, i + 1, JSON.stringify(r.breakdown), JSON.stringify(r.explanation)]
       );
-      inserted.push({ ...row.rows[0], candidate_headline: r.candidate.headline });
+      inserted.push({ ...row.rows[0], candidate_headline: r.candidate.headline, causal_narrative: r.causalNarrative });
     }
     await client.query('COMMIT');
     return { success: true, recommendations: inserted };
@@ -243,14 +264,18 @@ async function rankCandidatesForGap(gapId) {
 
 async function getRecommendationsForStartup(startupId) {
   const result = await pool.query(
-    `SELECT r.*, p.headline as candidate_headline, g.role as gap_role
+    `SELECT r.*, p.headline as candidate_headline, g.role as gap_role, g.reason as gap_reason
      FROM recommendations r
      JOIN profiles p ON p.user_id = r.target_user_id
      LEFT JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.startup_id = $1 ORDER BY r.source_gap_id, r.rank`,
     [startupId]
   );
-  return { success: true, recommendations: result.rows };
+  const withNarrative = result.rows.map(r => ({
+    ...r,
+    causal_narrative: r.gap_role && r.gap_reason ? buildCausalNarrative({ role: r.gap_role, reason: r.gap_reason }, r.candidate_headline, r.explanation) : null
+  }));
+  return { success: true, recommendations: withNarrative };
 }
 
 /**
@@ -261,7 +286,7 @@ async function getRecommendationsForStartup(startupId) {
  */
 async function getMyRecommendationsAsContributor(userId) {
   const result = await pool.query(
-    `SELECT r.*, s.name as startup_name, s.domain, s.stage, g.role as gap_role
+    `SELECT r.*, s.name as startup_name, s.domain, s.stage, g.role as gap_role, g.reason as gap_reason
      FROM recommendations r
      JOIN startups s ON s.id = r.startup_id
      LEFT JOIN gaps g ON g.id = r.source_gap_id
@@ -269,7 +294,11 @@ async function getMyRecommendationsAsContributor(userId) {
      ORDER BY r.score DESC LIMIT 20`,
     [userId]
   );
-  return { success: true, recommendations: result.rows };
+  const withNarrative = result.rows.map(r => ({
+    ...r,
+    causal_narrative: r.gap_role && r.gap_reason ? buildCausalNarrative({ role: r.gap_role, reason: r.gap_reason }, 'You', r.explanation) : null
+  }));
+  return { success: true, recommendations: withNarrative };
 }
 
-module.exports = { scoreCandidate, explainScore, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
+module.exports = { scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
