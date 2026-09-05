@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Shell from '../components/Shell.jsx';
-import { getMyProfile, updateBaseProfile } from '../services/startups.js';
+import { getMyProfile, updateBaseProfile, getNotificationPreferences, updateNotificationPreferences } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
-const CATEGORIES = ['Account', 'Profile', 'Privacy'];
+const CATEGORIES = ['Account', 'Profile', 'Notifications', 'Privacy'];
 const VISIBILITY_OPTIONS = [
   { value: 'DISCOVERABLE', label: 'Discoverable — anyone can find you in search' },
   { value: 'CONNECTIONS_ONLY', label: 'Connections only — only your connections see full details' },
@@ -14,11 +14,21 @@ export default function Settings() {
   const showToast = useToast();
   const [tab, setTab] = useState('Account');
   const [profile, setProfile] = useState(null);
+  const [prefs, setPrefs] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getMyProfile().then(({ ok, data }) => { if (ok && data.success) setProfile(data.profile); });
+    getNotificationPreferences().then(({ ok, data }) => { if (ok && data.success) setPrefs(data.preferences); });
   }, []);
+
+  async function handlePrefToggle(key) {
+    const newValue = !prefs[key];
+    setPrefs({ ...prefs, [key]: newValue });
+    const { ok, data } = await updateNotificationPreferences({ [key]: newValue });
+    if (ok && data.success) showToast('Preference saved.');
+    else showToast('Could not save preference.', 'error');
+  }
 
   async function handleVisibilityChange(value) {
     setSaving(true);
@@ -41,7 +51,22 @@ export default function Settings() {
           ))}
         </div>
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
-          {tab === 'Privacy' ? (
+          {tab === 'Notifications' ? (
+            <>
+              <p className="text-[15px] font-semibold text-ink-900 mb-4">Notification preferences</p>
+              {!prefs ? <p className="text-[13px] text-ink-500">Loading…</p> : [
+                ['connections', 'Connection requests'],
+                ['recommendations', 'New recommendations'],
+                ['team_updates', 'Team updates'],
+                ['ai_analysis', 'AI analysis completed'],
+              ].map(([key, label]) => (
+                <label key={key} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0 cursor-pointer">
+                  <span className="text-[15px] text-ink-900">{label}</span>
+                  <input type="checkbox" checked={prefs[key]} onChange={() => handlePrefToggle(key)} className="rounded border-surface-border" />
+                </label>
+              ))}
+            </>
+          ) : tab === 'Privacy' ? (
             <>
               <p className="text-[15px] font-semibold text-ink-900 mb-1">Visibility</p>
               <p className="text-[13px] text-ink-500 mb-4">Control who can find and view your profile. This is real — it changes what search actually returns.</p>

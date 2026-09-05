@@ -37,6 +37,13 @@ export const getMyConnections = () => apiFetch('/connections');
 
 export const searchStartups = (params) => apiFetch(`/search/startups?${new URLSearchParams(params)}`);
 export const semanticSearchStartups = (query) => apiFetch(`/search/startups/semantic?query=${encodeURIComponent(query)}`);
+export const getReadinessHistory = (startupId) => apiFetch(`/startups/${startupId}/readiness-history`);
+export const getNotificationPreferences = () => apiFetch('/notifications/preferences');
+export const updateNotificationPreferences = (payload) => apiFetch('/notifications/preferences', { method: 'PATCH', body: JSON.stringify(payload) });
+export const getWorkspaceFiles = (startupId) => apiFetch(`/startups/${startupId}/workspace/files`);
+export const addWorkspaceFile = (startupId, payload) => apiFetch(`/startups/${startupId}/workspace/files`, { method: 'POST', body: JSON.stringify(payload) });
+export const generateLegalDocument = (startupId, documentType) => apiFetch(`/startups/${startupId}/legal-documents`, { method: 'POST', body: JSON.stringify({ documentType }) });
+export const getLegalDocuments = (startupId) => apiFetch(`/startups/${startupId}/legal-documents`);
 export const searchContributors = (params) => apiFetch(`/search/contributors?${new URLSearchParams(params)}`);
 
 export const getNotifications = (unreadOnly) => apiFetch(`/notifications${unreadOnly ? '?unread=true' : ''}`);
