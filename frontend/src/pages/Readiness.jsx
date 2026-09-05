@@ -52,7 +52,7 @@ export default function Readiness() {
   if (loading) return <Shell title="Readiness"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   const dims = readiness ? Object.entries(readiness.dimensions).map(([name, value], i) => ({
-    name: name[0].toUpperCase() + name.slice(1), value: Math.round(value * 100), color: COLORS[i % COLORS.length]
+    name: name.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' '), value: Math.round(value * 100), color: COLORS[i % COLORS.length]
   })) : [];
 
   return (
