@@ -166,4 +166,28 @@ async function naturalLanguageSearchStartups(query) {
   return { success: true, interpreted_filters: filters, results: result.results };
 }
 
-module.exports = { searchStartups, searchContributors, searchInvestors, naturalLanguageSearchStartups };
+/**
+ * REAL semantic search (Sprint 26 part 2) — this replaces the honest
+ * "keyword extraction, not vector similarity" limitation documented
+ * since Sprint 7. Uses pgvector's cosine distance operator against
+ * real embeddings generated at structuring time.
+ */
+async function semanticSearchStartups(queryText, requestingUserId) {
+  const { generateEmbedding } = require('../shared/embeddings');
+  const queryEmbedding = await generateEmbedding(queryText);
+  if (!queryEmbedding) return { success: false, error: 'EMBEDDING_FAILED' };
+
+  const result = await pool.query(
+    `SELECT id, name, problem, solution, domain, stage, business_model, status,
+            1 - (embedding <=> $1::vector) as similarity
+     FROM startups
+     WHERE embedding IS NOT NULL
+       AND ((status = 'ACTIVE' AND visibility = 'DISCOVERABLE') OR founder_id = $2)
+     ORDER BY embedding <=> $1::vector
+     LIMIT 20`,
+    [JSON.stringify(queryEmbedding), requestingUserId]
+  );
+  return { success: true, results: result.rows, method: 'semantic_embedding' };
+}
+
+module.exports = { searchStartups, searchContributors, searchInvestors, naturalLanguageSearchStartups, semanticSearchStartups };

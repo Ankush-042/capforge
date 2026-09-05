@@ -152,6 +152,21 @@ async function analyzeStartup(founderId, startupId) {
      JSON.stringify(d.confidence), d.clarification_needed, startupId]
   );
 
+  // Sprint 26 part 2: real semantic embedding, generated from the
+  // structured problem+solution+domain text. Deliberately non-fatal —
+  // if embedding generation fails, structuring itself has already
+  // succeeded and must not be rolled back over an enhancement feature.
+  try {
+    const { generateEmbedding } = require('../shared/embeddings');
+    const embeddingText = `${d.problem} ${d.solution} ${(d.domain || []).join(' ')}`;
+    const embedding = await generateEmbedding(embeddingText);
+    if (embedding) {
+      await pool.query(`UPDATE startups SET embedding = $1 WHERE id = $2`, [JSON.stringify(embedding), startupId]);
+    }
+  } catch (embErr) {
+    console.error('Embedding generation failed (non-fatal):', embErr.message);
+  }
+
   await pool.query(`UPDATE ai_jobs SET status = 'COMPLETED', completed_at = now() WHERE id = $1`, [jobId]);
 
   return { success: true, startup: updateResult.rows[0] };
