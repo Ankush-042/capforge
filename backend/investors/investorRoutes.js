@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireRole } = require('../auth/authMiddleware');
 const { rankStartupsForInvestor, getInvestorRecommendations } = require('./investorMatchingService');
+const { getPortfolioAnalysis } = require('./portfolioService');
 const { sendInvestorConnectionRequest } = require('../connections/connectionService');
 
 router.post('/recommendations/refresh', requireAuth, requireRole('INVESTOR'), async (req, res) => {
@@ -23,6 +24,10 @@ router.post('/connections', requireAuth, requireRole('INVESTOR'), async (req, re
     return res.status(codeMap[result.error] || 400).json(result);
   }
   res.status(201).json(result);
+});
+
+router.get('/portfolio', requireAuth, requireRole('INVESTOR'), async (req, res) => {
+  res.json(await getPortfolioAnalysis(req.user.userId));
 });
 
 module.exports = router;

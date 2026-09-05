@@ -49,6 +49,7 @@ export const getMyProfile = () => apiFetch('/profiles/me');
 export const getMyRecommendationsAsContributor = () => apiFetch('/recommendations/mine');
 export const refreshInvestorRecommendations = () => apiFetch('/investors/recommendations/refresh', { method: 'POST' });
 export const getInvestorRecommendations = () => apiFetch('/investors/recommendations');
+export const getPortfolioAnalysis = () => apiFetch('/investors/portfolio');
 export const getSkillDemand = () => apiFetch('/skill-demand');
 export const requestVerification = (startupId) => apiFetch(`/startups/${startupId}/request-verification`, { method: 'POST' });
 export const getMyReputation = () => apiFetch('/reputation/me');
