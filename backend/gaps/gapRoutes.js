@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { runGapDiagnosis, getGaps } = require('./gapDiagnosisService');
+const { getSkillDemand } = require('./skillDemandService');
 const pool = require('../shared/db');
 
 async function assertOwnership(startupId, userId) {
@@ -25,6 +26,12 @@ router.get('/startups/:id/gaps', requireAuth, async (req, res) => {
   if (!own.ok) return res.status(own.code).json({ error: own.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
 
   const result = await getGaps(req.params.id);
+  res.json(result);
+});
+
+// Real, platform-wide skill demand aggregation — new feature, AI spec §named-but-unbuilt.
+router.get('/skill-demand', requireAuth, async (req, res) => {
+  const result = await getSkillDemand(req.user.userId);
   res.json(result);
 });
 

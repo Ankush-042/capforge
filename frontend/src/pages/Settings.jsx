@@ -1,11 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Shell from '../components/Shell.jsx';
+import { getMyProfile, updateBaseProfile } from '../services/startups.js';
+import { useToast } from '../components/Toast.jsx';
 
-const CATEGORIES = ['Account', 'Profile', 'Notifications', 'Privacy', 'Security'];
+const CATEGORIES = ['Account', 'Profile', 'Privacy'];
+const VISIBILITY_OPTIONS = [
+  { value: 'DISCOVERABLE', label: 'Discoverable — anyone can find you in search' },
+  { value: 'CONNECTIONS_ONLY', label: 'Connections only — only your connections see full details' },
+  { value: 'PRIVATE', label: 'Private — hidden from search entirely' },
+];
 
 export default function Settings() {
+  const showToast = useToast();
   const [tab, setTab] = useState('Account');
-  const [notifPrefs, setNotifPrefs] = useState({ connections: true, recommendations: true, team: true, aiAnalysis: false });
+  const [profile, setProfile] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getMyProfile().then(({ ok, data }) => { if (ok && data.success) setProfile(data.profile); });
+  }, []);
+
+  async function handleVisibilityChange(value) {
+    setSaving(true);
+    const { ok, data } = await updateBaseProfile({ visibility: value });
+    setSaving(false);
+    if (ok && data.success) { setProfile(data.profile); showToast('Visibility updated.'); }
+    else showToast('Could not update visibility.', 'error');
+  }
 
   return (
     <Shell title="Settings">
@@ -20,29 +41,27 @@ export default function Settings() {
           ))}
         </div>
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
-          {tab === 'Notifications' ? (
+          {tab === 'Privacy' ? (
             <>
-              <p className="text-[15px] font-semibold text-ink-900 mb-4">Notification preferences</p>
-              {Object.entries(notifPrefs).map(([key, val]) => (
-                <label key={key} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0 cursor-pointer">
-                  <span className="text-[15px] text-ink-900 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                  <input type="checkbox" checked={val} onChange={() => setNotifPrefs({ ...notifPrefs, [key]: !val })} className="rounded border-surface-border" />
+              <p className="text-[15px] font-semibold text-ink-900 mb-1">Visibility</p>
+              <p className="text-[13px] text-ink-500 mb-4">Control who can find and view your profile. This is real — it changes what search actually returns.</p>
+              {!profile ? <p className="text-[13px] text-ink-500">Loading…</p> : VISIBILITY_OPTIONS.map((opt) => (
+                <label key={opt.value} className="flex items-center gap-3 py-2.5 cursor-pointer">
+                  <input type="radio" name="visibility" checked={profile.visibility === opt.value} onChange={() => handleVisibilityChange(opt.value)} disabled={saving} />
+                  <span className="text-[15px] text-ink-700">{opt.label}</span>
                 </label>
               ))}
             </>
-          ) : tab === 'Privacy' ? (
+          ) : tab === 'Profile' ? (
             <>
-              <p className="text-[15px] font-semibold text-ink-900 mb-4">Visibility</p>
-              <p className="text-[13px] text-ink-500 mb-4">Control who can find and view your profile.</p>
-              {['Discoverable — anyone can find you in search', 'Connection-only — only your connections see full details', 'Private — hidden from search entirely'].map((opt) => (
-                <label key={opt} className="flex items-center gap-3 py-2.5 cursor-pointer">
-                  <input type="radio" name="visibility" defaultChecked={opt.startsWith('Discoverable')} />
-                  <span className="text-[15px] text-ink-700">{opt}</span>
-                </label>
-              ))}
+              <p className="text-[15px] font-semibold text-ink-900 mb-4">Profile</p>
+              <p className="text-[13px] text-ink-500">Display name, headline, and skills are edited from your onboarding flow. Profile completeness: {profile?.completion_score || 0}%.</p>
             </>
           ) : (
-            <p className="text-[15px] text-ink-500">Nothing to configure here yet.</p>
+            <>
+              <p className="text-[15px] font-semibold text-ink-900 mb-4">Account</p>
+              <p className="text-[13px] text-ink-500">Email and password changes aren't available yet.</p>
+            </>
           )}
         </div>
       </div>
