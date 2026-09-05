@@ -47,6 +47,15 @@ function getWorker() {
 async function generateEmbedding(text) {
   if (!text || text.trim().length === 0) return null;
 
+  // Real, immediate bypass: set SKIP_EMBEDDINGS=true in .env to disable
+  // embedding generation entirely (real semantic search/matching falls
+  // back to pure deterministic scoring, already built to handle this
+  // gracefully everywhere). Use this to unblock bulk seeding while the
+  // underlying worker-thread issue on a specific machine is investigated
+  // separately — embeddings are explicitly a non-fatal enhancement, not
+  // a required feature.
+  if (process.env.SKIP_EMBEDDINGS === 'true') return null;
+
   const id = ++requestId;
   const w = getWorker();
 
