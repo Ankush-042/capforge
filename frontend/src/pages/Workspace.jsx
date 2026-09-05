@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, FileText, Scale } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import AvatarRow from '../components/charts/AvatarRow.jsx';
-import { getMyStartups, getWorkspace, createTask, postDiscussion } from '../services/startups.js';
+import { getMyStartups, getWorkspace, createTask, postDiscussion, getWorkspaceFiles, addWorkspaceFile, generateLegalDocument, getLegalDocuments } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 export default function Workspace() {
@@ -11,12 +11,19 @@ export default function Workspace() {
   const [startup, setStartup] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [discussions, setDiscussions] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [legalDocs, setLegalDocs] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [newMessage, setNewMessage] = useState('');
+  const [newFileName, setNewFileName] = useState('');
+  const [newFileUrl, setNewFileUrl] = useState('');
+  const [generatingLegal, setGeneratingLegal] = useState(false);
 
   async function load(startupId) {
-    const { ok, data } = await getWorkspace(startupId);
-    if (ok && data.success) { setTasks(data.tasks); setDiscussions(data.discussions); }
+    const [wsRes, filesRes, legalRes] = await Promise.all([getWorkspace(startupId), getWorkspaceFiles(startupId), getLegalDocuments(startupId)]);
+    if (wsRes.ok && wsRes.data.success) { setTasks(wsRes.data.tasks); setDiscussions(wsRes.data.discussions); }
+    if (filesRes.ok && filesRes.data.success) setFiles(filesRes.data.files);
+    if (legalRes.ok && legalRes.data.success) setLegalDocs(legalRes.data.documents);
   }
 
   useEffect(() => {
@@ -42,6 +49,22 @@ export default function Workspace() {
     else showToast('Could not post.', 'error');
   }
 
+  async function handleAddFile() {
+    if (!newFileName.trim() || !newFileUrl.trim() || !startup) return;
+    const { ok, data } = await addWorkspaceFile(startup.id, { fileName: newFileName, fileUrl: newFileUrl });
+    if (ok && data.success) { setNewFileName(''); setNewFileUrl(''); await load(startup.id); showToast('File attached.'); }
+    else showToast('Could not attach file.', 'error');
+  }
+
+  async function handleGenerateLegal(type) {
+    if (!startup) return;
+    setGeneratingLegal(true);
+    const { ok, data } = await generateLegalDocument(startup.id, type);
+    setGeneratingLegal(false);
+    if (ok && data.success) { await load(startup.id); showToast('Document generated — review with a lawyer before use.'); }
+    else showToast(data.detail || data.error || 'Generation failed.', 'error');
+  }
+
   if (loading) return <Shell title="Workspace"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   return (
@@ -51,7 +74,7 @@ export default function Workspace() {
         <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Workspace</h1>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-6 mb-6">
         <div className="col-span-2 bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <p className="text-[15px] font-semibold text-ink-900 mb-4">Tasks</p>
           <div className="flex gap-2 mb-4">
@@ -77,6 +100,38 @@ export default function Workspace() {
             <div key={d.id} className="mb-3">
               <AvatarRow initial="U" name="Team member" subtitle={new Date(d.created_at).toLocaleDateString()} />
               <p className="text-[13px] text-ink-700 pl-12 mt-1">{d.content}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
+          <p className="text-[15px] font-semibold text-ink-900 mb-4 flex items-center gap-2"><FileText size={16} /> Files</p>
+          <div className="flex gap-2 mb-4">
+            <input value={newFileName} onChange={(e) => setNewFileName(e.target.value)} placeholder="File name" className="flex-1 px-3 py-2 rounded-lg border border-surface-border bg-surface-muted text-[13px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
+            <input value={newFileUrl} onChange={(e) => setNewFileUrl(e.target.value)} placeholder="Link (Drive, Dropbox...)" className="flex-1 px-3 py-2 rounded-lg border border-surface-border bg-surface-muted text-[13px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
+            <button onClick={handleAddFile} className="text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-lg font-medium hover:bg-violet-100 transition-colors">Add</button>
+          </div>
+          {files.length === 0 ? <p className="text-[13px] text-ink-500 py-4 text-center">No files attached yet.</p> : files.map((f) => (
+            <a key={f.id} href={f.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between py-2 border-b border-surface-border last:border-0 hover:text-violet-600 transition-colors">
+              <span className="text-[15px] text-ink-900">{f.file_name}</span>
+              <span className="text-xs text-ink-300">{new Date(f.created_at).toLocaleDateString()}</span>
+            </a>
+          ))}
+        </div>
+
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
+          <p className="text-[15px] font-semibold text-ink-900 mb-4 flex items-center gap-2"><Scale size={16} /> Legal documents</p>
+          <div className="flex gap-2 mb-4">
+            <button onClick={() => handleGenerateLegal('FOUNDERS_AGREEMENT')} disabled={generatingLegal} className="text-xs bg-surface-muted text-ink-700 px-3 py-2 rounded-lg font-medium disabled:opacity-50">Founders Agreement</button>
+            <button onClick={() => handleGenerateLegal('NDA')} disabled={generatingLegal} className="text-xs bg-surface-muted text-ink-700 px-3 py-2 rounded-lg font-medium disabled:opacity-50">NDA</button>
+          </div>
+          <p className="text-[11px] text-ink-300 mb-3">Templates only — not legal advice.</p>
+          {legalDocs.length === 0 ? <p className="text-[13px] text-ink-500 py-4 text-center">No documents generated yet.</p> : legalDocs.map((d) => (
+            <div key={d.id} className="py-2 border-b border-surface-border last:border-0">
+              <p className="text-[15px] text-ink-900">{d.document_type.replace(/_/g, ' ')}</p>
+              <p className="text-xs text-ink-300">{new Date(d.generated_at).toLocaleDateString()}</p>
             </div>
           ))}
         </div>

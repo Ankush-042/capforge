@@ -38,6 +38,7 @@ import StartupDetail from './pages/StartupDetail.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
 import MultiOfferComparison from './pages/MultiOfferComparison.jsx';
 import LearningRecommendations from './pages/LearningRecommendations.jsx';
+import Analytics from './pages/Analytics.jsx';
 import { ToastProvider } from './components/Toast.jsx';
 
 import './styles/index.css';
@@ -100,6 +101,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
         <Route path="/app/contributor/offers" element={<ProtectedRoute><MultiOfferComparison /></ProtectedRoute>} />
         <Route path="/app/contributor/learning" element={<ProtectedRoute><LearningRecommendations /></ProtectedRoute>} />
+        <Route path="/app/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
     </ToastProvider>
