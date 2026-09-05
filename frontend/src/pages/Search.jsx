@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 
 const results = {
@@ -35,9 +36,9 @@ export default function Search() {
           </div>
         ) : tab === 'startups' ? (
           results.startups.map((s) => (
-            <div key={s.name} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0">
+            <Link to="/app/startups/1" key={s.name} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0 hover:bg-surface-muted/50 -mx-1 px-1 rounded-lg transition-colors">
               <div><p className="text-[15px] font-medium text-ink-900">{s.name}</p><p className="text-[13px] text-ink-500">{s.domain} · {s.stage}</p></div>
-            </div>
+            </Link>
           ))
         ) : (
           results.contributors.map((c) => (

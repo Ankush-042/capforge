@@ -32,6 +32,7 @@ import InvestorPortfolio from './pages/InvestorPortfolio.jsx';
 import Search from './pages/Search.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Settings from './pages/Settings.jsx';
+import StartupDetail from './pages/StartupDetail.jsx';
 
 import './styles/index.css';
 
@@ -86,6 +87,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/app/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/app/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/app/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

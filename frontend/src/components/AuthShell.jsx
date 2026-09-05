@@ -16,6 +16,7 @@ export function AuthShell({ mode }) {
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
+  const [role, setRole] = useState('FOUNDER');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
@@ -34,7 +35,7 @@ export function AuthShell({ mode }) {
     setLoading(true);
     const endpoint = isSignUp ? '/auth/register' : '/auth/login';
     const body = isSignUp
-      ? { displayName: name, email, password, primaryRole: 'FOUNDER' }
+      ? { displayName: name, email, password, primaryRole: role }
       : { email, password };
 
     const { ok, data } = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
@@ -50,7 +51,9 @@ export function AuthShell({ mode }) {
     }
 
     localStorage.setItem('capforge_token', data.token);
-    navigate('/app');
+    const userRole = data.user?.primaryRole;
+    const destination = userRole === 'CONTRIBUTOR' ? '/app/contributor' : userRole === 'INVESTOR' ? '/app/investor' : '/app';
+    navigate(destination);
   }
 
   return (
@@ -91,6 +94,19 @@ export function AuthShell({ mode }) {
               <LockKeyhole size={16} className="text-ink-300" />
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <label className="text-xs font-medium text-ink-500 mb-2 block">I am a</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[['FOUNDER', 'Founder'], ['CONTRIBUTOR', 'Contributor'], ['INVESTOR', 'Investor']].map(([value, label]) => (
+                      <button type="button" key={value} onClick={() => setRole(value)}
+                        className={`text-center px-2 py-2.5 rounded-lg border text-[13px] font-medium transition-colors ${role === value ? 'border-forest-500 bg-forest-50 text-forest-700' : 'border-surface-border text-ink-500 hover:bg-surface-muted'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {isSignUp && (
                 <div>
                   <label className="text-xs font-medium text-ink-500 mb-1.5 block">Full name</label>
