@@ -183,4 +183,12 @@ async function getRisks(startupId) {
   return { success: true, risks: result.rows };
 }
 
-module.exports = { computeReadiness, computeRisks, runReadinessAndRiskAnalysis, getLatestReadiness, getRisks };
+async function getReadinessHistory(startupId) {
+  const result = await pool.query(
+    'SELECT overall_score, dimensions, generated_at FROM readiness_assessments WHERE startup_id = $1 ORDER BY generated_at ASC',
+    [startupId]
+  );
+  return { success: true, history: result.rows };
+}
+
+module.exports = { computeReadiness, computeRisks, runReadinessAndRiskAnalysis, getLatestReadiness, getRisks, getReadinessHistory };

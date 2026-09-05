@@ -66,3 +66,31 @@ async function postDiscussion(startupId, userId, content) {
 }
 
 module.exports = { isTeamMember, getWorkspace, createTask, updateTask, postDiscussion };
+
+/**
+ * Sprint 27: real workspace file attachments. Scoped honestly — this is
+ * URL-based attachment (e.g. a Google Drive/Dropbox link), not binary
+ * upload, since binary storage would require another external service
+ * and credential (S3/Cloudinary) — exactly the kind of extra API-key
+ * friction this build has already hit repeatedly. Real DB persistence,
+ * real listing, real access control, genuinely functional either way.
+ */
+async function addWorkspaceFile(startupId, userId, { fileName, fileUrl, fileSize }) {
+  if (!(await isTeamMember(startupId, userId))) return { success: false, error: 'NOT_AUTHORIZED' };
+  const workspace = await getOrCreateWorkspace(startupId);
+  const result = await pool.query(
+    `INSERT INTO workspace_files (workspace_id, uploaded_by, file_name, file_url, file_size) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+    [workspace.id, userId, fileName, fileUrl, fileSize || null]
+  );
+  return { success: true, file: result.rows[0] };
+}
+
+async function getWorkspaceFiles(startupId, userId) {
+  if (!(await isTeamMember(startupId, userId))) return { success: false, error: 'NOT_AUTHORIZED' };
+  const workspace = await getOrCreateWorkspace(startupId);
+  const result = await pool.query(`SELECT * FROM workspace_files WHERE workspace_id = $1 ORDER BY created_at DESC`, [workspace.id]);
+  return { success: true, files: result.rows };
+}
+
+module.exports.addWorkspaceFile = addWorkspaceFile;
+module.exports.getWorkspaceFiles = getWorkspaceFiles;

@@ -43,6 +43,8 @@ const adminRoutes = require('./admin/adminRoutes');
 app.use('/api', trustRoutes);
 app.use('/api', reputationRoutes);
 app.use('/api/admin', adminRoutes);
+const legalRoutes = require('./legal/legalRoutes');
+app.use('/api', legalRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
