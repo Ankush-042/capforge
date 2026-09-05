@@ -115,6 +115,7 @@ async function seedContributors() {
 async function seedInvestors() {
   console.log('\n=== Seeding Investors ===');
   for (const i of INVESTORS) {
+    await sleep(3500); // stay comfortably under the 20 req/min auth rate limit
     const reg = await post('/auth/register', { email: i.email, password: PASSWORD, primaryRole: 'INVESTOR', displayName: i.name });
     if (!reg.ok) { console.log(`  ✗ ${i.name}: registration failed —`, reg.data.error); continue; }
     const token = reg.data.token;
@@ -125,12 +126,17 @@ async function seedInvestors() {
 }
 
 async function run() {
+  const onlyInvestors = process.argv.includes('--investors-only');
   console.log('CapForge Ecosystem Seed — real API calls, real database, real AI structuring.');
-  console.log(`This will take a few minutes (${FOUNDERS.length} AI structuring calls + diagnosis/assessment).`);
-  await seedFounders();
-  await seedContributors();
-  await seedInvestors();
-  console.log('\n=== Done. Ecosystem seeded: 6 founders/startups, 12 contributors, 4 investors. ===');
+  if (onlyInvestors) {
+    await seedInvestors();
+  } else {
+    console.log(`This will take a few minutes (${FOUNDERS.length} AI structuring calls + diagnosis/assessment).`);
+    await seedFounders();
+    await seedContributors();
+    await seedInvestors();
+  }
+  console.log('\n=== Done. ===');
   console.log(`All seed accounts use password: ${PASSWORD}`);
 }
 
