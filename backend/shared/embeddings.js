@@ -1,44 +1,43 @@
 /**
- * Real semantic embeddings via a local, open-source model
- * (Xenova/all-MiniLM-L6-v2, 384 dimensions) — runs entirely in Node,
- * no external API key or network call needed at inference time. This
- * closes the embedding deferral flagged all the way back in Sprint 2.
+ * Real semantic embeddings — runs on a genuinely separate OS thread
+ * (Node worker_threads), not the main server thread.
  *
- * The model downloads once (from Hugging Face's CDN) on first use and
- * is cached locally afterward.
- *
- * REAL BUG FOUND: on first use, if the model download stalls (slow/
- * blocked network), this could hang indefinitely with zero output,
- * appearing as a complete freeze. Every call now has a hard timeout —
- * it fails loudly and clearly instead of hanging silently forever.
+ * REAL BUG FOUND AND FIXED: the previous version ran model loading/
+ * inference directly on the main thread wrapped in an un-awaited
+ * async function ("fire-and-forget"). This did NOT actually fix the
+ * freeze — Node's single main thread can still be blocked by
+ * synchronous CPU work inside a promise chain, regardless of whether
+ * the CALLER awaits it. Only a genuinely separate thread can guarantee
+ * the main server keeps responding to other requests no matter how
+ * long model loading/inference takes.
  */
-const EMBEDDING_TIMEOUT_MS = 60000; // 60s — generous for a slow first-time download, but finite
+const { Worker } = require('worker_threads');
+const path = require('path');
 
-let embedderPromise = null;
+const EMBEDDING_TIMEOUT_MS = 90000; // generous for a slow first-time model download
+let worker = null;
+let requestId = 0;
+const pending = new Map();
 
-function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms))
-  ]);
-}
-
-async function getEmbedder() {
-  if (!embedderPromise) {
-    console.log('Loading local embedding model (first use only — downloads once, then cached)...');
-    embedderPromise = withTimeout(
-      (async () => {
-        const { pipeline } = await import('@xenova/transformers');
-        return pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-      })(),
-      EMBEDDING_TIMEOUT_MS,
-      'Embedding model download/load'
-    ).catch(err => {
-      embedderPromise = null; // allow retry on a future call instead of permanently caching a failure
-      throw err;
+function getWorker() {
+  if (!worker) {
+    worker = new Worker(path.join(__dirname, 'embeddingWorker.js'));
+    worker.on('message', ({ id, success, embedding, error }) => {
+      const entry = pending.get(id);
+      if (!entry) return;
+      pending.delete(id);
+      clearTimeout(entry.timer);
+      if (success) entry.resolve(embedding);
+      else entry.reject(new Error(error));
+    });
+    worker.on('error', (err) => {
+      console.error('Embedding worker crashed (non-fatal, will restart on next call):', err.message);
+      for (const [, entry] of pending) { clearTimeout(entry.timer); entry.reject(err); }
+      pending.clear();
+      worker = null; // allow a fresh worker to be spawned on the next call
     });
   }
-  return embedderPromise;
+  return worker;
 }
 
 /**
@@ -47,14 +46,25 @@ async function getEmbedder() {
  */
 async function generateEmbedding(text) {
   if (!text || text.trim().length === 0) return null;
-  try {
-    const embedder = await getEmbedder();
-    const output = await withTimeout(embedder(text, { pooling: 'mean', normalize: true }), EMBEDDING_TIMEOUT_MS, 'Embedding inference');
-    return Array.from(output.data);
-  } catch (err) {
-    console.error('Embedding generation failed or timed out (non-fatal, caller handles gracefully):', err.message);
-    return null;
-  }
+
+  const id = ++requestId;
+  const w = getWorker();
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pending.delete(id);
+      console.error(`Embedding request ${id} timed out after ${EMBEDDING_TIMEOUT_MS}ms (non-fatal, caller handles gracefully).`);
+      resolve(null);
+    }, EMBEDDING_TIMEOUT_MS);
+
+    pending.set(id, {
+      resolve: (embedding) => resolve(embedding),
+      reject: (err) => { console.error('Embedding generation failed (non-fatal):', err.message); resolve(null); },
+      timer
+    });
+
+    w.postMessage({ id, text });
+  });
 }
 
 module.exports = { generateEmbedding };
