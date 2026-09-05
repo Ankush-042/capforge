@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
-const { searchStartups, searchContributors, searchInvestors, naturalLanguageSearchStartups } = require('./searchService');
+const { searchStartups, searchContributors, searchInvestors, naturalLanguageSearchStartups, semanticSearchStartups } = require('./searchService');
 
 router.get('/startups', requireAuth, async (req, res) => {
   const { domain, stage, role, skill, q } = req.query;
@@ -25,6 +25,15 @@ router.get('/startups/nl', requireAuth, async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ success: false, error: 'MISSING_QUERY' });
   const result = await naturalLanguageSearchStartups(query);
+  res.json(result);
+});
+
+// REAL semantic search — pgvector cosine similarity against real embeddings.
+router.get('/startups/semantic', requireAuth, async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ success: false, error: 'MISSING_QUERY' });
+  const result = await semanticSearchStartups(query, req.user.userId);
+  if (!result.success) return res.status(400).json(result);
   res.json(result);
 });
 

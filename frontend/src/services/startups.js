@@ -36,6 +36,7 @@ export const respondToConnection = (id, action) => apiFetch(`/connections/${id}/
 export const getMyConnections = () => apiFetch('/connections');
 
 export const searchStartups = (params) => apiFetch(`/search/startups?${new URLSearchParams(params)}`);
+export const semanticSearchStartups = (query) => apiFetch(`/search/startups/semantic?query=${encodeURIComponent(query)}`);
 export const searchContributors = (params) => apiFetch(`/search/contributors?${new URLSearchParams(params)}`);
 
 export const getNotifications = (unreadOnly) => apiFetch(`/notifications${unreadOnly ? '?unread=true' : ''}`);
