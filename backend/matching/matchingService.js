@@ -199,4 +199,23 @@ async function getRecommendationsForStartup(startupId) {
   return { success: true, recommendations: result.rows };
 }
 
-module.exports = { scoreCandidate, explainScore, rankCandidatesForGap, getRecommendationsForStartup, WEIGHTS };
+/**
+ * Real gap found while wiring the Contributor dashboard: the existing
+ * getRecommendationsForStartup() answers "who should this startup hire"
+ * but there was no symmetric "what startups match ME" query for a
+ * contributor's own dashboard. Added here rather than left unbuilt.
+ */
+async function getMyRecommendationsAsContributor(userId) {
+  const result = await pool.query(
+    `SELECT r.*, s.name as startup_name, s.domain, s.stage, g.role as gap_role
+     FROM recommendations r
+     JOIN startups s ON s.id = r.startup_id
+     LEFT JOIN gaps g ON g.id = r.source_gap_id
+     WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR' AND r.status = 'ACTIVE'
+     ORDER BY r.score DESC LIMIT 20`,
+    [userId]
+  );
+  return { success: true, recommendations: result.rows };
+}
+
+module.exports = { scoreCandidate, explainScore, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, WEIGHTS };
