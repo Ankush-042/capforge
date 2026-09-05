@@ -20,4 +20,12 @@ router.patch('/read-all', requireAuth, async (req, res) => {
   res.json(result);
 });
 
+const { getPreferences, updatePreferences } = require('./notificationPreferencesService');
+router.get('/preferences', requireAuth, async (req, res) => res.json(await getPreferences(req.user.userId)));
+router.patch('/preferences', requireAuth, async (req, res) => {
+  const result = await updatePreferences(req.user.userId, req.body);
+  if (!result.success) return res.status(400).json(result);
+  res.json(result);
+});
+
 module.exports = router;

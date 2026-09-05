@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
-const { runReadinessAndRiskAnalysis, getLatestReadiness, getRisks } = require('./readinessService');
+const { runReadinessAndRiskAnalysis, getLatestReadiness, getRisks, getReadinessHistory } = require('./readinessService');
 const pool = require('../shared/db');
 
 async function assertOwnership(startupId, userId) {
@@ -38,3 +38,9 @@ router.get('/startups/:id/risks', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+
+router.get('/startups/:id/readiness-history', requireAuth, async (req, res) => {
+  const own = await assertOwnership(req.params.id, req.user.userId);
+  if (!own.ok) return res.status(own.code).json({ error: own.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
+  res.json(await getReadinessHistory(req.params.id));
+});

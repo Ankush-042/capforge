@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
-const { getWorkspace, createTask, updateTask, postDiscussion } = require('./workspaceService');
+const { getWorkspace, createTask, updateTask, postDiscussion, addWorkspaceFile, getWorkspaceFiles } = require('./workspaceService');
 
 router.get('/startups/:id/workspace', requireAuth, async (req, res) => {
   const result = await getWorkspace(req.params.id, req.user.userId);
@@ -29,3 +29,15 @@ router.post('/startups/:id/workspace/discussions', requireAuth, async (req, res)
 });
 
 module.exports = router;
+
+router.get('/startups/:id/workspace/files', requireAuth, async (req, res) => {
+  const result = await getWorkspaceFiles(req.params.id, req.user.userId);
+  if (!result.success) return res.status(result.error === 'NOT_AUTHORIZED' ? 403 : 400).json(result);
+  res.json(result);
+});
+
+router.post('/startups/:id/workspace/files', requireAuth, async (req, res) => {
+  const result = await addWorkspaceFile(req.params.id, req.user.userId, req.body);
+  if (!result.success) return res.status(result.error === 'NOT_AUTHORIZED' ? 403 : 400).json(result);
+  res.status(201).json(result);
+});
