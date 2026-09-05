@@ -20,6 +20,16 @@ import CompetitorAnalysis from './pages/CompetitorAnalysis.jsx';
 import EquityCalculator from './pages/EquityCalculator.jsx';
 import Workspace from './pages/Workspace.jsx';
 
+import ContributorDashboard from './pages/ContributorDashboard.jsx';
+import ContributorOpportunities from './pages/ContributorOpportunities.jsx';
+import SkillDemand from './pages/SkillDemand.jsx';
+import ContributorEquityAsk from './pages/ContributorEquityAsk.jsx';
+import Connections from './pages/Connections.jsx';
+
+import InvestorDashboard from './pages/InvestorDashboard.jsx';
+import InvestorDealFlow from './pages/InvestorDealFlow.jsx';
+import InvestorPortfolio from './pages/InvestorPortfolio.jsx';
+
 import './styles/index.css';
 
 /**
@@ -28,6 +38,10 @@ import './styles/index.css';
  * routes. Every authenticated app screen lives under /app/* and is
  * wrapped in ProtectedRoute — an unauthenticated visitor can no longer
  * land on the dashboard by accident.
+ *
+ * Sprint 20: Contributor (/app/contributor/*) and Investor
+ * (/app/investor/*) routes added, each rendering their own persona-aware
+ * Shell nav.
  */
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -38,7 +52,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/sign-in" element={<SignIn />} />
         <Route path="/sign-up" element={<SignUp />} />
 
-        {/* Authenticated app */}
+        {/* Authenticated app — Founder */}
         <Route path="/app/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/app" element={<ProtectedRoute><FounderDashboard /></ProtectedRoute>} />
         <Route path="/app/gaps" element={<ProtectedRoute><GapDashboard /></ProtectedRoute>} />
@@ -51,6 +65,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/competitors" element={<ProtectedRoute><CompetitorAnalysis /></ProtectedRoute>} />
         <Route path="/app/equity" element={<ProtectedRoute><EquityCalculator /></ProtectedRoute>} />
         <Route path="/app/workspace" element={<ProtectedRoute><Workspace /></ProtectedRoute>} />
+
+        {/* Authenticated app — Contributor */}
+        <Route path="/app/contributor" element={<ProtectedRoute><ContributorDashboard /></ProtectedRoute>} />
+        <Route path="/app/contributor/opportunities" element={<ProtectedRoute><ContributorOpportunities /></ProtectedRoute>} />
+        <Route path="/app/contributor/skill-demand" element={<ProtectedRoute><SkillDemand /></ProtectedRoute>} />
+        <Route path="/app/contributor/equity-ask" element={<ProtectedRoute><ContributorEquityAsk /></ProtectedRoute>} />
+        <Route path="/app/contributor/connections" element={<ProtectedRoute><Connections persona="CONTRIBUTOR" /></ProtectedRoute>} />
+
+        {/* Authenticated app — Investor */}
+        <Route path="/app/investor" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
+        <Route path="/app/investor/deal-flow" element={<ProtectedRoute><InvestorDealFlow /></ProtectedRoute>} />
+        <Route path="/app/investor/portfolio" element={<ProtectedRoute><InvestorPortfolio /></ProtectedRoute>} />
+        <Route path="/app/investor/connections" element={<ProtectedRoute><Connections persona="INVESTOR" /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

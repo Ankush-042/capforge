@@ -2,22 +2,43 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 /**
- * App shell — sidebar per the Vercel dashboard reference: team/workspace
- * switcher up top, a real search input, gray active-state nav fill,
- * nested items get a chevron. Nav items are real router links (Sprint 19).
+ * App shell — persona-aware sidebar (Sprint 20). Same Vercel-style nav
+ * pattern, now switching its item set and identity block by persona
+ * instead of being hardcoded to Founder only.
  */
 
-const NAV = [
-  { label: 'Dashboard', icon: '▦', path: '/app' },
-  { label: 'Gaps', icon: '◈', path: '/app/gaps', nested: true },
-  { label: 'Team', icon: '◎', path: '/app/team' },
-  { label: 'Readiness', icon: '◒', path: '/app/readiness' },
-  { label: 'Risk', icon: '◑', path: '/app/risk' },
-  { label: 'Milestones', icon: '◇', path: '/app/milestones' },
-  { label: 'Competitors', icon: '◌', path: '/app/competitors' },
-  { label: 'Equity', icon: '◍', path: '/app/equity' },
-  { label: 'Workspace', icon: '◫', path: '/app/workspace' },
-];
+const NAV_BY_PERSONA = {
+  FOUNDER: [
+    { label: 'Dashboard', icon: '▦', path: '/app' },
+    { label: 'Gaps', icon: '◈', path: '/app/gaps', nested: true },
+    { label: 'Team', icon: '◎', path: '/app/team' },
+    { label: 'Readiness', icon: '◒', path: '/app/readiness' },
+    { label: 'Risk', icon: '◑', path: '/app/risk' },
+    { label: 'Milestones', icon: '◇', path: '/app/milestones' },
+    { label: 'Competitors', icon: '◌', path: '/app/competitors' },
+    { label: 'Equity', icon: '◍', path: '/app/equity' },
+    { label: 'Workspace', icon: '◫', path: '/app/workspace' },
+  ],
+  CONTRIBUTOR: [
+    { label: 'Dashboard', icon: '▦', path: '/app/contributor' },
+    { label: 'Opportunities', icon: '◈', path: '/app/contributor/opportunities' },
+    { label: 'Skill Demand', icon: '◒', path: '/app/contributor/skill-demand' },
+    { label: 'Equity Ask', icon: '◍', path: '/app/contributor/equity-ask' },
+    { label: 'Connections', icon: '◐', path: '/app/contributor/connections' },
+  ],
+  INVESTOR: [
+    { label: 'Dashboard', icon: '▦', path: '/app/investor' },
+    { label: 'Deal Flow', icon: '◈', path: '/app/investor/deal-flow' },
+    { label: 'Portfolio', icon: '◫', path: '/app/investor/portfolio' },
+    { label: 'Connections', icon: '◐', path: '/app/investor/connections' },
+  ],
+};
+
+const IDENTITY_BY_PERSONA = {
+  FOUNDER: { name: 'Founder', gradient: 'from-amber-500 to-rose-500', initial: 'F' },
+  CONTRIBUTOR: { name: 'Priya Data', gradient: 'from-blue-500 to-violet-500', initial: 'P' },
+  INVESTOR: { name: 'Raj Capital', gradient: 'from-mint-500 to-blue-500', initial: 'R' },
+};
 
 function NavItem({ label, icon, path, active, nested }) {
   return (
@@ -35,16 +56,20 @@ function NavItem({ label, icon, path, active, nested }) {
   );
 }
 
-export default function Shell({ children, title, subtitle }) {
+export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }) {
   const location = useLocation();
+  const NAV = NAV_BY_PERSONA[persona];
+  const identity = IDENTITY_BY_PERSONA[persona];
+  const homePath = NAV[0].path;
+
   return (
     <div className="app-shell min-h-screen bg-canvas flex">
       <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500" />
-            <span className="text-[15px] font-semibold text-ink-900 tracking-tight">FoodSense2</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-500 font-medium">Founder</span>
+            <span className="text-[15px] font-semibold text-ink-900 tracking-tight">CapForge</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-500 font-medium">{identity.name.split(' ')[0]}</span>
           </span>
           <span className="text-ink-300 text-xs">⌄</span>
         </button>
@@ -59,14 +84,14 @@ export default function Shell({ children, title, subtitle }) {
         </div>
 
         <nav className="space-y-0.5">
-          {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== '/app' && location.pathname.startsWith(n.path))} />)}
+          {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== homePath && location.pathname.startsWith(n.path))} />)}
         </nav>
 
         <div className="mt-auto pt-4 flex items-center gap-3 border-t border-surface-border">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-sm font-medium text-white">F</div>
+          <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${identity.gradient} flex items-center justify-center text-sm font-medium text-white`}>{identity.initial}</div>
           <div>
-            <p className="text-[15px] font-medium text-ink-900">Founder</p>
-            <p className="text-xs text-ink-300">test@test.com</p>
+            <p className="text-[15px] font-medium text-ink-900">{identity.name}</p>
+            <p className="text-xs text-ink-300">{persona.charAt(0) + persona.slice(1).toLowerCase()}</p>
           </div>
         </div>
       </aside>
