@@ -132,10 +132,12 @@ async function analyzeStartup(founderId, startupId) {
   d.business_model = normalizeArray(d.business_model);
   d.technology_requirements = normalizeArray(d.technology_requirements);
   d.risks = normalizeArray(d.risks);
+  const VALID_SEEKING_TYPES = ['CO_FOUNDER', 'CORE_HIRE', 'CONTRACTOR', 'ADVISOR'];
   if (Array.isArray(d.role_requirements)) {
     d.role_requirements = d.role_requirements.map(r => ({
       role: r.role, // role names stay as-is for display; matching already normalizes via normalizeRole()
-      skills: normalizeArray(r.skills)
+      skills: normalizeArray(r.skills),
+      seeking_type: VALID_SEEKING_TYPES.includes(r.seeking_type) ? r.seeking_type : 'CORE_HIRE'
     }));
   }
   const updateResult = await pool.query(

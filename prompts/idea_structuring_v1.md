@@ -25,7 +25,7 @@ Your job is to extract a structured representation of the venture. You must:
   "business_model": string[],
   "stage": "Idea" | "Prototype" | "MVP" | "Early Traction" | "Unclear",
   "role_requirements": [
-    { "role": string, "skills": string[] }
+    { "role": string, "skills": string[], "seeking_type": "CO_FOUNDER" | "CORE_HIRE" | "CONTRACTOR" | "ADVISOR" }
   ],
   "technology_requirements": string[],
   "risks": string[],
@@ -39,6 +39,12 @@ Your job is to extract a structured representation of the venture. You must:
 }
 
 `role_requirements` is a list of the distinct roles this venture needs, each paired with ONLY the skills specifically relevant to that role — do not repeat unrelated skills across roles. For example, a "Backend Engineer" role should list backend-relevant skills (e.g. "Node.js", "PostgreSQL"), not marketing or design skills, even if the venture needs those elsewhere. This pairing is critical — it is used downstream to calculate exactly how well each specific role is covered by the current team, so vague or cross-contaminated skill lists will produce incorrect results.
+
+For `seeking_type`, infer from context rather than defaulting blindly:
+- "CO_FOUNDER": a foundational, high-stakes, long-term role central to the venture's direction (e.g. a technical co-founder for a solo non-technical founder). Use sparingly — most ventures need at most 1-2 of these.
+- "CORE_HIRE": an important ongoing role that isn't founder-level (most roles should default here if unclear).
+- "CONTRACTOR": explicitly temporary, project-based, or short-term work.
+- "ADVISOR": guidance/expertise without hands-on execution.
 
 `clarification_needed` should list specific questions worth asking the founder if key information was missing or ambiguous. Empty array if the idea was clear enough.
 

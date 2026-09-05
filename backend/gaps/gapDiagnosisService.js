@@ -109,6 +109,7 @@ function diagnoseGaps(roleRequirements, teamMembers) {
     gaps.push({
       role,
       required_skills: roleSkills,
+      seeking_type: req.seeking_type || 'CORE_HIRE',
       priority_score: priorityScore,
       priority_level: priorityLevel,
       coverage: Math.round(coverage * 100) / 100,
@@ -149,9 +150,9 @@ async function runGapDiagnosis(startupId) {
     const inserted = [];
     for (const g of gaps) {
       const r = await client.query(
-        `INSERT INTO gaps (startup_id, role, required_skills, priority_score, priority_level, coverage, reason, evidence, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-        [startupId, g.role, g.required_skills, g.priority_score, g.priority_level, g.coverage, g.reason, JSON.stringify(g.evidence), g.status]
+        `INSERT INTO gaps (startup_id, role, required_skills, seeking_type, priority_score, priority_level, coverage, reason, evidence, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [startupId, g.role, g.required_skills, g.seeking_type, g.priority_score, g.priority_level, g.coverage, g.reason, JSON.stringify(g.evidence), g.status]
       );
       inserted.push(r.rows[0]);
     }

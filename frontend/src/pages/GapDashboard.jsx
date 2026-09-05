@@ -20,6 +20,7 @@ function GapRow({ gap, startupId }) {
           </div>
           <p className="text-[11px] text-ink-300 mt-1">{Math.round(gap.coverage * 100)}% covered</p>
         </div>
+        {gap.seeking_type === 'CO_FOUNDER' && <Badge label="Co-founder search" priority="CO_FOUNDER" />}
         <Badge label={gap.priority_level} priority={gap.priority_level} />
       </div>
     </Link>
