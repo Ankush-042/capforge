@@ -33,12 +33,22 @@ async function run() {
 
     const startupsRes = await fetch(`${BASE}/startups/mine`, { headers: { Authorization: `Bearer ${token}` } });
     const startupsData = await startupsRes.json();
-    if (!startupsData.success || startupsData.startups.length === 0) continue;
+    if (!startupsData.success || startupsData.startups.length === 0) {
+      console.log(`  ✗ ${email}: no startups found — success=${startupsData.success}, count=${startupsData.startups?.length}, raw=${JSON.stringify(startupsData).slice(0, 150)}`);
+      continue;
+    }
     const startup = startupsData.startups[0];
 
     const gapsRes = await fetch(`${BASE}/startups/${startup.id}/gaps`, { headers: { Authorization: `Bearer ${token}` } });
     const gapsData = await gapsRes.json();
-    if (!gapsData.success) continue;
+    if (!gapsData.success) {
+      console.log(`  ✗ ${startup.name}: gap fetch failed — ${JSON.stringify(gapsData).slice(0, 150)}`);
+      continue;
+    }
+    if (gapsData.gaps.length === 0) {
+      console.log(`  ⚠ ${startup.name}: zero gaps found (was diagnosis run during seeding?)`);
+      continue;
+    }
 
     for (const gap of gapsData.gaps) {
       if (gap.status === 'FILLED') continue;
