@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor } = require('./matchingService');
+const { getMultiOfferComparison, getLearningRecommendations } = require('./multiOfferService');
 const pool = require('../shared/db');
 
 async function assertOwnership(startupId, userId) {
@@ -38,5 +39,8 @@ router.get('/recommendations/mine', requireAuth, async (req, res) => {
   const result = await getMyRecommendationsAsContributor(req.user.userId);
   res.json(result);
 });
+
+router.get('/offers/compare', requireAuth, async (req, res) => res.json(await getMultiOfferComparison(req.user.userId)));
+router.get('/learning-recommendations', requireAuth, async (req, res) => res.json(await getLearningRecommendations(req.user.userId)));
 
 module.exports = router;
