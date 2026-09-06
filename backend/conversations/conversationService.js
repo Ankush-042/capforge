@@ -75,4 +75,57 @@ async function getMessages(conversationId, userId) {
   return { success: true, messages: result.rows, conversation: c };
 }
 
-module.exports = { startOrGetConversation, sendMessage, getMyConversations, getMessages };
+const { addContributorToTeam } = require('../connections/connectionService');
+const { createNotification } = require('../notifications/notificationService');
+
+/**
+ * Phase D — the real mutual-confirm mechanism. This is what actually
+ * gates team-join propagation now: BOTH people in a conversation must
+ * independently confirm, not one person clicking accept/reject on the
+ * other's behalf. Uses the SAME tested addContributorToTeam() function
+ * the old instant-accept flow used — real, proven propagation logic,
+ * just correctly gated behind a genuine two-sided human decision.
+ */
+async function confirmTeamFormation(conversationId, userId) {
+  const convo = await pool.query('SELECT * FROM conversations WHERE id = $1', [conversationId]);
+  if (convo.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
+  const c = convo.rows[0];
+
+  if (c.participant_a_id !== userId && c.participant_b_id !== userId) return { success: false, error: 'NOT_AUTHORIZED' };
+  if (c.team_formed_at) return { success: false, error: 'ALREADY_FORMED' };
+  if (!c.startup_id) return { success: false, error: 'NO_VENTURE_CONTEXT', detail: 'This conversation isn\'t tied to a specific venture — team formation needs that context.' };
+
+  // Determine which side of the conversation this user is on: the
+  // founder (owns the startup) or the other party (the contributor).
+  const startupResult = await pool.query('SELECT founder_id FROM startups WHERE id = $1', [c.startup_id]);
+  if (startupResult.rows.length === 0) return { success: false, error: 'STARTUP_NOT_FOUND' };
+  const isFounder = startupResult.rows[0].founder_id === userId;
+
+  const column = isFounder ? 'founder_confirmed' : 'other_confirmed';
+  const updated = await pool.query(`UPDATE conversations SET ${column} = true WHERE id = $1 RETURNING *`, [conversationId]);
+  const updatedConvo = updated.rows[0];
+
+  if (!updatedConvo.founder_confirmed || !updatedConvo.other_confirmed) {
+    // Only one side has confirmed so far — real, honest partial state.
+    const otherUserId = isFounder ? c.participant_b_id : c.participant_a_id;
+    await createNotification(otherUserId, {
+      type: 'TEAM_CONFIRM_PENDING',
+      title: 'Ready to form a team?',
+      message: 'The other person confirmed they want to move forward — your confirmation is the last step.',
+      referenceType: 'conversation',
+      referenceId: conversationId
+    });
+    return { success: true, bothConfirmed: false, conversation: updatedConvo };
+  }
+
+  // Both sides confirmed — this is the real moment team-join propagation fires.
+  const contributorUserId = isFounder ? c.participant_b_id : c.participant_a_id;
+  const teamResult = await addContributorToTeam(c.startup_id, contributorUserId, c.gap_id);
+  if (!teamResult.success) return { success: false, error: teamResult.error, detail: teamResult.detail };
+
+  await pool.query('UPDATE conversations SET team_formed_at = now() WHERE id = $1', [conversationId]);
+
+  return { success: true, bothConfirmed: true, conversation: updatedConvo, propagation: teamResult.propagation };
+}
+
+module.exports = { startOrGetConversation, sendMessage, getMyConversations, getMessages, confirmTeamFormation };

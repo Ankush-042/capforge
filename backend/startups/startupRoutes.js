@@ -6,8 +6,8 @@ const { createStartup, analyzeStartup, confirmStartup, getStartup, listMyStartup
 
 // SRS §13: only founders create startups.
 router.post('/', requireAuth, requireRole('FOUNDER'), aiEndpointLimit, async (req, res) => {
-  const { name, rawIdea, currentTeamSize, fundingRaised, fundingStage, targetTimeline, equityOfferedRange, founderDomainExpertise, founderPriorExperience, dpiitRecognized, cityTier } = req.body;
-  const result = await createStartup(req.user.userId, { name, rawIdea, currentTeamSize, fundingRaised, fundingStage, targetTimeline, equityOfferedRange, founderDomainExpertise, founderPriorExperience, dpiitRecognized, cityTier });
+  const { name, rawIdea, currentTeamSize, fundingRaised, fundingStage, targetTimeline, equityOfferedRange, founderDomainExpertise, founderPriorExperience, dpiitRecognized, cityTier, founderVision } = req.body;
+  const result = await createStartup(req.user.userId, { name, rawIdea, currentTeamSize, fundingRaised, fundingStage, targetTimeline, equityOfferedRange, founderDomainExpertise, founderPriorExperience, dpiitRecognized, cityTier, founderVision });
   if (!result.success) return res.status(400).json(result);
   res.status(201).json(result);
 });
