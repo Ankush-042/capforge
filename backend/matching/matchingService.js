@@ -286,7 +286,7 @@ async function getRecommendationsForStartup(startupId) {
  */
 async function getMyRecommendationsAsContributor(userId) {
   const result = await pool.query(
-    `SELECT r.*, s.name as startup_name, s.domain, s.stage, g.role as gap_role, g.reason as gap_reason
+    `SELECT r.*, s.name as startup_name, s.domain, s.stage, s.founder_id, g.role as gap_role, g.reason as gap_reason
      FROM recommendations r
      JOIN startups s ON s.id = r.startup_id
      LEFT JOIN gaps g ON g.id = r.source_gap_id
