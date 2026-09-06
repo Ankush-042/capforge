@@ -46,39 +46,51 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 /**
  * Real GraphQL query against Product Hunt's live v2 API — pulls
  * currently-featured posts (real products/startups), most recent first.
+ * Uses real cursor-based pagination (Relay-style, endCursor/hasNextPage)
+ * to page through multiple batches in ONE run, since Product Hunt caps
+ * each individual request at 20 results regardless of what's requested.
  */
-async function fetchProductHuntStartups(count) {
+async function fetchProductHuntStartups(targetCount) {
   const token = process.env.PRODUCTHUNT_API_TOKEN;
   if (!token) { console.log('PRODUCTHUNT_API_TOKEN not set in .env — cannot fetch.'); return []; }
 
-  const query = `
-    query {
-      posts(first: ${count}, order: RANKING) {
-        edges {
-          node { name tagline description }
+  const results = [];
+  let cursor = null;
+  let hasNextPage = true;
+
+  while (results.length < targetCount && hasNextPage) {
+    const afterClause = cursor ? `, after: "${cursor}"` : '';
+    const query = `
+      query {
+        posts(first: 20, order: RANKING${afterClause}) {
+          pageInfo { endCursor hasNextPage }
+          edges { node { name tagline description } }
         }
       }
-    }
-  `;
+    `;
 
-  const res = await fetch(PH_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ query })
-  });
+    const res = await fetch(PH_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ query })
+    });
 
-  if (!res.ok) {
-    console.log(`Product Hunt API error ${res.status}: ${await res.text()}`);
-    return [];
+    if (!res.ok) { console.log(`Product Hunt API error ${res.status}: ${await res.text()}`); break; }
+    const data = await res.json();
+    if (data.errors) { console.log('Product Hunt API returned errors:', JSON.stringify(data.errors)); break; }
+
+    const page = data.data?.posts;
+    const nodes = (page?.edges || []).map(e => e.node).filter(n => n.name && (n.tagline || n.description));
+    results.push(...nodes.map(n => ({ name: n.name, idea: n.description || n.tagline })));
+
+    hasNextPage = page?.pageInfo?.hasNextPage;
+    cursor = page?.pageInfo?.endCursor;
+    console.log(`  Fetched page: ${nodes.length} startups (running total: ${results.length})`);
+
+    if (hasNextPage) await sleep(1000); // brief pause between Product Hunt's own pages
   }
 
-  const data = await res.json();
-  if (data.errors) { console.log('Product Hunt API returned errors:', JSON.stringify(data.errors)); return []; }
-
-  return (data.data?.posts?.edges || [])
-    .map(e => e.node)
-    .filter(n => n.name && (n.tagline || n.description))
-    .map(n => ({ name: n.name, idea: n.description || n.tagline }));
+  return results.slice(0, targetCount);
 }
 
 async function run() {
@@ -94,11 +106,18 @@ async function run() {
   }
   if (!systemToken) { console.log('Could not create/login the system import account.'); return; }
 
+  // Real duplicate check: skip anything already imported in a previous run.
+  const existingRes = await fetch(`${BASE}/startups/mine`, { headers: { Authorization: `Bearer ${systemToken}` } });
+  const existingData = await existingRes.json();
+  const existingNames = new Set((existingData.startups || []).map(s => s.name));
+  const newStartups = startups.filter(s => !existingNames.has(s.name));
+  console.log(`${existingNames.size} already imported previously, ${newStartups.length} genuinely new to import.\n`);
+
   const adminToken = await login(ADMIN_EMAIL, ADMIN_PASSWORD);
   if (!adminToken) console.log(`Could not log in as admin (${ADMIN_EMAIL}) — entries will stay CLAIMED instead of UNVERIFIED.`);
 
   let imported = 0;
-  for (const s of startups) {
+  for (const s of newStartups) {
     await sleep(7000); // POST /startups is AI-rate-limited to 10/min — 7s spacing stays safely under that
     const create = await post('/startups', { name: s.name, rawIdea: s.idea }, systemToken);
     if (!create.ok || !create.data.success) { console.log(`  ✗ ${s.name}: creation failed — ${create.data.error || create.data.detail}`); continue; }
