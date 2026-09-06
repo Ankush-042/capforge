@@ -1,8 +1,8 @@
 import React from 'react';
 import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 
-const PRIORITY_COLOR = { CRITICAL: '#E15C4D', HIGH: '#F0A84E', MEDIUM: '#E0C64B', LOW: '#3FB081' };
-const PRIORITY_BG = { CRITICAL: '#FDEEF0', HIGH: '#FEF3E8', MEDIUM: '#FFF9E8', LOW: '#EAF7F0' };
+const PRIORITY_COLOR = { CRITICAL: '#E15C4D', HIGH: '#2563EB', MEDIUM: '#E0C64B', LOW: '#3FB081' };
+const PRIORITY_BG = { CRITICAL: '#FDEEF0', HIGH: '#EAF1FE', MEDIUM: '#FFF9E8', LOW: '#EAF7F0' };
 
 /**
  * Real replacement for the bar-chart-with-ghost-boxes treatment,
