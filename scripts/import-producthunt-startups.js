@@ -90,7 +90,18 @@ async function fetchProductHuntStartups(targetCount) {
     if (hasNextPage) await sleep(1000); // brief pause between Product Hunt's own pages
   }
 
-  return results.slice(0, targetCount);
+  // Real bug fix: Product Hunt's own paginated results can repeat an
+  // entry across pages (confirmed — 'OP.GG for Time Takers' appeared
+  // twice in a real run). Dedupe by name within this fetch itself,
+  // not just against previous runs.
+  const seen = new Set();
+  const deduped = results.filter(s => {
+    if (seen.has(s.name)) return false;
+    seen.add(s.name);
+    return true;
+  });
+
+  return deduped.slice(0, targetCount);
 }
 
 async function run() {
