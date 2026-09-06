@@ -14,10 +14,19 @@ async function getVentureSummary(startupId) {
   if (startupResult.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
   const startup = startupResult.rows[0];
 
-  const [readinessResult, risksResult, gapsResult] = await Promise.all([
+  const [readinessResult, risksResult, gapsResult, coInvestorsResult] = await Promise.all([
     getLatestReadiness(startupId),
     getRisks(startupId),
-    pool.query('SELECT priority_level, status FROM gaps WHERE startup_id = $1', [startupId])
+    pool.query('SELECT priority_level, status FROM gaps WHERE startup_id = $1', [startupId]),
+    // Phase F — real co-investment visibility: other investors who have
+    // ACTUALLY connected with this venture, not a fabricated "interest" count.
+    pool.query(
+      `SELECT p.display_name, p.headline
+       FROM connections c
+       JOIN profiles p ON p.user_id = c.sender_id
+       WHERE c.startup_id = $1 AND c.type = 'FOUNDER_INVESTOR' AND c.status = 'ACCEPTED'`,
+      [startupId]
+    )
   ]);
 
   const gaps = gapsResult.rows;
@@ -49,7 +58,8 @@ async function getVentureSummary(startupId) {
         roles_open: gaps.length - filledCount,
         open_by_priority: gapCounts
       },
-      generated_at: new Date().toISOString()
+      generated_at: new Date().toISOString(),
+      co_investors: coInvestorsResult.rows
     }
   };
 }

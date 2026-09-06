@@ -4,8 +4,8 @@ const { requireAuth } = require('../auth/authMiddleware');
 const { searchStartups, searchContributors, searchInvestors, naturalLanguageSearchStartups, semanticSearchStartups } = require('./searchService');
 
 router.get('/startups', requireAuth, async (req, res) => {
-  const { domain, stage, role, skill, q } = req.query;
-  const result = await searchStartups({ domain, stage, role, skill, q }, req.user.userId);
+  const { domain, stage, fundingStage, role, skill, q } = req.query;
+  const result = await searchStartups({ domain, stage, fundingStage, role, skill, q }, req.user.userId);
   res.json(result);
 });
 
