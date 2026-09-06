@@ -3,10 +3,10 @@ import { useMyPersona } from '../hooks/useMyPersona.js';
 import { SlidersHorizontal } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { getMyProfile, updateBaseProfile, getNotificationPreferences, updateNotificationPreferences } from '../services/startups.js';
+import { getMyProfile, updateBaseProfile, getNotificationPreferences, updateNotificationPreferences, getMyProfileViews } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
-const CATEGORIES = ['Account', 'Profile', 'Notifications', 'Privacy'];
+const CATEGORIES = ['Account', 'Profile', 'Profile Views', 'Notifications', 'Privacy'];
 const VISIBILITY_OPTIONS = [
   { value: 'DISCOVERABLE', label: 'Discoverable — anyone can find you in search' },
   { value: 'CONNECTIONS_ONLY', label: 'Connections only — only your connections see full details' },
@@ -19,11 +19,13 @@ export default function Settings() {
   const [tab, setTab] = useState('Account');
   const [profile, setProfile] = useState(null);
   const [prefs, setPrefs] = useState(null);
+  const [profileViews, setProfileViews] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getMyProfile().then(({ ok, data }) => { if (ok && data.success) setProfile(data.profile); });
     getNotificationPreferences().then(({ ok, data }) => { if (ok && data.success) setPrefs(data.preferences); });
+    getMyProfileViews().then(({ ok, data }) => { if (ok && data.success) setProfileViews(data); });
   }, []);
 
   async function handlePrefToggle(key) {
@@ -55,7 +57,23 @@ export default function Settings() {
           ))}
         </div>
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
-          {tab === 'Notifications' ? (
+          {tab === 'Profile Views' ? (
+            <>
+              <p className="text-[15px] font-semibold text-ink-900 mb-1">Who viewed your profile</p>
+              <p className="text-[13px] text-ink-500 mb-4">{profileViews ? `${profileViews.totalCount} total real views` : 'Loading…'}</p>
+              {profileViews?.views.length === 0 ? (
+                <p className="text-[13px] text-ink-500 py-6 text-center">No profile views yet.</p>
+              ) : profileViews?.views.map((v, i) => (
+                <div key={i} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0">
+                  <div>
+                    <p className="text-[15px] text-ink-900">{v.display_name}</p>
+                    <p className="text-[13px] text-ink-500">{v.headline} · {v.primary_role}</p>
+                  </div>
+                  <span className="text-xs text-ink-300">{new Date(v.viewed_at).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </>
+          ) : tab === 'Notifications' ? (
             <>
               <p className="text-[15px] font-semibold text-ink-900 mb-4">Notification preferences</p>
               {!prefs ? <p className="text-[13px] text-ink-500">Loading…</p> : [
