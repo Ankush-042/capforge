@@ -57,7 +57,7 @@ async function getMyProfile(userId, role) {
     await pool.query('UPDATE profiles SET completion_score = $1, updated_at = now() WHERE id = $2', [completeness, profile.id]);
   }
 
-  return { success: true, profile: { ...profile, completion_score: completeness }, roleProfile };
+  return { success: true, profile: { ...profile, completion_score: completeness, primary_role: role }, roleProfile };
 }
 
 async function updateBaseProfile(userId, updates) {

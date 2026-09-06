@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useMyPersona } from '../hooks/useMyPersona.js';
 import { SlidersHorizontal } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -13,6 +14,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export default function Settings() {
+  const persona = useMyPersona();
   const showToast = useToast();
   const [tab, setTab] = useState('Account');
   const [profile, setProfile] = useState(null);
@@ -41,7 +43,7 @@ export default function Settings() {
   }
 
   return (
-    <Shell title="Settings">
+    <Shell persona={persona} title="Settings">
       <PageHeader icon={SlidersHorizontal} iconBg="bg-blue-50" iconColor="text-blue-500" title="Settings" />
       <div className="grid grid-cols-[200px_1fr] gap-6">
         <div className="space-y-1">

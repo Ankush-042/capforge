@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useMyPersona } from '../hooks/useMyPersona.js';
 import { Link } from 'react-router-dom';
 import { SearchIcon, Sparkles } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
@@ -6,6 +7,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import { searchStartups, searchContributors, semanticSearchStartups } from '../services/startups.js';
 
 export default function Search() {
+  const persona = useMyPersona();
   const [tab, setTab] = useState('startups');
   const [mode, setMode] = useState('keyword'); // 'keyword' | 'semantic'
   const [query, setQuery] = useState('');
@@ -32,7 +34,7 @@ export default function Search() {
   }
 
   return (
-    <Shell title="Search" subtitle="Real, live results">
+    <Shell persona={persona} title="Search" subtitle="Real, live results">
       <PageHeader icon={SearchIcon} iconBg="bg-violet-50" iconColor="text-violet-600" title="Search" subtitle="Real, live results" />
 
       <div className="relative mb-4">

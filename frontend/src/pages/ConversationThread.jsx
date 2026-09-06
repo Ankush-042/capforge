@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useMyPersona } from '../hooks/useMyPersona.js';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
@@ -6,6 +7,7 @@ import { getConversationMessages, sendMessage, getMyProfile } from '../services/
 import { useToast } from '../components/Toast.jsx';
 
 export default function ConversationThread() {
+  const persona = useMyPersona();
   const { id } = useParams();
   const navigate = useNavigate();
   const showToast = useToast();
@@ -35,10 +37,10 @@ export default function ConversationThread() {
     else showToast(data.error || 'Could not send message.', 'error');
   }
 
-  if (loading) return <Shell title="Conversation"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell persona={persona} title="Conversation"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   return (
-    <Shell title="Conversation">
+    <Shell persona={persona} title="Conversation">
       <button onClick={() => navigate('/app/inbox')} className="flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 mb-4 transition-colors">
         <ArrowLeft size={14} /> Back to inbox
       </button>

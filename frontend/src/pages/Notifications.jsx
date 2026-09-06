@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useMyPersona } from '../hooks/useMyPersona.js';
 import { Bell } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -16,6 +17,7 @@ function groupByDay(notifications) {
 }
 
 export default function Notifications() {
+  const persona = useMyPersona();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
 
@@ -35,12 +37,12 @@ export default function Notifications() {
     if (!n.is_read) { await markNotificationRead(n.id); await load(); }
   }
 
-  if (loading) return <Shell title="Notifications"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell persona={persona} title="Notifications"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   const groups = groupByDay(items);
 
   return (
-    <Shell title="Notifications">
+    <Shell persona={persona} title="Notifications">
       <PageHeader icon={Bell} iconBg="bg-amber-50" iconColor="text-amber-500" title="Notifications"
         action={<button onClick={markAllRead} className="text-xs text-violet-600 font-medium hover:text-violet-700 transition-colors">Mark all read</button>} />
       {items.length === 0 ? (

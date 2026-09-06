@@ -202,6 +202,14 @@ async function rankCandidatesForGap(gapId) {
   const startupResult = await pool.query('SELECT * FROM startups WHERE id = $1', [gap.startup_id]);
   const startup = startupResult.rows[0];
 
+  // Real fix for a confirmed bug: unclaimed/imported startups (verification_status
+  // = UNVERIFIED, owned by the system-import account) have no real, responsive
+  // founder — recommending a contributor message one is a genuine dead end, not
+  // an actionable match. Skip ranking entirely for these.
+  if (startup.verification_status === 'UNVERIFIED') {
+    return { success: true, recommendations: [], skipped: 'STARTUP_NOT_CLAIMED' };
+  }
+
   // Hard filters: must be a CONTRIBUTOR, profile must be discoverable,
   // and must not already be on this startup's team.
   // Phase 2: real semantic similarity via pgvector cosine distance,
