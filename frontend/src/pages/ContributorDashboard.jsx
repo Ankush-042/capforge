@@ -44,13 +44,13 @@ export default function ContributorDashboard() {
         {recs.length === 0 ? (
           <p className="text-[13px] text-ink-500 py-6 text-center">No recommendations yet — a founder needs to rank candidates for a gap that matches you.</p>
         ) : recs.slice(0, 5).map((r) => (
-          <div key={r.id} className="flex items-center justify-between py-4 border-b border-surface-border last:border-0">
+          <Link to={`/app/startups/${r.startup_id}`} key={r.id} className="hover-lift flex items-center justify-between py-4 border-b border-surface-border last:border-0 hover:bg-surface-muted/50 transition-colors -mx-1 px-1 rounded-lg">
             <div>
               <p className="text-[15px] font-medium text-ink-900">{r.startup_name}</p>
               <p className="text-[13px] text-ink-500">{(r.domain || []).join(', ')} · needs {r.gap_role}</p>
             </div>
             <span className="text-sm font-medium text-violet-600">{Math.round(r.score * 100)}%</span>
-          </div>
+          </Link>
         ))}
       </div>
     </Shell>
