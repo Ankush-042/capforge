@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Compass } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { getMyRecommendationsAsContributor, sendConnection } from '../services/startups.js';
+import { getMyRecommendationsAsContributor, startConversation } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 export default function ContributorOpportunities() {
+  const navigate = useNavigate();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [recs, setRecs] = useState([]);
@@ -18,7 +20,9 @@ export default function ContributorOpportunities() {
   }, []);
 
   async function handleInterest(r) {
-    showToast('Interest expressed — the founder will be notified when they view your candidacy.');
+    const { ok, data } = await startConversation(r.founder_id, { startupId: r.startup_id, gapId: r.source_gap_id });
+    if (ok && data.success) navigate(`/app/inbox/${data.conversation.id}`);
+    else showToast(data.error || 'Could not start a conversation.', 'error');
   }
 
   if (loading) return <Shell persona="CONTRIBUTOR" title="Opportunities"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
@@ -50,7 +54,7 @@ export default function ContributorOpportunities() {
                 {(r.explanation?.limitations || []).map((s) => <p key={s} className="text-[13px] text-amber-500 flex gap-1.5 mt-1"><span>△</span>{s}</p>)}
               </div>
               <button onClick={() => handleInterest(r)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">
-                Express interest
+                Message the founder
               </button>
             </div>
           ))}

@@ -45,6 +45,8 @@ app.use('/api', reputationRoutes);
 app.use('/api/admin', adminRoutes);
 const legalRoutes = require('./legal/legalRoutes');
 app.use('/api', legalRoutes);
+const conversationRoutes = require('./conversations/conversationRoutes');
+app.use('/api', conversationRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

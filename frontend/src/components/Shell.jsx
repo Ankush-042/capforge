@@ -11,6 +11,7 @@ import CommandPalette from './CommandPalette.jsx';
 const NAV_BY_PERSONA = {
   FOUNDER: [
     { label: 'Dashboard', icon: '▦', path: '/app' },
+    { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Gaps', icon: '◈', path: '/app/gaps', nested: true },
     { label: 'Team', icon: '◎', path: '/app/team' },
     { label: 'Readiness', icon: '◒', path: '/app/readiness' },
@@ -24,6 +25,7 @@ const NAV_BY_PERSONA = {
   ],
   CONTRIBUTOR: [
     { label: 'Dashboard', icon: '▦', path: '/app/contributor' },
+    { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Opportunities', icon: '◈', path: '/app/contributor/opportunities' },
     { label: 'Compare offers', icon: '◎', path: '/app/contributor/offers' },
     { label: 'Skill Demand', icon: '◒', path: '/app/contributor/skill-demand' },
@@ -33,6 +35,7 @@ const NAV_BY_PERSONA = {
   ],
   INVESTOR: [
     { label: 'Dashboard', icon: '▦', path: '/app/investor' },
+    { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Deal Flow', icon: '◈', path: '/app/investor/deal-flow' },
     { label: 'Portfolio', icon: '◫', path: '/app/investor/portfolio' },
     { label: 'Connections', icon: '◐', path: '/app/investor/connections' },

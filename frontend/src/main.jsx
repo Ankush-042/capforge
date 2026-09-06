@@ -40,6 +40,8 @@ import MultiOfferComparison from './pages/MultiOfferComparison.jsx';
 import LearningRecommendations from './pages/LearningRecommendations.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Investability from './pages/Investability.jsx';
+import Inbox from './pages/Inbox.jsx';
+import ConversationThread from './pages/ConversationThread.jsx';
 import { ToastProvider } from './components/Toast.jsx';
 
 import './styles/index.css';
@@ -104,6 +106,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/contributor/learning" element={<ProtectedRoute><LearningRecommendations /></ProtectedRoute>} />
         <Route path="/app/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
         <Route path="/app/investability" element={<ProtectedRoute><Investability /></ProtectedRoute>} />
+        <Route path="/app/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
+        <Route path="/app/inbox/:id" element={<ProtectedRoute><ConversationThread /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
     </ToastProvider>
