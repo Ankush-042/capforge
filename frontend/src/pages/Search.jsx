@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SearchIcon, Sparkles } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { searchStartups, searchContributors, semanticSearchStartups } from '../services/startups.js';
 
 export default function Search() {
@@ -32,7 +33,7 @@ export default function Search() {
 
   return (
     <Shell title="Search" subtitle="Real, live results">
-      <div className="mb-6"><h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Search</h1></div>
+      <PageHeader icon={SearchIcon} iconBg="bg-violet-50" iconColor="text-violet-600" title="Search" subtitle="Real, live results" />
 
       <div className="relative mb-4">
         <SearchIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-300" />

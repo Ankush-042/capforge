@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { getMyProfile, updateBaseProfile, getNotificationPreferences, updateNotificationPreferences } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -40,7 +42,7 @@ export default function Settings() {
 
   return (
     <Shell title="Settings">
-      <div className="mb-6"><h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Settings</h1></div>
+      <PageHeader icon={SlidersHorizontal} iconBg="bg-blue-50" iconColor="text-blue-500" title="Settings" />
       <div className="grid grid-cols-[200px_1fr] gap-6">
         <div className="space-y-1">
           {CATEGORIES.map((c) => (

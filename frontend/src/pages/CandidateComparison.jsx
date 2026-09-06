@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Scale } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { rankCandidates, sendConnection } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -32,7 +34,7 @@ export default function CandidateComparison() {
 
   return (
     <Shell title="Compare candidates" subtitle="Real ranked results">
-      <div className="mb-6"><h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Compare candidates</h1></div>
+      <PageHeader icon={Scale} iconBg="bg-blue-50" iconColor="text-blue-500" title="Compare candidates" subtitle="Real ranked results" />
       {candidates.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">
           <p className="text-[15px] text-ink-500">No candidates ranked yet for this gap.</p>

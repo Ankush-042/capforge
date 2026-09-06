@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Building2 } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import VentureSummaryCard from '../components/VentureSummaryCard.jsx';
 import { getStartup, getVentureSummary } from '../services/startups.js';
 
@@ -25,10 +27,7 @@ export default function StartupDetail() {
 
   return (
     <Shell title={startup.name} subtitle="Startup profile">
-      <div className="mb-6">
-        <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">{startup.name}</h1>
-        <p className="text-sm text-ink-500 mt-1">{(startup.domain || []).join(', ')} · {startup.stage} stage · {startup.visibility}</p>
-      </div>
+      <PageHeader icon={Building2} iconBg="bg-violet-50" iconColor="text-violet-600" title={startup.name} subtitle={`${(startup.domain || []).join(', ')} · ${startup.stage} stage · ${startup.visibility}`} />
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 bg-surface rounded-xl border border-surface-border shadow-card p-7">

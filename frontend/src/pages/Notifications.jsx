@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Bell } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../services/startups.js';
 
 function groupByDay(notifications) {
@@ -38,10 +40,8 @@ export default function Notifications() {
 
   return (
     <Shell title="Notifications">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Notifications</h1>
-        <button onClick={markAllRead} className="text-xs text-violet-600 font-medium hover:text-violet-700 transition-colors">Mark all read</button>
-      </div>
+      <PageHeader icon={Bell} iconBg="bg-amber-50" iconColor="text-amber-500" title="Notifications"
+        action={<button onClick={markAllRead} className="text-xs text-violet-600 font-medium hover:text-violet-700 transition-colors">Mark all read</button>} />
       {items.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">
           <p className="text-[15px] text-ink-500">No notifications yet.</p>
