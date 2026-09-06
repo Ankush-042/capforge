@@ -246,3 +246,93 @@ Methodology pipeline (4 steps, explicit): Structure idea -> venture profile. Dia
 2. Readiness computes 7 dimensions (Team/Problem/Solution/Market/Execution/Technical/Business), not the 4 explicitly named in the PPT (team composition/market positioning/product readiness/funding readiness) — funding readiness has no dedicated scored dimension anywhere.
 3. No unified "diagnosis-backed venture summary" artifact exists — the exact side-by-side-comparable, same-4-dimensions-every-venture object Objective 3 requires. Investor views are currently scattered across separate screens/components.
 4. Objective 4 (repeat-run consistency validation) has never been tested — a real, stated, falsifiable success criterion with zero evidence either way.
+
+## LOCKED: The Real Core-Loop Rebuild — Stringent Execution Plan
+Superseding all prior incremental UI work. Every item below must be
+REAL and DYNAMIC (live backend data, real user actions with real
+consequences) — zero static/dummy content anywhere, verified per
+screen before considered done.
+
+### The confirmed real flow (source of truth for every subsequent decision)
+FOUNDER: describe idea -> AI structures it (as a moment, not a form
+response) -> dashboard as NARRATIVE (one sharp insight, not a stat
+grid) -> sharpest gap surfaces a real rich candidate profile -> Express
+Interest -> REAL CONVERSATION opens -> if it clicks, mutual "Form Team"
+confirmation -> THEN real propagation fires (team updates, gaps/
+readiness recalculate, framed as a story: "you went from 31 to 58
+because Sara joined") -> once a real readiness bar is crossed, venture
+becomes investor-facing with real, current, search-grounded AI
+advisory (not static internal scoring alone).
+
+CONTRIBUTOR: real profile (skills/portfolio/availability) -> dashboard
+surfaces ventures BECAUSE of what this person specifically brings
+(causal narrative first) -> real rich venture profile -> Express
+Interest -> real conversation with the founder -> mutual confirm ->
+joins team -> real propagation.
+
+INVESTOR: real thesis -> deal flow filtered to ventures past a real
+readiness/team-formed threshold -> REAL DELIBERATE SEARCH by domain/
+stage/ticket-size (not just passive algorithmic feed) -> real unified
+venture summary + real search-grounded market advisory -> real
+conversation with the founder, more formal than founder-contributor
+chat but still substantive, not a bare accept/reject.
+
+### Phase A — Design Foundation (MANDATORY FIRST, before any other code)
+- Read ui-ux-pro-max, frontend-design, design-taste-frontend skills in
+  full before writing a single new component
+- Establish one real, coherent design system (tokens/type scale/color
+  system) from that guidance, replacing ad-hoc incremental choices
+- Rebuild the Dashboard as narrative, not a stat grid — this is the
+  reference screen for the new bar, same gate discipline as the
+  original Sprint 17 approval process (nothing else proceeds until
+  this is approved)
+
+### Phase B — Real Chat/Messaging (the single biggest missing piece)
+Real conversations + messages tables, tied to an interest/connection
+record. Real inbox (list of active conversations), real message
+thread UI, real send/receive.
+
+### Phase C — Real Rich Profile Pages
+Contributor profile: real bio, portfolio/work-sample link, skills with
+proficiency — something to actually evaluate, not a name + score row.
+Startup profile: founder's real vision narrative, not just problem/
+solution paragraphs.
+
+### Phase D — Real Interest -> Conversation -> Mutual Confirm -> Team-Join Funnel
+Replaces today's instant accept/reject entirely. Express Interest opens
+a real conversation. A new explicit "Form Team" mutual-confirm action
+(both sides) is what actually triggers team-join propagation — not a
+single click.
+
+### Phase E — Founder-Side Fixes
+- Fix the startups[0] assumption broken across every screen — real
+  multi-venture support
+- Add real founder-initiated contributor search/browse (not just
+  receiving gap-ranked candidates passively)
+- Real "who viewed your profile" signal
+
+### Phase F — Investor-Side Additions
+- REAL deliberate search/filter by domain, stage, ticket size,
+  readiness threshold (explicit user request, locked)
+- Real saved-search/alert mechanism
+- Real co-investment/syndicate visibility (named in the original plan,
+  never built)
+
+### Phase G — Notifications Overhaul
+New real notification types matching the new flow: interest expressed,
+new message received, mutual confirm needed, team formed.
+
+### Phase H — Curation/Selectivity Signal
+Some real mechanism working against "instant unmoderated access to
+everything" — the actual source of platforms feeling exclusive/YC-like.
+
+### Phase I — Fix the 4 confirmed real bugs found via direct inspection
+1. StartupDetail has no Connect/Express-Interest action at all
+2. Every Dashboard stat card/chart is non-clickable decoration
+3. Dashboard shows bare readiness numbers with zero explanation
+4. Workspace's file section doesn't communicate it's link-based, not
+   real upload
+
+### Phase J — Final Validation
+Full walkthrough, screen by screen, confirming zero static/dummy
+content remains anywhere in the product.
