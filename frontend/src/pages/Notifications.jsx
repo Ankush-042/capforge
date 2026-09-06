@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../services/startups.js';
 
 function groupByDay(notifications) {
@@ -44,7 +45,7 @@ export default function Notifications() {
         action={<button onClick={markAllRead} className="text-xs text-violet-600 font-medium hover:text-violet-700 transition-colors">Mark all read</button>} />
       {items.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">
-          <p className="text-[15px] text-ink-500">No notifications yet.</p>
+          <EmptyState icon={Bell} message="No notifications yet." />
         </div>
       ) : Object.entries(groups).map(([g, list]) => list.length > 0 && (
         <div key={g} className="mb-6">
