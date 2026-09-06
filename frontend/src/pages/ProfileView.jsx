@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ExternalLink, MessageCircle, Briefcase, MapPin } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
@@ -13,6 +13,7 @@ import { useToast } from '../components/Toast.jsx';
  */
 export default function ProfileView() {
   const { userId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const persona = useMyPersona();
   const showToast = useToast();
@@ -30,7 +31,9 @@ export default function ProfileView() {
   }, [userId]);
 
   async function handleMessage() {
-    const { ok, data } = await startConversation(userId, {});
+    const startupId = searchParams.get('startupId') || undefined;
+    const gapId = searchParams.get('gapId') || undefined;
+    const { ok, data } = await startConversation(userId, { startupId, gapId });
     if (ok && data.success) navigate(`/app/inbox/${data.conversation.id}`);
     else showToast(data.error || 'Could not start a conversation.', 'error');
   }

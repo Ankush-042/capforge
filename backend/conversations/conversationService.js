@@ -20,7 +20,21 @@ async function startOrGetConversation(userId, otherUserId, { startupId, gapId } 
      LIMIT 1`,
     [userId, otherUserId]
   );
-  if (existing.rows.length > 0) return { success: true, conversation: existing.rows[0], isNew: false };
+  if (existing.rows.length > 0) {
+    const existingConvo = existing.rows[0];
+    // Real fix: if this conversation was started before it had any real
+    // venture context (e.g. via the ProfileView bug where 'Message'
+    // passed nothing), and real context is now available, backfill it
+    // rather than leaving the conversation permanently context-less.
+    if (!existingConvo.startup_id && startupId) {
+      const updated = await pool.query(
+        `UPDATE conversations SET startup_id = $1, gap_id = $2 WHERE id = $3 RETURNING *`,
+        [startupId, gapId || null, existingConvo.id]
+      );
+      return { success: true, conversation: updated.rows[0], isNew: false };
+    }
+    return { success: true, conversation: existingConvo, isNew: false };
+  }
 
   const result = await pool.query(
     `INSERT INTO conversations (participant_a_id, participant_b_id, startup_id, gap_id) VALUES ($1, $2, $3, $4) RETURNING *`,
