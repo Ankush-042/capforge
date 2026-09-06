@@ -31,6 +31,12 @@ export default function StartupDetail() {
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 bg-surface rounded-xl border border-surface-border shadow-card p-7">
+          {startup.founder_vision && (
+            <div className="mb-6 bg-violet-50 rounded-lg p-5">
+              <p className="text-[13px] font-medium text-violet-700 mb-1.5">The founder's vision — in their own words</p>
+              <p className="text-[15px] text-ink-700 leading-relaxed italic">"{startup.founder_vision}"</p>
+            </div>
+          )}
           <p className="text-[15px] font-semibold text-ink-900 mb-2">Problem</p>
           <p className="text-[15px] text-ink-700 leading-relaxed mb-5">{startup.problem}</p>
           <p className="text-[15px] font-semibold text-ink-900 mb-2">Solution</p>
