@@ -145,6 +145,20 @@ async function runGapDiagnosis(startupId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    // Real fix for a confirmed bug: source_gap_id uses ON DELETE SET NULL
+    // (intentionally preserves recommendation history rather than
+    // destroying records), but nothing was marking those orphaned
+    // recommendations as no-longer-valid — they stayed ACTIVE and were
+    // shown to real contributors with a broken blank role name.
+    // Expire them explicitly, in the same transaction, before the gaps
+    // that back them are deleted.
+    await client.query(
+      `UPDATE recommendations SET status = 'EXPIRED'
+       WHERE status = 'ACTIVE' AND source_gap_id IN (SELECT id FROM gaps WHERE startup_id = $1)`,
+      [startupId]
+    );
+
     await client.query('DELETE FROM gaps WHERE startup_id = $1', [startupId]);
 
     const inserted = [];

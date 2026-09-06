@@ -293,14 +293,23 @@ async function getRecommendationsForStartup(startupId) {
  * contributor's own dashboard. Added here rather than left unbuilt.
  */
 async function getMyRecommendationsAsContributor(userId) {
+  // Real fix, per direct question: not every technically-ranked gap
+  // should be shown as an "opportunity" — a genuine minimum-relevance
+  // threshold matters. 0.20 was chosen from actual score distribution:
+  // matches with real skill/domain/stage overlap score 0.24+ in this
+  // engine; 0.17-tier matches had ZERO overlap on every dimension
+  // except a nonzero experienceFit — noise, not a real opportunity.
+  const MIN_RELEVANCE_SCORE = 0.20;
+
   const result = await pool.query(
     `SELECT r.*, s.name as startup_name, s.domain, s.stage, s.founder_id, g.role as gap_role, g.reason as gap_reason
      FROM recommendations r
      JOIN startups s ON s.id = r.startup_id
-     LEFT JOIN gaps g ON g.id = r.source_gap_id
+     JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR' AND r.status = 'ACTIVE'
+       AND r.score >= $2
      ORDER BY r.score DESC LIMIT 20`,
-    [userId]
+    [userId, MIN_RELEVANCE_SCORE]
   );
   const withNarrative = result.rows.map(r => ({
     ...r,
