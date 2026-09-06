@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Percent } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getMyStartups, calculateEquity } from '../services/startups.js';
+import { calculateEquity } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 export default function EquityCalculator() {
+  const { activeStartup } = useActiveStartup();
   const showToast = useToast();
   const [startup, setStartup] = useState(null);
   const [role, setRole] = useState('CTO');
@@ -16,8 +18,8 @@ export default function EquityCalculator() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getMyStartups().then(({ ok, data }) => { if (ok && data.success && data.startups.length > 0) setStartup(data.startups[0]); });
-  }, []);
+    if (activeStartup) setStartup(activeStartup);
+  }, [activeStartup]);
 
   async function handleCalculate() {
     setLoading(true);

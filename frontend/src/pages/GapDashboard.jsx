@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Target, RefreshCw } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import Badge from '../components/charts/Badge.jsx';
-import { getMyStartups, getGaps, diagnoseGaps } from '../services/startups.js';
+import { getGaps, diagnoseGaps } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 function GapRow({ gap, startupId }) {
@@ -28,6 +29,7 @@ function GapRow({ gap, startupId }) {
 }
 
 export default function GapDashboard() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [diagnosing, setDiagnosing] = useState(false);
   const [startup, setStartup] = useState(null);
@@ -40,15 +42,15 @@ export default function GapDashboard() {
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) {
-        setStartup(data.startups[0]);
-        await loadGaps(data.startups[0].id);
+      if (startupLoading) return;
+      if (activeStartup) {
+        setStartup(activeStartup);
+        await loadGaps(activeStartup.id);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   const showToast = useToast();
 

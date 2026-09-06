@@ -2,25 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import Badge from '../components/charts/Badge.jsx';
-import { getMyStartups, getRisks } from '../services/startups.js';
+import { getRisks } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 export default function RiskPage() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [startup, setStartup] = useState(null);
   const [risks, setRisks] = useState([]);
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) {
-        setStartup(data.startups[0]);
-        const risksRes = await getRisks(data.startups[0].id);
+      if (startupLoading) return;
+      if (activeStartup) {
+        setStartup(activeStartup);
+        const risksRes = await getRisks(activeStartup.id);
         if (risksRes.ok && risksRes.data.success) setRisks(risksRes.data.risks);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   if (loading) return <Shell title="Risk"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 

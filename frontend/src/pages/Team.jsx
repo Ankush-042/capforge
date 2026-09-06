@@ -4,11 +4,13 @@ import Shell from '../components/Shell.jsx';
 import AvatarRow from '../components/charts/AvatarRow.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { Users2 } from 'lucide-react';
-import { getMyStartups, getTeamMembers, getGaps } from '../services/startups.js';
+import { getTeamMembers, getGaps } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 const GRADIENTS = ['from-amber-500 to-rose-500', 'from-blue-500 to-violet-500', 'from-mint-500 to-blue-500', 'from-violet-500 to-rose-500'];
 
 export default function Team() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [openGaps, setOpenGaps] = useState([]);
@@ -16,9 +18,9 @@ export default function Team() {
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (!ok || !data.success || data.startups.length === 0) { setLoading(false); return; }
-      const s = data.startups[0];
+      if (startupLoading) return;
+      if (!activeStartup) { setLoading(false); return; }
+      const s = activeStartup;
       setStartup(s);
       const [teamRes, gapsRes] = await Promise.all([getTeamMembers(s.id), getGaps(s.id)]);
       if (teamRes.ok && teamRes.data.success) setMembers(teamRes.data.members);
@@ -26,7 +28,7 @@ export default function Team() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   if (loading) return <Shell title="Team"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 

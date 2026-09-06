@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BarChart3, ShieldCheck } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getMyStartups, getReadinessHistory } from '../services/startups.js';
+import { getReadinessHistory } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 /**
  * Phase 5 — makes Objective 4 (consistency validation) a real, visible
@@ -37,16 +38,17 @@ function ConsistencySignal({ history }) {
 }
 
 export default function Analytics() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [startup, setStartup] = useState(null);
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) {
-        setStartup(data.startups[0]);
-        const histRes = await getReadinessHistory(data.startups[0].id);
+      if (startupLoading) return;
+      if (activeStartup) {
+        setStartup(activeStartup);
+        const histRes = await getReadinessHistory(activeStartup.id);
         if (histRes.ok && histRes.data.success) {
           setHistory(histRes.data.history.map((h, i) => ({ point: `#${i + 1}`, score: Math.round(h.overall_score), date: new Date(h.generated_at).toLocaleDateString() })));
         }
@@ -54,7 +56,7 @@ export default function Analytics() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   if (loading) return <Shell title="Analytics"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 

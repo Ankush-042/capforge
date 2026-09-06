@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import CommandPalette from './CommandPalette.jsx';
+import StartupSwitcher from './StartupSwitcher.jsx';
 
 /**
  * App shell — persona-aware sidebar (Sprint 20). Same Vercel-style nav
@@ -100,6 +101,7 @@ export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-ink-300 border border-surface-border rounded px-1.5">⌘K</span>
         </button>
 
+        {persona === 'FOUNDER' && <StartupSwitcher />}
         <nav className="space-y-0.5">
           {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== homePath && location.pathname.startsWith(n.path))} />)}
         </nav>
