@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { Percent } from 'lucide-react';
 import { calculateEquity } from '../services/startups.js';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 export default function ContributorEquityAsk() {
@@ -26,10 +28,7 @@ export default function ContributorEquityAsk() {
 
   return (
     <Shell persona="CONTRIBUTOR" title="Equity ask calculator">
-      <div className="mb-6">
-        <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Equity ask calculator</h1>
-        <p className="text-sm text-ink-500 mt-1">Negotiation guidance — not a guaranteed market rate.</p>
-      </div>
+      <PageHeader icon={Percent} iconBg="bg-mint-50" iconColor="text-mint-500" title="Equity ask calculator" subtitle="Negotiation guidance — not a guaranteed market rate." />
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <p className="text-[15px] font-semibold text-ink-900 mb-5">Your inputs</p>

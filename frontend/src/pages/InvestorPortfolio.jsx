@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { PieChart } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import DonutChart from '../components/charts/DonutChart.jsx';
 import { getPortfolioAnalysis } from '../services/startups.js';
 
@@ -23,10 +25,7 @@ export default function InvestorPortfolio() {
 
   return (
     <Shell persona="INVESTOR" title="Portfolio">
-      <div className="mb-6">
-        <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Portfolio</h1>
-        <p className="text-sm text-ink-500 mt-1">{portfolio?.count || 0} real accepted connections — built from your actual activity, not sample data.</p>
-      </div>
+      <PageHeader icon={PieChart} iconBg="bg-violet-50" iconColor="text-violet-600" title="Portfolio" subtitle={`${portfolio?.count || 0} real accepted connections — built from your actual activity, not sample data.`} />
 
       {(!portfolio || portfolio.count === 0) ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { TrendingUp } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { getSkillDemand } from '../services/startups.js';
 
 const DEMAND_COLOR = { HIGH: 'text-signal-critical', MEDIUM: 'text-signal-medium', LOW: 'text-signal-low' };
@@ -21,10 +23,7 @@ export default function SkillDemand() {
 
   return (
     <Shell persona="CONTRIBUTOR" title="Skill demand">
-      <div className="mb-6">
-        <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Skills in demand</h1>
-        <p className="text-sm text-ink-500 mt-1">Aggregated from real, currently-open startup gaps across the platform.</p>
-      </div>
+      <PageHeader icon={TrendingUp} iconBg="bg-mint-50" iconColor="text-mint-500" title="Skills in demand" subtitle="Aggregated from real, currently-open startup gaps across the platform." />
       {skills.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">
           <p className="text-[15px] text-ink-500">No open gaps on the platform yet to aggregate demand from.</p>

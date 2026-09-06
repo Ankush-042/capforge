@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Compass } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { getMyRecommendationsAsContributor, sendConnection } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -23,10 +25,7 @@ export default function ContributorOpportunities() {
 
   return (
     <Shell persona="CONTRIBUTOR" title="Opportunities">
-      <div className="mb-6">
-        <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Opportunities</h1>
-        <p className="text-sm text-ink-500 mt-1">Ranked by real fit — not a generic search list.</p>
-      </div>
+      <PageHeader icon={Compass} iconBg="bg-violet-50" iconColor="text-violet-600" title="Opportunities" subtitle="Ranked by real fit — not a generic search list." />
       {recs.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">
           <p className="text-[15px] text-ink-500">No opportunities yet. Complete your profile with real skills to be considered for open gaps.</p>
