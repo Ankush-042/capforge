@@ -20,7 +20,7 @@
  */
 const pool = require('../shared/db');
 
-async function searchStartups({ domain, stage, role, skill, q }, requestingUserId) {
+async function searchStartups({ domain, stage, fundingStage, role, skill, q }, requestingUserId) {
   const conditions = [`(status = 'ACTIVE' AND visibility = 'DISCOVERABLE')`];
   const params = [];
   let i = 1;
@@ -41,6 +41,11 @@ async function searchStartups({ domain, stage, role, skill, q }, requestingUserI
   if (stage) {
     conditions.push(`LOWER(stage) = LOWER($${i})`);
     params.push(stage);
+    i++;
+  }
+  if (fundingStage) {
+    conditions.push(`LOWER(funding_stage) = LOWER($${i})`);
+    params.push(fundingStage);
     i++;
   }
   if (role) {

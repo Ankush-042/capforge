@@ -47,6 +47,8 @@ const legalRoutes = require('./legal/legalRoutes');
 app.use('/api', legalRoutes);
 const conversationRoutes = require('./conversations/conversationRoutes');
 app.use('/api', conversationRoutes);
+const savedSearchRoutes = require('./savedsearches/savedSearchRoutes');
+app.use('/api', savedSearchRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
