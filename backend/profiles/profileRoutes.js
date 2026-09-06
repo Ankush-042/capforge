@@ -40,7 +40,29 @@ router.get('/:userId', requireAuth, async (req, res) => {
   if (result.profile.visibility !== 'DISCOVERABLE' && req.params.userId !== req.user.userId) {
     return res.status(403).json({ success: false, error: 'PROFILE_NOT_DISCOVERABLE' });
   }
+
+  // Phase E — real "who viewed your profile" signal. Fire-and-forget:
+  // never blocks or fails the actual profile response.
+  if (req.params.userId !== req.user.userId) {
+    pool.query('INSERT INTO profile_views (viewer_id, viewed_user_id) VALUES ($1, $2)', [req.user.userId, req.params.userId])
+      .catch(err => console.error('Profile view logging failed (non-fatal):', err.message));
+  }
+
   res.json(result);
+});
+
+router.get('/me/views', requireAuth, async (req, res) => {
+  const result = await pool.query(
+    `SELECT pv.viewed_at, p.display_name, p.headline, u.primary_role
+     FROM profile_views pv
+     JOIN users u ON u.id = pv.viewer_id
+     JOIN profiles p ON p.user_id = pv.viewer_id
+     WHERE pv.viewed_user_id = $1
+     ORDER BY pv.viewed_at DESC LIMIT 20`,
+    [req.user.userId]
+  );
+  const countResult = await pool.query('SELECT COUNT(*) FROM profile_views WHERE viewed_user_id = $1', [req.user.userId]);
+  res.json({ success: true, views: result.rows, totalCount: parseInt(countResult.rows[0].count) });
 });
 
 router.patch('/me', requireAuth, async (req, res) => {
