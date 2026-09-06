@@ -114,11 +114,11 @@ async function upsertContributorProfile(userId, data) {
   if (profileResult.rows.length === 0) return { success: false, error: 'PROFILE_NOT_FOUND' };
   const profileId = profileResult.rows[0].id;
 
-  const { availability, commitmentType, preferredStage, preferredDomains, experienceYears, equityPreference, portfolioUrl } = data;
+  const { availability, commitmentType, preferredStage, preferredDomains, experienceYears, equityPreference, portfolioUrl, lookingFor } = data;
 
   const result = await pool.query(
-    `INSERT INTO contributor_profiles (profile_id, availability, commitment_type, preferred_stage, preferred_domains, experience_years, equity_preference, portfolio_url)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO contributor_profiles (profile_id, availability, commitment_type, preferred_stage, preferred_domains, experience_years, equity_preference, portfolio_url, looking_for)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      ON CONFLICT (profile_id) DO UPDATE SET
        availability = EXCLUDED.availability,
        commitment_type = EXCLUDED.commitment_type,
@@ -126,9 +126,10 @@ async function upsertContributorProfile(userId, data) {
        preferred_domains = EXCLUDED.preferred_domains,
        experience_years = EXCLUDED.experience_years,
        equity_preference = EXCLUDED.equity_preference,
-       portfolio_url = EXCLUDED.portfolio_url
+       portfolio_url = EXCLUDED.portfolio_url,
+       looking_for = EXCLUDED.looking_for
      RETURNING *`,
-    [profileId, availability, commitmentType, preferredStage || [], preferredDomains || [], experienceYears, equityPreference, portfolioUrl]
+    [profileId, availability, commitmentType, preferredStage || [], preferredDomains || [], experienceYears, equityPreference, portfolioUrl, lookingFor || null]
   );
   return { success: true, contributorProfile: result.rows[0] };
 }

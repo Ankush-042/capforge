@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
-const { startOrGetConversation, sendMessage, getMyConversations, getMessages } = require('./conversationService');
+const { startOrGetConversation, sendMessage, getMyConversations, getMessages, confirmTeamFormation } = require('./conversationService');
 
 router.post('/conversations', requireAuth, async (req, res) => {
   const { otherUserId, startupId, gapId } = req.body;
@@ -25,6 +25,12 @@ router.post('/conversations/:id/messages', requireAuth, async (req, res) => {
   const result = await sendMessage(req.params.id, req.user.userId, req.body.content);
   if (!result.success) return res.status(result.error === 'NOT_AUTHORIZED' ? 403 : 400).json(result);
   res.status(201).json(result);
+});
+
+router.post('/conversations/:id/confirm-team', requireAuth, async (req, res) => {
+  const result = await confirmTeamFormation(req.params.id, req.user.userId);
+  if (!result.success) return res.status(result.error === 'NOT_AUTHORIZED' ? 403 : 400).json(result);
+  res.json(result);
 });
 
 module.exports = router;

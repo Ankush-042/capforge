@@ -112,6 +112,67 @@ async function sendInvestorConnectionRequest(investorId, { startupId, message })
   }
 }
 
+/**
+ * Real team-join propagation, extracted so it's usable from BOTH the
+ * existing connection-accept flow AND Phase D's new mutual-confirm
+ * flow — identical, tested logic in one place, not duplicated.
+ */
+async function addContributorToTeam(startupId, contributorUserId, sourceGapId) {
+  const client = await pool.connect();
+  let assignedRole;
+  try {
+    await client.query('BEGIN');
+
+    if (sourceGapId) {
+      const gapResult = await client.query('SELECT role FROM gaps WHERE id = $1', [sourceGapId]);
+      assignedRole = gapResult.rows[0]?.role;
+    }
+    if (!assignedRole) {
+      const profileResult = await client.query(`SELECT p.headline FROM profiles p WHERE p.user_id = $1`, [contributorUserId]);
+      assignedRole = profileResult.rows[0]?.headline || 'Contributor';
+    }
+
+    const profileForSkills = await client.query(`SELECT skills FROM profiles WHERE user_id = $1`, [contributorUserId]);
+
+    await client.query(
+      `INSERT INTO startup_team_members (startup_id, user_id, role, skills, is_founder)
+       VALUES ($1, $2, $3, $4, false)
+       ON CONFLICT (startup_id, user_id) DO UPDATE SET role = EXCLUDED.role, skills = EXCLUDED.skills`,
+      [startupId, contributorUserId, assignedRole, profileForSkills.rows[0]?.skills || []]
+    );
+
+    if (sourceGapId) {
+      await client.query(`UPDATE recommendations SET status = 'CONNECTED' WHERE source_gap_id = $1 AND target_user_id = $2`, [sourceGapId, contributorUserId]);
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    client.release();
+    return { success: false, error: 'TEAM_JOIN_FAILED', detail: err.message };
+  }
+  client.release();
+
+  // Deliberately outside the transaction — team membership is already
+  // durably committed by this point, a recalculation failure here must
+  // never roll back something that already succeeded.
+  try {
+    const gapResult = await runGapDiagnosis(startupId);
+    const readinessResult = await runReadinessAndRiskAnalysis(startupId);
+    return {
+      success: true,
+      assignedRole,
+      propagation: {
+        team_member_added: { user_id: contributorUserId, role: assignedRole },
+        gaps_recalculated: gapResult.success ? gapResult.gaps : null,
+        readiness_recalculated: readinessResult.success ? readinessResult.readiness : null
+      }
+    };
+  } catch (err) {
+    return { success: true, assignedRole, propagation: { team_member_added: { user_id: contributorUserId, role: assignedRole }, warning: 'Team membership was saved, but automatic recalculation failed.', error_detail: err.message } };
+  }
+}
+
 async function respondToConnection(connectionId, respondingUserId, action) {
   if (!['accept', 'reject'].includes(action)) {
     return { success: false, error: 'INVALID_ACTION' };
@@ -161,97 +222,26 @@ async function respondToConnection(connectionId, respondingUserId, action) {
     return { success: true, connection: r.rows[0], propagation: null };
   }
 
-  // action === 'accept', type === FOUNDER_CONTRIBUTOR — the full propagation chain.
-  // Phase 1: the transactional part (team membership, connection status,
-  // recommendation status) — atomic, rolls back cleanly on failure.
-  const client = await pool.connect();
-  let updatedConnRow, assignedRole;
-  try {
-    await client.query('BEGIN');
+  // action === 'accept', type === FOUNDER_CONTRIBUTOR — the full propagation chain,
+  // now via the shared addContributorToTeam() function (also used by Phase D's mutual-confirm).
+  const updatedConn = await pool.query(
+    `UPDATE connections SET status = 'ACCEPTED', updated_at = now() WHERE id = $1 RETURNING *`,
+    [connectionId]
+  );
+  const updatedConnRow = updatedConn.rows[0];
 
-    const updatedConn = await client.query(
-      `UPDATE connections SET status = 'ACCEPTED', updated_at = now() WHERE id = $1 RETURNING *`,
-      [connectionId]
-    );
-    updatedConnRow = updatedConn.rows[0];
-
-    if (connection.source_gap_id) {
-      const gapResult = await client.query('SELECT role FROM gaps WHERE id = $1', [connection.source_gap_id]);
-      assignedRole = gapResult.rows[0]?.role;
-    }
-    if (!assignedRole) {
-      const profileResult = await client.query(
-        `SELECT p.headline FROM profiles p WHERE p.user_id = $1`, [connection.receiver_id]
-      );
-      assignedRole = profileResult.rows[0]?.headline || 'Contributor';
-    }
-
-    const profileForSkills = await client.query(
-      `SELECT skills FROM profiles WHERE user_id = $1`, [connection.receiver_id]
-    );
-
-    await client.query(
-      `INSERT INTO startup_team_members (startup_id, user_id, role, skills, is_founder)
-       VALUES ($1, $2, $3, $4, false)
-       ON CONFLICT (startup_id, user_id) DO UPDATE SET role = EXCLUDED.role, skills = EXCLUDED.skills`,
-      [connection.startup_id, connection.receiver_id, assignedRole, profileForSkills.rows[0]?.skills || []]
-    );
-
-    if (connection.source_gap_id) {
-      await client.query(
-        `UPDATE recommendations SET status = 'CONNECTED'
-         WHERE source_gap_id = $1 AND target_user_id = $2`,
-        [connection.source_gap_id, connection.receiver_id]
-      );
-    }
-
-    await client.query('COMMIT');
-  } catch (err) {
-    await client.query('ROLLBACK');
-    client.release();
-    return { success: false, error: 'ACCEPTANCE_FAILED', detail: err.message };
-  }
-  client.release();
+  const teamResult = await addContributorToTeam(connection.startup_id, connection.receiver_id, connection.source_gap_id);
+  if (!teamResult.success) return { success: false, error: teamResult.error, detail: teamResult.detail };
 
   await createNotification(connection.sender_id, {
     type: 'TEAM_MEMBER_JOINED',
     title: 'New team member joined',
-    message: `Your connection request was accepted — they've joined the ${assignedRole} role.`,
+    message: `Your connection request was accepted — they've joined the ${teamResult.assignedRole} role.`,
     referenceType: 'connection',
     referenceId: connectionId
   });
 
-  // Phase 2: propagation (team changed -> gaps recalculate -> readiness
-  // recalculates). Deliberately OUTSIDE the transaction and in its own
-  // try/catch — these are separate logical operations (architecture doc
-  // §67), and by this point the team-membership change is already
-  // durably committed, so a failure here must never be treated as a
-  // reason to roll back something that already succeeded.
-  let gapResult, readinessResult;
-  try {
-    gapResult = await runGapDiagnosis(connection.startup_id);
-    readinessResult = await runReadinessAndRiskAnalysis(connection.startup_id);
-  } catch (err) {
-    return {
-      success: true,
-      connection: updatedConnRow,
-      propagation: {
-        team_member_added: { user_id: connection.receiver_id, role: assignedRole },
-        warning: 'Team membership was saved, but automatic gap/readiness recalculation failed. Re-run analysis manually.',
-        error_detail: err.message
-      }
-    };
-  }
-
-  return {
-    success: true,
-    connection: updatedConnRow,
-    propagation: {
-      team_member_added: { user_id: connection.receiver_id, role: assignedRole },
-      gaps_recalculated: gapResult.success ? gapResult.gaps : null,
-      readiness_recalculated: readinessResult.success ? readinessResult.readiness : null
-    }
-  };
+  return { success: true, connection: updatedConnRow, propagation: teamResult.propagation };
 }
 
 async function getMyConnections(userId) {
@@ -269,4 +259,4 @@ async function getMyConnections(userId) {
   return { success: true, connections: result.rows };
 }
 
-module.exports = { sendConnectionRequest, sendInvestorConnectionRequest, respondToConnection, getMyConnections };
+module.exports = { sendConnectionRequest, sendInvestorConnectionRequest, respondToConnection, getMyConnections, addContributorToTeam };
