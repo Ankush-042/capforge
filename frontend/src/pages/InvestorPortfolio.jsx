@@ -49,7 +49,7 @@ export default function InvestorPortfolio() {
                 <>
                   <p className="text-[13px] font-medium text-ink-500 mb-2">Suggested for diversification</p>
                   {portfolio.diversification_suggestions.map((s) => (
-                    <Link key={s.startup_id} to={`/app/startups/${s.startup_id}`} className="flex items-center justify-between py-2 border-b border-surface-border last:border-0 hover:bg-surface-muted/50 -mx-1 px-1 rounded-lg transition-colors">
+                    <Link key={s.startup_id} to={`/app/startups/${s.startup_id}`} className="flex items-center justify-between py-2 border-b border-surface-border last:border-0 hover-lift hover:bg-surface-muted/50 -mx-1 px-1 rounded-lg transition-colors">
                       <span className="text-[15px] text-ink-900">{s.name}</span>
                       <span className="text-sm text-violet-600 font-medium">{Math.round(s.score * 100)}%</span>
                     </Link>
