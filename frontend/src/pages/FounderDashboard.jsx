@@ -87,25 +87,28 @@ export default function FounderDashboard() {
         </h1>
       </div>
 
-      <div ref={gridRef} className="grid grid-cols-4 grid-rows-2 gap-5 mb-6" style={{ gridAutoRows: '160px' }}>
+      <div ref={gridRef} className="grid grid-cols-4 gap-5 mb-6 items-start">
         {/* Hero insight card — the single sharpest thing to act on, real and clickable */}
         <Link to={criticalGap ? `/app/gaps/${criticalGap.id}` : '/app/gaps'}
-          className="col-span-2 row-span-2 bg-trust-bg border border-trust-border rounded-xl p-7 flex flex-col justify-between hover:shadow-trust-lg transition-shadow cursor-pointer">
-          <div className="flex items-center justify-between">
+          className="col-span-2 bg-trust-bg border border-trust-border rounded-xl p-7 hover:shadow-trust-lg transition-shadow cursor-pointer">
+          <div className="flex items-center justify-between mb-5">
             <div className="w-10 h-10 rounded-xl bg-trust text-white flex items-center justify-center"><Target size={18} /></div>
             <ArrowUpRight size={18} className="text-trust" />
           </div>
-          <div>
-            {criticalGap ? (
-              <>
-                <p className="text-[13px] font-medium text-trust mb-1">{criticalGap.seeking_type === 'CO_FOUNDER' ? 'CO-FOUNDER SEARCH' : 'CRITICAL HIRE'}</p>
-                <p className="text-xl font-semibold text-trust-fg mb-2">{criticalGap.role}</p>
-                <p className="text-[13px] text-ink-700 leading-relaxed">{criticalGap.reason}</p>
-              </>
-            ) : (
-              <p className="text-[15px] text-trust-fg">No critical gaps open right now — see the full picture.</p>
-            )}
-          </div>
+          {criticalGap ? (
+            <>
+              <p className="text-[13px] font-medium text-trust mb-1">{criticalGap.seeking_type === 'CO_FOUNDER' ? 'CO-FOUNDER SEARCH' : 'CRITICAL HIRE'}</p>
+              <p className="text-xl font-semibold text-trust-fg mb-2">{criticalGap.role}</p>
+              <p className="text-[13px] text-ink-700 leading-relaxed mb-4">{criticalGap.reason}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(criticalGap.required_skills || []).slice(0, 4).map(s => (
+                  <span key={s} className="text-[11px] px-2 py-1 rounded-md bg-white/60 text-trust-fg">{s}</span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-[15px] text-trust-fg">No critical gaps open right now — see the full picture.</p>
+          )}
         </Link>
 
         {/* Readiness — real score + real explanation of WHY, not a bare number */}
