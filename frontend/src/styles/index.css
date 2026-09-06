@@ -6,3 +6,26 @@
 
 body { @apply bg-canvas antialiased; }
 .app-shell { @apply text-ink-900 font-sans; }
+
+/**
+ * Phase 8 — global interaction polish. Pure enhancement: adds
+ * smoothness to state changes that already existed (hover backgrounds,
+ * focus rings) without altering any resting color, size, or layout —
+ * nothing already-approved (the Dashboard went through multiple
+ * explicit feedback rounds) changes appearance when not being
+ * interacted with.
+ */
+.app-shell button,
+.app-shell a,
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+/* Real hover-lift for genuinely clickable card-style rows (search
+   results, gap rows, team/connection entries) — a subtle shadow
+   increase on hover signals interactivity beyond just a color change. */
+.app-shell .hover-lift:hover {
+  box-shadow: 0 4px 16px rgba(20, 20, 30, 0.08), 0 1px 3px rgba(20, 20, 30, 0.06);
+}

@@ -53,7 +53,7 @@ export default function CandidateComparison() {
             </tr></thead>
             <tbody>
               {candidates.map((c) => (
-                <tr key={c.id} className="border-b border-surface-border last:border-0 hover:bg-surface-muted/50">
+                <tr key={c.id} className="border-b border-surface-border last:border-0 hover-lift hover:bg-surface-muted/50">
                   <td className="px-6 py-4 font-medium text-ink-900">{c.candidate_headline}</td>
                   <td className="px-6 py-4 text-violet-600 font-medium">{Math.round(c.score * 100)}%</td>
                   <td className="px-6 py-4 text-ink-700">{Math.round((c.score_breakdown?.skillFit || 0) * 100)}%</td>

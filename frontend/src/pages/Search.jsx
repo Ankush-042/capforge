@@ -72,7 +72,7 @@ export default function Search() {
           <p className="text-[15px] text-ink-500 text-center py-6">No results found. Try a different search term or fewer filters.</p>
         ) : tab === 'startups' ? (
           results.map((s) => (
-            <Link to={`/app/startups/${s.id}`} key={s.id} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0 hover:bg-surface-muted/50 -mx-1 px-1 rounded-lg transition-colors">
+            <Link to={`/app/startups/${s.id}`} key={s.id} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0 hover-lift hover:bg-surface-muted/50 -mx-1 px-1 rounded-lg transition-colors">
               <div><p className="text-[15px] font-medium text-ink-900">{s.name}</p><p className="text-[13px] text-ink-500">{(s.domain || []).join(', ')} · {s.stage}</p></div>
               {s.similarity !== undefined && <span className="text-sm font-medium text-violet-600">{Math.round(s.similarity * 100)}% match</span>}
             </Link>
