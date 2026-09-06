@@ -77,7 +77,7 @@ export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }
   }, []);
 
   return (
-    <div className="app-shell min-h-screen bg-canvas flex">
+    <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
