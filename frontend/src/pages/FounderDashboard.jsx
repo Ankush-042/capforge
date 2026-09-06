@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
+import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import GapBarChart from '../components/charts/GapBarChart.jsx';
@@ -123,18 +124,31 @@ export default function FounderDashboard() {
           </p>
         </Link>
 
-        {/* Team coverage — clickable */}
-        <Link to="/app/team" className="bg-white border border-surface-border rounded-xl p-6 hover:shadow-elevated transition-shadow cursor-pointer">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center mb-3"><Users size={16} /></div>
-          <p className="text-2xl font-bold text-ink-900">{coveragePct}%</p>
-          <p className="text-[13px] text-ink-500 mt-1">{filledCount} of {gaps.length} roles filled</p>
+        {/* Team coverage — real mini radial gauge, not a bare number */}
+        <Link to="/app/team" className="bg-white border border-surface-border rounded-xl p-6 hover:shadow-elevated transition-shadow cursor-pointer flex items-center gap-4">
+          <div className="relative w-14 h-14 shrink-0">
+            <RadialBarChart width={56} height={56} innerRadius="70%" outerRadius="100%" barSize={6} data={[{ value: coveragePct, fill: '#4C86F9' }]} startAngle={90} endAngle={-270}>
+              <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+              <RadialBar background={{ fill: '#EAF1FE' }} dataKey="value" cornerRadius={4} />
+            </RadialBarChart>
+            <div className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-blue-600">{coveragePct}%</div>
+          </div>
+          <div>
+            <p className="text-[15px] font-semibold text-ink-900">Team coverage</p>
+            <p className="text-[13px] text-ink-500">{filledCount} of {gaps.length} roles filled</p>
+          </div>
         </Link>
 
-        {/* Milestones — clickable */}
+        {/* Milestones — real segmented progress bar, not plain text */}
         <Link to="/app/milestones" className="bg-white border border-surface-border rounded-xl p-6 hover:shadow-elevated transition-shadow cursor-pointer">
-          <div className="w-9 h-9 rounded-lg bg-mint-50 text-mint-500 flex items-center justify-center mb-3"><ListChecks size={16} /></div>
-          <p className="text-[15px] font-semibold text-ink-900">Next milestones</p>
-          <p className="text-[13px] text-ink-500 mt-1">Real, AI-suggested steps →</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[15px] font-semibold text-ink-900">Milestones</p>
+            <ListChecks size={16} className="text-mint-500" />
+          </div>
+          <div className="flex gap-1 mb-2">
+            {[0, 1, 2, 3, 4].map(i => <div key={i} className={`h-2 flex-1 rounded-full ${i === 0 ? 'bg-mint-500' : 'bg-surface-muted'}`} />)}
+          </div>
+          <p className="text-[13px] text-ink-500">Real, AI-suggested steps →</p>
         </Link>
       </div>
 
