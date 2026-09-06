@@ -72,7 +72,19 @@ async function getMessages(conversationId, userId) {
   const result = await pool.query('SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC', [conversationId]);
   // Real read-receipt behavior: mark the other participant's messages read when this user opens the thread.
   await pool.query('UPDATE messages SET read_at = now() WHERE conversation_id = $1 AND sender_id != $2 AND read_at IS NULL', [conversationId, userId]);
-  return { success: true, messages: result.rows, conversation: c };
+
+  // Real fix: the frontend previously had to guess which confirm
+  // column ('founder_confirmed' vs 'other_confirmed') applied to the
+  // requesting user, without knowing who the actual founder is —
+  // computed here correctly instead, once.
+  let isFounderSide = false, myConfirmed = false;
+  if (c.startup_id) {
+    const startupResult = await pool.query('SELECT founder_id FROM startups WHERE id = $1', [c.startup_id]);
+    isFounderSide = startupResult.rows[0]?.founder_id === userId;
+    myConfirmed = isFounderSide ? c.founder_confirmed : c.other_confirmed;
+  }
+
+  return { success: true, messages: result.rows, conversation: { ...c, isFounderSide, myConfirmed } };
 }
 
 const { addContributorToTeam } = require('../connections/connectionService');

@@ -12,6 +12,7 @@ export default function ContributorOnboarding() {
   const [saving, setSaving] = useState(false);
 
   const [headline, setHeadline] = useState('');
+  const [lookingFor, setLookingFor] = useState('');
   const [skillsInput, setSkillsInput] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
@@ -30,7 +31,7 @@ export default function ContributorOnboarding() {
 
     const profileRes = await updateBaseProfile({ headline, skills });
     const contribRes = await upsertContributorProfile({
-      availability, preferredStage, preferredDomains,
+      availability, preferredStage, preferredDomains, lookingFor: lookingFor || undefined,
       experienceYears: experienceYears ? parseInt(experienceYears) : undefined,
       portfolioUrl: portfolioUrl || undefined,
       equityPreference: equityPreference || undefined,
@@ -58,6 +59,12 @@ export default function ContributorOnboarding() {
             <label className="text-[13px] font-medium text-ink-500 mb-1.5 block">Skills (comma-separated)</label>
             <input value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} placeholder="React, Node.js, PostgreSQL"
               className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
+          </div>
+          <div>
+            <label className="text-[13px] font-medium text-ink-500 mb-1.5 block">What kind of mission are you actually looking for?</label>
+            <p className="text-[12px] text-ink-300 mb-1.5">Not your skills — what draws you in. This is what real alignment is built on, not just a skill match.</p>
+            <textarea value={lookingFor} onChange={(e) => setLookingFor(e.target.value)} rows={3} placeholder="I want to work on... I care about..."
+              className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20 resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -64,6 +64,13 @@ export default function ProfileView() {
           </div>
         )}
 
+        {roleProfile?.looking_for && (
+          <div className="mb-6 bg-violet-50 rounded-lg p-4">
+            <p className="text-[13px] font-medium text-violet-700 mb-1.5">What they're looking for</p>
+            <p className="text-[14px] text-ink-700 leading-relaxed">{roleProfile.looking_for}</p>
+          </div>
+        )}
+
         {(profile.skills || []).length > 0 && (
           <div className="mb-6">
             <p className="text-[13px] font-medium text-ink-500 mb-2">Skills</p>

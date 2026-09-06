@@ -49,6 +49,7 @@ export const startConversation = (otherUserId, context) => apiFetch('/conversati
 export const getMyConversations = () => apiFetch('/conversations');
 export const getConversationMessages = (conversationId) => apiFetch(`/conversations/${conversationId}/messages`);
 export const sendMessage = (conversationId, content) => apiFetch(`/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ content }) });
+export const confirmTeamFormation = (conversationId) => apiFetch(`/conversations/${conversationId}/confirm-team`, { method: 'POST' });
 export const searchContributors = (params) => apiFetch(`/search/contributors?${new URLSearchParams(params)}`);
 
 export const getNotifications = (unreadOnly) => apiFetch(`/notifications${unreadOnly ? '?unread=true' : ''}`);

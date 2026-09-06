@@ -22,6 +22,7 @@ export default function Onboarding() {
 
   const [name, setName] = useState('');
   const [rawIdea, setRawIdea] = useState('');
+  const [founderVision, setFounderVision] = useState('');
   const [currentTeamSize, setCurrentTeamSize] = useState('');
   const [fundingRaised, setFundingRaised] = useState('');
   const [fundingStage, setFundingStage] = useState('');
@@ -41,7 +42,7 @@ export default function Onboarding() {
     const stepTimer = setInterval(() => setProcessingStep((s) => (s + 1) % PROCESSING_MESSAGES.length), 1400);
 
     const { ok, data } = await createStartup({
-      name, rawIdea,
+      name, rawIdea, founderVision: founderVision || undefined,
       currentTeamSize: currentTeamSize ? parseInt(currentTeamSize) : undefined,
       fundingRaised: fundingRaised ? parseFloat(fundingRaised) : undefined,
       fundingStage: fundingStage || undefined,
@@ -85,6 +86,11 @@ export default function Onboarding() {
               className="w-full mb-4 px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300" />
             <label className="text-[13px] font-medium text-ink-500 mb-1.5 block">Your idea</label>
             <textarea value={rawIdea} onChange={(e) => setRawIdea(e.target.value)} rows={5} placeholder="I want to build..."
+              className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 resize-none" />
+
+            <label className="text-[13px] font-medium text-ink-500 mb-1.5 block mt-4">Your vision — in your own words</label>
+            <p className="text-[12px] text-ink-300 mb-1.5">Not the elevator pitch — why this matters to you, and what kind of person you want beside you. This is what a real co-founder actually needs to feel aligned with.</p>
+            <textarea value={founderVision} onChange={(e) => setFounderVision(e.target.value)} rows={3} placeholder="I care about... I want someone who..."
               className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-300 resize-none" />
 
             <button onClick={() => setShowMore(!showMore)} className="flex items-center gap-1.5 text-[13px] text-violet-600 font-medium mt-4">
