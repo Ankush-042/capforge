@@ -4,7 +4,7 @@ import gsap from 'gsap';
 import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import GapBarChart from '../components/charts/GapBarChart.jsx';
+import RoleCoverageGrid from '../components/charts/RoleCoverageGrid.jsx';
 import { getMyStartups, getGaps, getReadiness, getReadinessHistory } from '../services/startups.js';
 
 /**
@@ -160,7 +160,7 @@ export default function FounderDashboard() {
           </div>
           <ArrowUpRight size={18} className="text-ink-300" />
         </div>
-        {gaps.length > 0 ? <GapBarChart gaps={gaps} /> : <p className="text-[13px] text-ink-500 py-10 text-center">No gaps diagnosed yet — run analysis from the Gaps page.</p>}
+        {gaps.length > 0 ? <RoleCoverageGrid gaps={gaps} /> : <p className="text-[13px] text-ink-500 py-10 text-center">No gaps diagnosed yet — run analysis from the Gaps page.</p>}
       </Link>
     </Shell>
   );
