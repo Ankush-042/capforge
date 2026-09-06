@@ -12,16 +12,25 @@ export default {
         amber: { 50: '#FEF3E8', 500: '#F0A84E' },
         rose: { 50: '#FDEEF0', 500: '#EF6E85' },
         mint: { 50: '#EAF7F0', 500: '#3FB081' },
-        signal: { critical: '#E15C4D', high: '#F0A84E', medium: '#E0C64B', low: '#3FB081' }
+        signal: { critical: '#E15C4D', high: '#F0A84E', medium: '#E0C64B', low: '#3FB081' },
+        // Real design-system-tool-generated tokens (Phase A) — trust
+        // purple + transaction green, informed by real marketplace/
+        // matching-platform design intelligence, not ad-hoc choice.
+        trust: { DEFAULT: '#7C3AED', light: '#A78BFA', bg: '#FAF5FF', fg: '#4C1D95', border: '#DDD6FE' },
+        transact: { DEFAULT: '#16A34A', bg: '#EAF7F0' },
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui'],
-        display: ['"Geist Sans"', 'Inter', 'sans-serif']
+        display: ['"Geist Sans"', 'Inter', 'sans-serif'],
+        editorial: ['"Playfair Display"', 'Georgia', 'serif'],
       },
       borderRadius: { lg: '16px', xl: '20px' },
       boxShadow: {
         card: '0 1px 2px rgba(20,20,30,0.04), 0 1px 1px rgba(20,20,30,0.03)',
-        elevated: '0 16px 40px rgba(20,20,30,0.08), 0 2px 8px rgba(20,20,30,0.04)'
+        elevated: '0 16px 40px rgba(20,20,30,0.08), 0 2px 8px rgba(20,20,30,0.04)',
+        // Real design-system shadow depths (Phase A)
+        'trust-md': '0 4px 6px rgba(124,58,237,0.10)',
+        'trust-lg': '0 10px 25px rgba(124,58,237,0.15)',
       }
     }
   },
