@@ -79,7 +79,11 @@ export default function FounderDashboard() {
       <div className="mb-7">
         <p className="text-xs text-ink-500 mb-1">Good evening, Founder</p>
         <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight">
-          {criticalGap ? `Your biggest opportunity right now: ${criticalGap.role}.` : 'Your venture is in good shape.'}
+          {criticalGap
+            ? (criticalGap.seeking_type === 'CO_FOUNDER'
+                ? `You're looking for a co-founder: someone to own ${criticalGap.role}.`
+                : `Right now, you need a ${criticalGap.role} on your team.`)
+            : 'Your venture is in good shape.'}
         </h1>
       </div>
 
@@ -94,7 +98,7 @@ export default function FounderDashboard() {
           <div>
             {criticalGap ? (
               <>
-                <p className="text-[13px] font-medium text-trust mb-1">CRITICAL · needs a real person</p>
+                <p className="text-[13px] font-medium text-trust mb-1">{criticalGap.seeking_type === 'CO_FOUNDER' ? 'CO-FOUNDER SEARCH' : 'CRITICAL HIRE'}</p>
                 <p className="text-xl font-semibold text-trust-fg mb-2">{criticalGap.role}</p>
                 <p className="text-[13px] text-ink-700 leading-relaxed">{criticalGap.reason}</p>
               </>
