@@ -3,10 +3,12 @@ import { LayoutGrid, FileText, Scale, CheckSquare, MessageSquare, FolderOpen } f
 import EmptyState from '../components/EmptyState.jsx';
 import Shell from '../components/Shell.jsx';
 import AvatarRow from '../components/charts/AvatarRow.jsx';
-import { getMyStartups, getWorkspace, createTask, postDiscussion, getWorkspaceFiles, addWorkspaceFile, generateLegalDocument, getLegalDocuments } from '../services/startups.js';
+import { getWorkspace, createTask, postDiscussion, getWorkspaceFiles, addWorkspaceFile, generateLegalDocument, getLegalDocuments } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 export default function Workspace() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [startup, setStartup] = useState(null);
@@ -29,12 +31,12 @@ export default function Workspace() {
 
   useEffect(() => {
     async function init() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) { setStartup(data.startups[0]); await load(data.startups[0].id); }
+      if (startupLoading) return;
+      if (activeStartup) { setStartup(activeStartup); await load(activeStartup.id); }
       setLoading(false);
     }
     init();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   async function handleAddTask() {
     if (!newTask.trim() || !startup) return;

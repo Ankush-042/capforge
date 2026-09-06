@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Gauge, RefreshCw } from 'lucide-react';
 import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import Shell from '../components/Shell.jsx';
-import { getMyStartups, getReadiness, assessReadinessRisk } from '../services/startups.js';
+import { getReadiness, assessReadinessRisk } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 const DIM_COLORS = { team_composition: '#7C5CFC', market_positioning: '#4C86F9', product_readiness: '#3FB081', funding_readiness: '#F0A84E' };
 const dimLabel = (k) => k.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
 
 export default function Readiness() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [assessing, setAssessing] = useState(false);
   const [startup, setStartup] = useState(null);
@@ -22,15 +24,15 @@ export default function Readiness() {
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) {
-        setStartup(data.startups[0]);
-        await loadReadiness(data.startups[0].id);
+      if (startupLoading) return;
+      if (activeStartup) {
+        setStartup(activeStartup);
+        await loadReadiness(activeStartup.id);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   async function handleAssess() {
     if (!startup) { showToast('No startup found — complete onboarding first.', 'error'); return; }

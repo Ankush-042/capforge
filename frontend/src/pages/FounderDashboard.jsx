@@ -5,7 +5,8 @@ import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import RoleCoverageGrid from '../components/charts/RoleCoverageGrid.jsx';
-import { getMyStartups, getGaps, getReadiness, getReadinessHistory } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
+import { getGaps, getReadiness, getReadinessHistory } from '../services/startups.js';
 
 /**
  * Phase A reference screen — rebuilt as a real bento-grid NARRATIVE,
@@ -16,6 +17,7 @@ import { getMyStartups, getGaps, getReadiness, getReadinessHistory } from '../se
  * persisted design system (design-system/capforge/MASTER.md).
  */
 export default function FounderDashboard() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [startup, setStartup] = useState(null);
   const [gaps, setGaps] = useState([]);
@@ -25,9 +27,9 @@ export default function FounderDashboard() {
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (!ok || !data.success || data.startups.length === 0) { setLoading(false); return; }
-      const s = data.startups[0];
+      if (startupLoading) return;
+      if (!activeStartup) { setLoading(false); return; }
+      const s = activeStartup;
       setStartup(s);
 
       const [gapsRes, readinessRes, historyRes] = await Promise.all([getGaps(s.id), getReadiness(s.id), getReadinessHistory(s.id)]);
@@ -37,7 +39,7 @@ export default function FounderDashboard() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   useEffect(() => {
     if (!loading && gridRef.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {

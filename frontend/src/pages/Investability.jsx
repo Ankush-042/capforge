@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Eye } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import VentureSummaryCard from '../components/VentureSummaryCard.jsx';
-import { getMyStartups, getVentureSummary } from '../services/startups.js';
+import { getVentureSummary } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 /**
  * Operationalizes "investable" as a real, founder-facing concept
@@ -11,20 +12,21 @@ import { getMyStartups, getVentureSummary } from '../services/startups.js';
  * their venture, using the identical component.
  */
 export default function Investability() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) {
-        const res = await getVentureSummary(data.startups[0].id);
+      if (startupLoading) return;
+      if (activeStartup) {
+        const res = await getVentureSummary(activeStartup.id);
         if (res.ok && res.data.success) setSummary(res.data.summary);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   if (loading) return <Shell title="Investability"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 

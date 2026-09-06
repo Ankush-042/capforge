@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ListChecks, Sparkles } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getMyStartups, getMilestones, generateMilestones, updateMilestone } from '../services/startups.js';
+import { getMilestones, generateMilestones, updateMilestone } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 export default function Milestones() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -18,15 +20,15 @@ export default function Milestones() {
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) {
-        setStartup(data.startups[0]);
-        await loadMilestones(data.startups[0].id);
+      if (startupLoading) return;
+      if (activeStartup) {
+        setStartup(activeStartup);
+        await loadMilestones(activeStartup.id);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   async function handleGenerate() {
     if (!startup) { showToast('No startup found.', 'error'); return; }

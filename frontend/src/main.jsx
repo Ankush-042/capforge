@@ -58,9 +58,11 @@ import './styles/index.css';
  * (/app/investor/*) routes added, each rendering their own persona-aware
  * Shell nav.
  */
+import { ActiveStartupProvider } from './context/ActiveStartupContext.jsx';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ToastProvider>
+    <ActiveStartupProvider>
     <BrowserRouter>
       <Routes>
         {/* Public */}
@@ -112,6 +114,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/profile/:userId" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
+    </ActiveStartupProvider>
     </ToastProvider>
   </React.StrictMode>
 );

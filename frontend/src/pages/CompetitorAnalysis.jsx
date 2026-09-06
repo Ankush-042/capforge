@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Compass, Sparkles } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getMyStartups, getCompetitorAnalysis, runCompetitorAnalysis } from '../services/startups.js';
+import { getCompetitorAnalysis, runCompetitorAnalysis } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 export default function CompetitorAnalysis() {
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -13,16 +15,16 @@ export default function CompetitorAnalysis() {
 
   useEffect(() => {
     async function load() {
-      const { ok, data } = await getMyStartups();
-      if (ok && data.success && data.startups.length > 0) {
-        setStartup(data.startups[0]);
-        const res = await getCompetitorAnalysis(data.startups[0].id);
+      if (startupLoading) return;
+      if (activeStartup) {
+        setStartup(activeStartup);
+        const res = await getCompetitorAnalysis(activeStartup.id);
         if (res.ok && res.data.success && res.data.analyses.length > 0) setAnalysis(res.data.analyses[0]);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [activeStartup?.id, startupLoading]);
 
   async function handleRun() {
     if (!startup) { showToast('No startup found.', 'error'); return; }
