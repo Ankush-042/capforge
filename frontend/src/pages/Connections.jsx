@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Inbox } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import AvatarRow from '../components/charts/AvatarRow.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import { InboxIcon, Send } from 'lucide-react';
 import { getMyConnections, respondToConnection, getMyProfile } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -55,7 +57,7 @@ export default function Connections({ persona = 'CONTRIBUTOR' }) {
         <p className="text-[13px] font-medium text-ink-500 mb-3">Received — {received.filter((c) => c.status === 'PENDING').length} pending</p>
         <div className="bg-surface rounded-xl border border-surface-border shadow-card">
           {received.length === 0 ? (
-            <p className="text-[13px] text-ink-500 text-center py-8">No connection requests received yet.</p>
+            <EmptyState icon={InboxIcon} message="No connection requests received yet." />
           ) : received.map((c) => (
             <div key={c.id} className="flex items-center justify-between p-5 border-b border-surface-border last:border-0">
               <AvatarRow initial={c.startup_name[0]} name={c.startup_name} subtitle={c.message || `Regarding ${c.type === 'FOUNDER_INVESTOR' ? 'investment' : 'a role'}`} />
@@ -76,7 +78,7 @@ export default function Connections({ persona = 'CONTRIBUTOR' }) {
         <p className="text-[13px] font-medium text-ink-500 mb-3">Sent by you</p>
         <div className="bg-surface rounded-xl border border-surface-border shadow-card">
           {sent.length === 0 ? (
-            <p className="text-[13px] text-ink-500 text-center py-8">You haven't sent any connection requests yet.</p>
+            <EmptyState icon={Send} message="You haven't sent any connection requests yet." />
           ) : sent.map((c) => (
             <div key={c.id} className="flex items-center justify-between p-5 border-b border-surface-border last:border-0">
               <AvatarRow initial={c.startup_name[0]} name={c.startup_name} subtitle={c.message} />

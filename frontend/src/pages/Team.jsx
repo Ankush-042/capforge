@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Users, Crown, CircleAlert } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import AvatarRow from '../components/charts/AvatarRow.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import { Users2 } from 'lucide-react';
 import { getMyStartups, getTeamMembers, getGaps } from '../services/startups.js';
 
 const GRADIENTS = ['from-amber-500 to-rose-500', 'from-blue-500 to-violet-500', 'from-mint-500 to-blue-500', 'from-violet-500 to-rose-500'];
@@ -46,7 +48,7 @@ export default function Team() {
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
           <p className="text-[15px] font-semibold text-ink-900 mb-4">Current team</p>
           {members.length === 0 ? (
-            <p className="text-[13px] text-ink-500 py-6 text-center">No team members yet.</p>
+            <EmptyState icon={Users2} message="No team members yet." />
           ) : (
             <div className="space-y-4">
               {members.map((m, i) => (

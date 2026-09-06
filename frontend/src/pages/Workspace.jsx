@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, FileText, Scale } from 'lucide-react';
+import { LayoutGrid, FileText, Scale, CheckSquare, MessageSquare, FolderOpen } from 'lucide-react';
+import EmptyState from '../components/EmptyState.jsx';
 import Shell from '../components/Shell.jsx';
 import AvatarRow from '../components/charts/AvatarRow.jsx';
 import { getMyStartups, getWorkspace, createTask, postDiscussion, getWorkspaceFiles, addWorkspaceFile, generateLegalDocument, getLegalDocuments } from '../services/startups.js';
@@ -82,7 +83,7 @@ export default function Workspace() {
               className="flex-1 px-3 py-2 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
             <button onClick={handleAddTask} className="text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-lg font-medium hover:bg-violet-100 transition-colors">Add</button>
           </div>
-          {tasks.length === 0 ? <p className="text-[13px] text-ink-500 py-6 text-center">No tasks yet.</p> : tasks.map((t) => (
+          {tasks.length === 0 ? <EmptyState icon={CheckSquare} message="No tasks yet." /> : tasks.map((t) => (
             <div key={t.id} className="flex items-center justify-between py-3 border-b border-surface-border last:border-0">
               <p className="text-[15px] text-ink-900">{t.title}</p>
               <span className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-500 font-medium">{t.status.replace('_', ' ')}</span>
@@ -96,7 +97,7 @@ export default function Workspace() {
             <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Say something…" onKeyDown={(e) => e.key === 'Enter' && handlePost()}
               className="flex-1 px-3 py-2 rounded-lg border border-surface-border bg-surface-muted text-[13px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
           </div>
-          {discussions.length === 0 ? <p className="text-[13px] text-ink-500 text-center py-4">No discussion yet.</p> : discussions.map((d) => (
+          {discussions.length === 0 ? <EmptyState icon={MessageSquare} message="No discussion yet." /> : discussions.map((d) => (
             <div key={d.id} className="mb-3">
               <AvatarRow initial="U" name="Team member" subtitle={new Date(d.created_at).toLocaleDateString()} />
               <p className="text-[13px] text-ink-700 pl-12 mt-1">{d.content}</p>
@@ -113,7 +114,7 @@ export default function Workspace() {
             <input value={newFileUrl} onChange={(e) => setNewFileUrl(e.target.value)} placeholder="Link (Drive, Dropbox...)" className="flex-1 px-3 py-2 rounded-lg border border-surface-border bg-surface-muted text-[13px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
             <button onClick={handleAddFile} className="text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-lg font-medium hover:bg-violet-100 transition-colors">Add</button>
           </div>
-          {files.length === 0 ? <p className="text-[13px] text-ink-500 py-4 text-center">No files attached yet.</p> : files.map((f) => (
+          {files.length === 0 ? <EmptyState icon={FolderOpen} message="No files attached yet." /> : files.map((f) => (
             <a key={f.id} href={f.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between py-2 border-b border-surface-border last:border-0 hover:text-violet-600 transition-colors">
               <span className="text-[15px] text-ink-900">{f.file_name}</span>
               <span className="text-xs text-ink-300">{new Date(f.created_at).toLocaleDateString()}</span>
