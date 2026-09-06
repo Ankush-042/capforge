@@ -3,6 +3,7 @@ const router = express.Router();
 const { requireAuth, requireRole } = require('../auth/authMiddleware');
 const { getMyProfile, updateBaseProfile, upsertContributorProfile, upsertInvestorProfile } = require('./profileService');
 const { getOpenGapIds } = require('../gaps/gapDiagnosisService');
+const pool = require('../shared/db');
 const { rankCandidatesForGap } = require('../matching/matchingService');
 
 /**
@@ -25,6 +26,20 @@ async function refreshOpenGapRankings() {
 router.get('/me', requireAuth, async (req, res) => {
   const result = await getMyProfile(req.user.userId, req.user.role);
   if (!result.success) return res.status(404).json(result);
+  res.json(result);
+});
+
+// Real fix for Phase C — no endpoint existed to view ANYONE else's
+// profile before this; a candidate or founder was only ever a name
+// and a score, nothing to actually evaluate before messaging them.
+router.get('/:userId', requireAuth, async (req, res) => {
+  const targetResult = await pool.query('SELECT primary_role FROM users WHERE id = $1', [req.params.userId]);
+  if (targetResult.rows.length === 0) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
+  const result = await getMyProfile(req.params.userId, targetResult.rows[0].primary_role);
+  if (!result.success) return res.status(404).json(result);
+  if (result.profile.visibility !== 'DISCOVERABLE' && req.params.userId !== req.user.userId) {
+    return res.status(403).json({ success: false, error: 'PROFILE_NOT_DISCOVERABLE' });
+  }
   res.json(result);
 });
 

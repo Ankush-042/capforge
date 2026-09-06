@@ -95,15 +95,15 @@ export default function GapDetail() {
             <p className="text-[13px] text-ink-500 py-10 text-center">Click "Rank real candidates" to score the actual contributor pool against this gap.</p>
           ) : candidates.map((c) => (
             <div key={c.id} className="border-b border-surface-border last:border-0 pb-5 mb-5 last:pb-0 last:mb-0">
-              <AvatarRow initial={(c.candidate_headline || '?')[0]} name={c.candidate_headline || 'Candidate'} subtitle={`Rank #${c.rank}`}
-                trailing={
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-violet-600">{Math.round(c.score * 100)}%</span>
-                    <button onClick={() => handleConnect(c)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">
-                      {gap.seeking_type === 'CO_FOUNDER' ? 'Explore co-founder match' : 'Connect'}
-                    </button>
-                  </div>
-                } />
+              <Link to={`/app/profile/${c.target_user_id}`} className="block hover:opacity-80 transition-opacity">
+                <AvatarRow initial={(c.candidate_headline || '?')[0]} name={c.candidate_headline || 'Candidate'} subtitle={`Rank #${c.rank} · View full profile`} />
+              </Link>
+              <div className="flex items-center justify-end gap-3 mt-2">
+                <span className="text-sm font-medium text-violet-600">{Math.round(c.score * 100)}%</span>
+                <button onClick={() => handleConnect(c)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">
+                  {gap.seeking_type === 'CO_FOUNDER' ? 'Explore co-founder match' : 'Connect'}
+                </button>
+              </div>
               <div className="mt-3 pl-12">
                 {c.causal_narrative ? (
                   <p className="text-[13px] text-ink-700 leading-relaxed">{c.causal_narrative}</p>

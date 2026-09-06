@@ -59,6 +59,7 @@ export const upsertContributorProfile = (payload) => apiFetch('/profiles/contrib
 export const upsertInvestorProfile = (payload) => apiFetch('/profiles/investor', { method: 'POST', body: JSON.stringify(payload) });
 export const updateBaseProfile = (payload) => apiFetch('/profiles/me', { method: 'PATCH', body: JSON.stringify(payload) });
 export const getMyProfile = () => apiFetch('/profiles/me');
+export const getUserProfile = (userId) => apiFetch(`/profiles/${userId}`);
 export const getMyRecommendationsAsContributor = () => apiFetch('/recommendations/mine');
 export const refreshInvestorRecommendations = () => apiFetch('/investors/recommendations/refresh', { method: 'POST' });
 export const getInvestorRecommendations = () => apiFetch('/investors/recommendations');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Compass } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -66,7 +66,7 @@ export default function ContributorOpportunities() {
               <div key={g.startup_id} className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-[15px] font-semibold text-ink-900">{g.startup_name}</p>
+                    <Link to={`/app/profile/${top.founder_id}`} className="text-[15px] font-semibold text-ink-900 hover:text-violet-600 transition-colors">{g.startup_name}</Link>
                     <p className="text-[13px] text-ink-500">{(g.domain || []).join(', ')} · {g.stage} · {g.roles.length} matching role{g.roles.length !== 1 ? 's' : ''}</p>
                   </div>
                   <span className="text-lg font-semibold text-violet-600">{Math.round(top.score * 100)}%</span>
