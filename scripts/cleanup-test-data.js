@@ -19,7 +19,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejec
 
 async function run() {
   const result = await pool.query(
-    `DELETE FROM startups WHERE name LIKE 'Bench-%' OR name LIKE 'ConsistTest-%' RETURNING name`
+    `DELETE FROM startups WHERE name LIKE 'Bench-%' OR name LIKE 'ConsistTest-%' OR name LIKE 'FoodSense%' RETURNING name`
   );
   console.log(`Deleted ${result.rows.length} throwaway test startups:`, result.rows.map(r => r.name).join(', ') || '(none found)');
   await pool.end();
