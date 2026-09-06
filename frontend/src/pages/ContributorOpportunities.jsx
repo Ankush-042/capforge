@@ -66,7 +66,7 @@ export default function ContributorOpportunities() {
               <div key={g.startup_id} className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <Link to={`/app/profile/${top.founder_id}`} className="text-[15px] font-semibold text-ink-900 hover:text-violet-600 transition-colors">{g.startup_name}</Link>
+                    <Link to={`/app/profile/${top.founder_id}?startupId=${g.startup_id}&gapId=${top.source_gap_id}`} className="text-[15px] font-semibold text-ink-900 hover:text-violet-600 transition-colors">{g.startup_name}</Link>
                     <p className="text-[13px] text-ink-500">{(g.domain || []).join(', ')} · {g.stage} · {g.roles.length} matching role{g.roles.length !== 1 ? 's' : ''}</p>
                   </div>
                   <span className="text-lg font-semibold text-violet-600">{Math.round(top.score * 100)}%</span>

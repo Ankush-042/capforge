@@ -95,7 +95,7 @@ export default function GapDetail() {
             <p className="text-[13px] text-ink-500 py-10 text-center">Click "Rank real candidates" to score the actual contributor pool against this gap.</p>
           ) : candidates.map((c) => (
             <div key={c.id} className="border-b border-surface-border last:border-0 pb-5 mb-5 last:pb-0 last:mb-0">
-              <Link to={`/app/profile/${c.target_user_id}`} className="block hover:opacity-80 transition-opacity">
+              <Link to={`/app/profile/${c.target_user_id}?startupId=${startupId}&gapId=${id}`} className="block hover:opacity-80 transition-opacity">
                 <AvatarRow initial={(c.candidate_headline || '?')[0]} name={c.candidate_headline || 'Candidate'} subtitle={`Rank #${c.rank} · View full profile`} />
               </Link>
               <div className="flex items-center justify-end gap-3 mt-2">
