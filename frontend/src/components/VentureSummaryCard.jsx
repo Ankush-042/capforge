@@ -67,6 +67,12 @@ export default function VentureSummaryCard({ summary, framing }) {
             <Badge label={`${top_risks[0].category} · ${top_risks[0].severity}`} priority={top_risks[0].severity} />
           ) : <p className="text-[13px] text-ink-500">None flagged</p>}
         </div>
+        {summary.co_investors?.length > 0 && (
+          <div className="col-span-2 pt-2">
+            <p className="text-[13px] font-medium text-ink-500 mb-2">Other investors already connected</p>
+            <p className="text-[14px] text-ink-700">{summary.co_investors.map(i => i.display_name).join(', ')}</p>
+          </div>
+        )}
       </div>
     </div>
   );

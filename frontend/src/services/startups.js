@@ -62,6 +62,10 @@ export const updateBaseProfile = (payload) => apiFetch('/profiles/me', { method:
 export const getMyProfile = () => apiFetch('/profiles/me');
 export const getUserProfile = (userId) => apiFetch(`/profiles/${userId}`);
 export const getMyProfileViews = () => apiFetch('/profiles/me/views');
+export const createSavedSearch = (name, filters) => apiFetch('/saved-searches', { method: 'POST', body: JSON.stringify({ name, filters }) });
+export const getMySavedSearches = () => apiFetch('/saved-searches');
+export const deleteSavedSearch = (id) => apiFetch(`/saved-searches/${id}`, { method: 'DELETE' });
+export const runSavedSearch = (id) => apiFetch(`/saved-searches/${id}/run`, { method: 'POST' });
 export const getMyRecommendationsAsContributor = () => apiFetch('/recommendations/mine');
 export const refreshInvestorRecommendations = () => apiFetch('/investors/recommendations/refresh', { method: 'POST' });
 export const getInvestorRecommendations = () => apiFetch('/investors/recommendations');

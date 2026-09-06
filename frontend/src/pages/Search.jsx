@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { Link } from 'react-router-dom';
-import { SearchIcon, Sparkles } from 'lucide-react';
+import { SearchIcon, Sparkles, BookmarkPlus } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { searchStartups, searchContributors, semanticSearchStartups } from '../services/startups.js';
+import { searchStartups, searchContributors, semanticSearchStartups, createSavedSearch } from '../services/startups.js';
+import { useToast } from '../components/Toast.jsx';
+
+const FUNDING_STAGES = ['Bootstrapped', 'Pre-seed', 'Seed', 'Series A+'];
 
 export default function Search() {
   const persona = useMyPersona();
+  const showToast = useToast();
   const [tab, setTab] = useState('startups');
   const [mode, setMode] = useState('keyword'); // 'keyword' | 'semantic'
   const [query, setQuery] = useState('');
   const [domain, setDomain] = useState('');
+  const [fundingStage, setFundingStage] = useState('');
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
+
+  function currentFilters() {
+    const params = {};
+    if (query) params.q = query;
+    if (domain) params.domain = domain;
+    if (fundingStage) params.fundingStage = fundingStage;
+    return params;
+  }
 
   async function runSearch() {
     setSearching(true);
@@ -23,14 +36,19 @@ export default function Search() {
     if (mode === 'semantic' && tab === 'startups') {
       response = await semanticSearchStartups(query);
     } else {
-      const params = {};
-      if (query) params.q = query;
-      if (domain) params.domain = domain;
-      response = tab === 'startups' ? await searchStartups(params) : await searchContributors(params);
+      response = tab === 'startups' ? await searchStartups(currentFilters()) : await searchContributors(currentFilters());
     }
     setSearching(false);
     if (response.ok && response.data.success) setResults(response.data.results);
     else setResults([]);
+  }
+
+  async function handleSaveSearch() {
+    const name = window.prompt('Name this search (e.g. "Pre-seed fintech ventures")');
+    if (!name) return;
+    const { ok, data } = await createSavedSearch(name, currentFilters());
+    if (ok && data.success) showToast('Search saved — find it any time from your saved searches.');
+    else showToast(data.error || 'Could not save search.', 'error');
   }
 
   return (
@@ -60,9 +78,21 @@ export default function Search() {
           <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Filter by domain (e.g. fintech)"
             className="text-sm px-3 py-2 rounded-lg border border-surface-border bg-surface-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
         )}
+        {mode === 'keyword' && tab === 'startups' && persona === 'INVESTOR' && (
+          <select value={fundingStage} onChange={(e) => setFundingStage(e.target.value)}
+            className="text-sm px-3 py-2 rounded-lg border border-surface-border bg-surface-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+            <option value="">Any funding stage</option>
+            {FUNDING_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
         <button onClick={runSearch} disabled={searching} className="text-sm bg-violet-50 text-violet-700 px-4 py-2 rounded-lg font-medium hover:bg-violet-100 transition-colors disabled:opacity-50">
           {searching ? 'Searching…' : 'Search'}
         </button>
+        {persona === 'INVESTOR' && tab === 'startups' && (
+          <button onClick={handleSaveSearch} className="flex items-center gap-1.5 text-sm bg-surface-muted text-ink-700 px-3 py-2 rounded-lg font-medium hover:bg-surface-border transition-colors">
+            <BookmarkPlus size={14} /> Save search
+          </button>
+        )}
       </div>
 
       <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">

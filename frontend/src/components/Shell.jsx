@@ -38,6 +38,7 @@ const NAV_BY_PERSONA = {
     { label: 'Dashboard', icon: '▦', path: '/app/investor' },
     { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Deal Flow', icon: '◈', path: '/app/investor/deal-flow' },
+    { label: 'Saved Searches', icon: '◍', path: '/app/investor/saved-searches' },
     { label: 'Portfolio', icon: '◫', path: '/app/investor/portfolio' },
     { label: 'Connections', icon: '◐', path: '/app/investor/connections' },
   ],
