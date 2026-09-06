@@ -13,6 +13,9 @@
  *
  * Run: node scripts/consistency-tests.js
  */
+require('dotenv').config();
+const { Pool } = require('pg');
+const dbPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 const BASE = 'http://localhost:3000/api';
 const RUNS_PER_IDEA = 3;
 const PASSWORD = 'ConsistTest123!';
@@ -81,7 +84,7 @@ async function run() {
     const roleCountRange = Math.max(...roleCounts) - Math.min(...roleCounts);
     console.log(`  Role count across runs: [${roleCounts.join(', ')}] — range: ${roleCountRange}`);
 
-    allResults.push({ name: testIdea.name, stageAgreement, avgDomainSimilarity, roleCountRange });
+    allResults.push({ name: testIdea.name, stageAgreement, avgDomainSimilarity, roleCountRange, startupIds: runs.map(r => r.id) });
   }
 
   console.log('\n=== Summary ===');
@@ -93,6 +96,16 @@ async function run() {
   console.log('already-structured data — given identical inputs, they are exact-match');
   console.log('consistent by construction (deterministic code, not an LLM call).');
   console.log('This test targets the one genuinely AI-driven, non-deterministic step.');
+
+  // Real fix for a confirmed bug: this script used to leave every test
+  // startup permanently in the database — repeated runs polluted real
+  // contributor recommendations. Self-cleans now.
+  const allIds = allResults.flatMap(r => r.startupIds || []);
+  if (allIds.length > 0) {
+    await dbPool.query('DELETE FROM startups WHERE id = ANY($1)', [allIds]);
+    console.log(`\n(${allIds.length} test startups self-deleted — this script leaves no permanent trace on the real ecosystem.)`);
+  }
+  await dbPool.end();
 }
 
 run();

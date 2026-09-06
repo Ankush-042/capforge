@@ -1,4 +1,10 @@
 require('dotenv').config();
+const { Pool } = require('pg');
+const dbPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+
+async function pool_delete(startupId) {
+  await dbPool.query('DELETE FROM startups WHERE id = $1', [startupId]);
+}
 
 /**
  * Phase 6 — real comparison against a naive zero-shot baseline, on the
@@ -93,6 +99,13 @@ async function run() {
     console.log(`    Names a specific actionable gap: ${analysis.hasSpecificActionableStep ? 'yes' : 'no'}`);
     console.log(`    Response length: ${analysis.wordCount} words (free-form prose)`);
     console.log(`    Sample: "${analysis.raw}..."`);
+    // Real fix for a confirmed bug: this script used to leave the test
+    // startup permanently in the database with an identical name every
+    // run, polluting real contributor recommendations after repeated
+    // runs. Self-cleans now — this script is for validation, not for
+    // adding permanent content to the ecosystem.
+    await pool_delete(startup.id);
+
     console.log();
   }
 
@@ -102,6 +115,8 @@ async function run() {
   console.log('The naive baseline\'s structure and actionability vary run to run, since');
   console.log('nothing constrains its format — consistent with the literature\'s finding');
   console.log('that unstructured zero-shot evaluation is unreliable for this task.');
+  console.log('\n(Test startups self-deleted — this script leaves no permanent trace on the real ecosystem.)');
+  await dbPool.end();
 }
 
 run();
