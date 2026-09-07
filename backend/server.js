@@ -20,6 +20,17 @@ const workspaceRoutes = require('./workspace/workspaceRoutes');
 const app = express();
 app.use(express.json());
 
+// Real fix for a confirmed identity-leak symptom: no response from this
+// API ever declared it shouldn't be cached, meaning a browser could
+// legally serve a stale cached response for an identical URL (e.g.
+// GET /api/profiles/me) across two completely different logged-in
+// users. Every API response now explicitly forbids caching — this is
+// also just correct practice for any authenticated API, not a hack.
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
+
 const { authLimit } = require('./shared/rateLimiter');
 app.use('/api/auth', authLimit, authRoutes);
 app.use('/api/profiles', profileRoutes);
