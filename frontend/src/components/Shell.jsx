@@ -108,12 +108,30 @@ export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }
           {NAV.map((n) => <NavItem key={n.label} {...n} active={location.pathname === n.path || (n.path !== homePath && location.pathname.startsWith(n.path))} />)}
         </nav>
 
-        <div className="mt-auto pt-4 flex items-center gap-3 border-t border-surface-border">
-          <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${identity.gradient} flex items-center justify-center text-sm font-medium text-white`}>{identity.initial}</div>
-          <div>
-            <p className="text-[15px] font-medium text-ink-900">{identity.name}</p>
-            <p className="text-xs text-ink-300">{persona.charAt(0) + persona.slice(1).toLowerCase()}</p>
+        <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-surface-border">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${identity.gradient} flex items-center justify-center text-sm font-medium text-white shrink-0`}>{identity.initial}</div>
+            <div className="min-w-0">
+              <p className="text-[15px] font-medium text-ink-900 truncate">{identity.name}</p>
+              <p className="text-xs text-ink-300">{persona.charAt(0) + persona.slice(1).toLowerCase()}</p>
+            </div>
           </div>
+          <button
+            onClick={() => {
+              // Real fix: no logout mechanism existed anywhere in the app —
+              // users were switching accounts by logging in again over an
+              // existing session, which never reset app state, causing a
+              // real cross-account data leak. A genuine full page reload
+              // guarantees every piece of state resets cleanly.
+              localStorage.removeItem('capforge_token');
+              localStorage.removeItem('capforge_active_startup_id');
+              window.location.href = '/sign-in';
+            }}
+            title="Log out"
+            className="text-xs text-ink-300 hover:text-signal-critical shrink-0 transition-colors px-2 py-1"
+          >
+            Log out
+          </button>
         </div>
       </aside>
 
