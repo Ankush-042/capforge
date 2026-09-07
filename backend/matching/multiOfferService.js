@@ -20,7 +20,7 @@ async function getMultiOfferComparison(userId) {
      JOIN startups s ON s.id = r.startup_id
      JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR' AND r.status = 'ACTIVE'
-       AND r.score >= $2
+       AND r.score >= $2 AND g.status != 'FILLED'
      ORDER BY r.score DESC`,
     [userId, MIN_RELEVANCE_SCORE]
   );
