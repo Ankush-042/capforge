@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { Bell } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
@@ -18,6 +19,7 @@ function groupByDay(notifications) {
 
 export default function Notifications() {
   const persona = useMyPersona();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
 
@@ -35,6 +37,16 @@ export default function Notifications() {
 
   async function handleClick(n) {
     if (!n.is_read) { await markNotificationRead(n.id); await load(); }
+
+    // Real fix for a confirmed gap: clicking a notification only ever
+    // marked it read and went nowhere, even though real reference data
+    // was already stored on every notification.
+    if (n.reference_type === 'conversation') {
+      navigate(`/app/inbox/${n.reference_id}`);
+    } else if (n.reference_type === 'connection') {
+      const path = persona === 'FOUNDER' ? '/app/connections' : persona === 'CONTRIBUTOR' ? '/app/contributor/connections' : '/app/investor/connections';
+      navigate(path);
+    }
   }
 
   if (loading) return <Shell persona={persona} title="Notifications"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;

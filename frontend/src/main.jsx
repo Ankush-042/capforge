@@ -91,6 +91,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/contributor/opportunities" element={<ProtectedRoute><ContributorOpportunities /></ProtectedRoute>} />
         <Route path="/app/contributor/skill-demand" element={<ProtectedRoute><SkillDemand /></ProtectedRoute>} />
         <Route path="/app/contributor/equity-ask" element={<ProtectedRoute><ContributorEquityAsk /></ProtectedRoute>} />
+        <Route path="/app/connections" element={<ProtectedRoute><Connections persona="FOUNDER" /></ProtectedRoute>} />
         <Route path="/app/contributor/connections" element={<ProtectedRoute><Connections persona="CONTRIBUTOR" /></ProtectedRoute>} />
 
         {/* Authenticated app — Investor */}

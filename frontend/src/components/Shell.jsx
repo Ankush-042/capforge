@@ -15,6 +15,7 @@ const NAV_BY_PERSONA = {
     { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Gaps', icon: '◈', path: '/app/gaps', nested: true },
     { label: 'Team', icon: '◎', path: '/app/team' },
+    { label: 'Connections', icon: '◐', path: '/app/connections' },
     { label: 'Readiness', icon: '◒', path: '/app/readiness' },
     { label: 'Risk', icon: '◑', path: '/app/risk' },
     { label: 'Milestones', icon: '◇', path: '/app/milestones' },
