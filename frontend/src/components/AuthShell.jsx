@@ -58,7 +58,13 @@ export function AuthShell({ mode }) {
     } else {
       destination = userRole === 'CONTRIBUTOR' ? '/app/contributor' : userRole === 'INVESTOR' ? '/app/investor' : '/app';
     }
-    navigate(destination);
+    // REAL FIX for a confirmed cross-account data leak: client-side
+    // navigate() never remounts the React tree, so any long-lived
+    // context (e.g. the active-startup context) silently kept a
+    // PREVIOUS user's data after logging in as someone completely
+    // different in the same tab. A full page load guarantees every
+    // piece of app state genuinely resets on every login, no exceptions.
+    window.location.href = destination;
   }
 
   return (
