@@ -61,6 +61,19 @@ import './styles/index.css';
  * Shell nav.
  */
 import { ActiveStartupProvider } from './context/ActiveStartupContext.jsx';
+// Real fix for a confirmed stale-session symptom: browsers can restore
+// an ENTIRE previous page — including its full in-memory JavaScript
+// state — from the back/forward cache (bfcache) when navigating via
+// browser back/forward, completely bypassing React and any of the
+// login/logout reset logic. event.persisted === true is the browser's
+// own signal that this happened; force a genuine fresh reload when it
+// does, so a previous user's session can never resurface this way.
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ToastProvider>
