@@ -206,7 +206,18 @@ async function rankCandidatesForGap(gapId) {
   // = UNVERIFIED, owned by the system-import account) have no real, responsive
   // founder — recommending a contributor message one is a genuine dead end, not
   // an actionable match. Skip ranking entirely for these.
-  if (startup.verification_status === 'UNVERIFIED') {
+  //
+  // CONFIRMED, additional real gap: the import scripts' own code admits
+  // "entries will stay CLAIMED instead of UNVERIFIED" if a SEPARATE
+  // admin-login step fails after creation — a fragile, two-step
+  // process. Found exactly this leak directly (AdPilot showing a real
+  // score to a real contributor despite being a system import). Fixed
+  // structurally: also exclude by the founder's actual email matching
+  // the known system-import account, which can never silently fail
+  // the way a secondary admin PATCH call can.
+  const founderResult = await pool.query('SELECT email FROM users WHERE id = $1', [startup.founder_id]);
+  const isSystemImport = founderResult.rows[0]?.email === 'system.import@capforge.internal';
+  if (startup.verification_status === 'UNVERIFIED' || isSystemImport) {
     return { success: true, recommendations: [], skipped: 'STARTUP_NOT_CLAIMED' };
   }
 
@@ -238,12 +249,22 @@ async function rankCandidatesForGap(gapId) {
   const signalKeys = [`stage:${(startup.stage || '').toLowerCase()}`, ...(startup.domain || []).map(d => `domain:${d.toLowerCase()}`)];
   const feedbackAdjustment = await getPreferenceAdjustment(startup.founder_id, signalKeys);
 
-  const ranked = candidatesResult.rows.map(candidate => {
-    const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate, feedbackAdjustment);
-    const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
-    const causalNarrative = buildCausalNarrative(gap, candidate.headline || 'This candidate', explanation);
-    return { candidate, score, breakdown, explanation, causalNarrative };
-  }).sort((a, b) => b.score - a.score);
+  const ranked = candidatesResult.rows
+    .map(candidate => {
+      const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate, feedbackAdjustment);
+      const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
+      const causalNarrative = buildCausalNarrative(gap, candidate.headline || 'This candidate', explanation);
+      return { candidate, score, breakdown, explanation, causalNarrative, overlap, domainOverlap };
+    })
+    // Real fix for confirmed scoring noise: dozens of candidates with
+    // ZERO real skill overlap, ZERO domain overlap, and no semantic
+    // signal were still persisted as "recommendations" purely because
+    // baseline experienceFit/compatibilityFit produced a nonzero score
+    // (a consistent ~0.20-0.22 cluster with nothing real behind it,
+    // confirmed directly from real reported data). A recommendation
+    // now requires at least ONE genuine signal to exist at all.
+    .filter(r => r.overlap.length > 0 || r.domainOverlap.length > 0 || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
+    .sort((a, b) => b.score - a.score);
 
   const client = await pool.connect();
   try {
