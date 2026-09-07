@@ -263,7 +263,17 @@ async function rankCandidatesForGap(gapId) {
     // (a consistent ~0.20-0.22 cluster with nothing real behind it,
     // confirmed directly from real reported data). A recommendation
     // now requires at least ONE genuine signal to exist at all.
-    .filter(r => r.overlap.length > 0 || r.domainOverlap.length > 0 || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
+    // Real fix, confirmed from direct reported data: AdPilot showed
+    // 'Product Manager', 'DevOps Engineer', 'Growth Marketer' as real
+    // recommendations for a Full Stack Engineer with zero skill
+    // relevance to any of them — propped up ENTIRELY by domainOverlap
+    // (a startup-level "likes this industry" signal, not evidence of
+    // fitting THIS SPECIFIC role). Domain overlap still legitimately
+    // contributes to the SCORE (via domainFit's weight in
+    // scoreCandidate) — it must never, alone, be sufficient to
+    // recommend someone for a role they have zero real skill relevance
+    // to. A recommendation now requires genuine role-level evidence.
+    .filter(r => r.overlap.length > 0 || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
     .sort((a, b) => b.score - a.score);
 
   const client = await pool.connect();
@@ -303,7 +313,7 @@ async function getRecommendationsForStartup(startupId) {
      FROM recommendations r
      JOIN profiles p ON p.user_id = r.target_user_id
      JOIN gaps g ON g.id = r.source_gap_id
-     WHERE r.startup_id = $1 ORDER BY r.source_gap_id, r.rank`,
+     WHERE r.startup_id = $1 AND g.status != 'FILLED' ORDER BY r.source_gap_id, r.rank`,
     [startupId]
   );
   const withNarrative = result.rows.map(r => ({
@@ -334,7 +344,7 @@ async function getMyRecommendationsAsContributor(userId) {
      JOIN startups s ON s.id = r.startup_id
      JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR' AND r.status = 'ACTIVE'
-       AND r.score >= $2
+       AND r.score >= $2 AND g.status != 'FILLED'
      ORDER BY r.score DESC LIMIT 20`,
     [userId, MIN_RELEVANCE_SCORE]
   );
