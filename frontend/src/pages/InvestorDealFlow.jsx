@@ -12,6 +12,7 @@ export default function InvestorDealFlow() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deals, setDeals] = useState([]);
+  const [note, setNote] = useState(null);
 
   async function load() {
     const { ok, data } = await getInvestorRecommendations();
@@ -25,6 +26,7 @@ export default function InvestorDealFlow() {
     const { ok, data } = await refreshInvestorRecommendations();
     setRefreshing(false);
     if (!ok || !data.success) { showToast('Refresh failed.', 'error'); return; }
+    setNote(data.note || null);
     await load();
     showToast('Deal flow refreshed.');
   }
@@ -33,7 +35,7 @@ export default function InvestorDealFlow() {
 
   return (
     <Shell persona="INVESTOR" title="Deal flow">
-      <PageHeader icon={LineChart} iconBg="bg-blue-50" iconColor="text-blue-500" title="Deal flow" subtitle="Ranked against your stated thesis, with real evidence."
+      <PageHeader icon={LineChart} iconBg="bg-blue-50" iconColor="text-blue-500" title="Deal flow" subtitle="Ranked against your stated thesis, with real evidence. Only ventures that have crossed a genuine readiness bar appear here — this is a curated feed, not everything on the platform."
         action={
           <button onClick={handleRefresh} disabled={refreshing} className="text-sm bg-ink-900 hover:bg-ink-700 text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
             {refreshing ? 'Refreshing…' : 'Refresh'}
@@ -41,7 +43,7 @@ export default function InvestorDealFlow() {
         } />
       {deals.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center">
-          <p className="text-[15px] text-ink-500">No deal flow yet. Click Refresh above.</p>
+          <p className="text-[15px] text-ink-500">{note || 'No deal flow yet. Click Refresh above.'}</p>
         </div>
       ) : (
         <div className="space-y-4">
