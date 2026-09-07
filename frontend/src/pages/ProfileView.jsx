@@ -15,7 +15,7 @@ export default function ProfileView() {
   const { userId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const persona = useMyPersona();
+  const { persona, displayName } = useMyPersona();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -38,11 +38,11 @@ export default function ProfileView() {
     else showToast(data.error || 'Could not start a conversation.', 'error');
   }
 
-  if (loading) return <Shell persona={persona} title="Profile"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
-  if (error || !profile) return <Shell persona={persona} title="Profile"><div className="bg-white rounded-xl border border-surface-border shadow-card p-12 text-center"><p className="text-[15px] text-ink-500">This profile isn't available to view.</p></div></Shell>;
+  if (loading) return <Shell persona={persona} displayName={displayName} title="Profile"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (error || !profile) return <Shell persona={persona} displayName={displayName} title="Profile"><div className="bg-white rounded-xl border border-surface-border shadow-card p-12 text-center"><p className="text-[15px] text-ink-500">This profile isn't available to view.</p></div></Shell>;
 
   return (
-    <Shell persona={persona} title={profile.display_name}>
+    <Shell persona={persona} displayName={displayName} title={profile.display_name}>
       <div className="bg-white rounded-xl border border-surface-border shadow-card p-8">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">

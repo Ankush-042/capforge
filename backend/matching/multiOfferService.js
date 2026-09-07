@@ -6,14 +6,23 @@ const pool = require('../shared/db');
 
 /** Real: every ACTIVE recommendation this contributor is currently in the running for, compared side by side. */
 async function getMultiOfferComparison(userId) {
+  // Real fix for a confirmed bug: this is a SEPARATE query from
+  // getMyRecommendationsAsContributor() in matchingService.js — the
+  // same two fixes applied there (excluding orphaned gap references,
+  // a genuine minimum-relevance threshold) were never applied here,
+  // explaining the exact garbage reported: blank Role/Type columns
+  // (orphaned source_gap_id) and a long tail of near-zero-relevance
+  // noise entries.
+  const MIN_RELEVANCE_SCORE = 0.20;
   const result = await pool.query(
     `SELECT r.*, s.name as startup_name, s.domain, s.stage, g.role as gap_role, g.seeking_type
      FROM recommendations r
      JOIN startups s ON s.id = r.startup_id
-     LEFT JOIN gaps g ON g.id = r.source_gap_id
+     JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR' AND r.status = 'ACTIVE'
+       AND r.score >= $2
      ORDER BY r.score DESC`,
-    [userId]
+    [userId, MIN_RELEVANCE_SCORE]
   );
   return { success: true, offers: result.rows };
 }

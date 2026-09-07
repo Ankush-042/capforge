@@ -14,7 +14,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export default function Settings() {
-  const persona = useMyPersona();
+  const { persona, displayName } = useMyPersona();
   const showToast = useToast();
   const [tab, setTab] = useState('Account');
   const [profile, setProfile] = useState(null);
@@ -45,7 +45,7 @@ export default function Settings() {
   }
 
   return (
-    <Shell persona={persona} title="Settings">
+    <Shell persona={persona} displayName={displayName} title="Settings">
       <PageHeader icon={SlidersHorizontal} iconBg="bg-blue-50" iconColor="text-blue-500" title="Settings" />
       <div className="grid grid-cols-[200px_1fr] gap-6">
         <div className="space-y-1">

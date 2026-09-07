@@ -13,7 +13,7 @@ import { getMyConversations } from '../services/startups.js';
  * nowhere for this to happen at all.
  */
 export default function Inbox() {
-  const persona = useMyPersona();
+  const { persona, displayName } = useMyPersona();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
@@ -25,10 +25,10 @@ export default function Inbox() {
     });
   }, []);
 
-  if (loading) return <Shell persona={persona} title="Inbox"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell persona={persona} displayName={displayName} title="Inbox"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   return (
-    <Shell persona={persona} title="Inbox">
+    <Shell persona={persona} displayName={displayName} title="Inbox">
       <PageHeader icon={MessageCircle} iconBg="bg-violet-50" iconColor="text-violet-600" title="Conversations" />
       {conversations.length === 0 ? (
         <div className="bg-white rounded-xl border border-surface-border shadow-card">

@@ -12,7 +12,7 @@ import { useToast } from '../components/Toast.jsx';
  * independently confirm before team-join propagation fires.
  */
 export default function ConversationThread() {
-  const persona = useMyPersona();
+  const { persona, displayName } = useMyPersona();
   const { id } = useParams();
   const navigate = useNavigate();
   const showToast = useToast();
@@ -57,13 +57,13 @@ export default function ConversationThread() {
     await load();
   }
 
-  if (loading) return <Shell persona={persona} title="Conversation"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell persona={persona} displayName={displayName} title="Conversation"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   const myConfirmed = conversation?.myConfirmed || false;
   const canConfirm = conversation && conversation.startup_id && !conversation.team_formed_at;
 
   return (
-    <Shell persona={persona} title="Conversation">
+    <Shell persona={persona} displayName={displayName} title="Conversation">
       <button onClick={() => navigate('/app/inbox')} className="flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 mb-4 transition-colors">
         <ArrowLeft size={14} /> Back to inbox
       </button>

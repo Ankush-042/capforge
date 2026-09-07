@@ -67,11 +67,38 @@ function NavItem({ label, icon, path, active, nested }) {
   );
 }
 
-export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }) {
+export default function Shell({ children, title, subtitle, persona = 'FOUNDER', displayName }) {
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Real fix: persona === null (explicitly, not undefined) means one of
+  // the 7 dynamic-persona pages is still waiting on useMyPersona()'s
+  // real fetch to resolve — JS's own '= FOUNDER' default above only
+  // triggers for undefined, so the ~20 founder-only pages that never
+  // pass a persona prop at all are completely unaffected by this check
+  // and continue working exactly as before. Previously this either
+  // crashed (NAV[0] on an undefined lookup) or, before that, silently
+  // showed FOUNDER's full nav as a wrong guess (the confirmed 'flashes
+  // founder sidebar every time' bug) — now a genuine, neutral loading
+  // state until the real persona is actually known.
+  if (persona === null) {
+    return (
+      <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
+        <aside className="w-64 border-r border-surface-border bg-white p-4 flex flex-col">
+          <div className="h-8 bg-surface-muted rounded-lg animate-pulse mb-6" />
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-8 bg-surface-muted rounded-lg animate-pulse" />)}
+          </div>
+        </aside>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   const NAV = NAV_BY_PERSONA[persona];
-  const identity = IDENTITY_BY_PERSONA[persona];
+  const identity = { ...IDENTITY_BY_PERSONA[persona], ...(displayName ? { name: displayName } : {}) };
   const homePath = NAV[0].path;
 
   React.useEffect(() => {
