@@ -44,6 +44,7 @@ import Inbox from './pages/Inbox.jsx';
 import ConversationThread from './pages/ConversationThread.jsx';
 import ProfileView from './pages/ProfileView.jsx';
 import SavedSearches from './pages/SavedSearches.jsx';
+import MyProfile from './pages/MyProfile.jsx';
 import { ToastProvider } from './components/Toast.jsx';
 
 import './styles/index.css';
@@ -115,6 +116,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/inbox/:id" element={<ProtectedRoute><ConversationThread /></ProtectedRoute>} />
         <Route path="/app/profile/:userId" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         <Route path="/app/investor/saved-searches" element={<ProtectedRoute><SavedSearches /></ProtectedRoute>} />
+        <Route path="/app/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
     </ActiveStartupProvider>

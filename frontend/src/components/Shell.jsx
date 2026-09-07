@@ -109,13 +109,13 @@ export default function Shell({ children, title, subtitle, persona = 'FOUNDER' }
         </nav>
 
         <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-surface-border">
-          <div className="flex items-center gap-3 min-w-0">
+          <Link to="/app/my-profile" className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity" title="View and edit your profile">
             <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${identity.gradient} flex items-center justify-center text-sm font-medium text-white shrink-0`}>{identity.initial}</div>
             <div className="min-w-0">
               <p className="text-[15px] font-medium text-ink-900 truncate">{identity.name}</p>
               <p className="text-xs text-ink-300">{persona.charAt(0) + persona.slice(1).toLowerCase()}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={() => {
               // Real fix: no logout mechanism existed anywhere in the app —
