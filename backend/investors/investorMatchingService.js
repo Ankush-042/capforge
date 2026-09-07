@@ -104,19 +104,34 @@ async function rankStartupsForInvestor(investorUserId) {
   }
 
   const { getPreferenceAdjustment } = require('../feedback/feedbackService');
+
+  // Phase H — real curation/selectivity: readiness previously only
+  // affected SCORE (20% weight), meaning every venture regardless of
+  // quality still appeared in deal-flow, just ranked lower — genuine
+  // noise, not curation. A venture must cross a real readiness bar to
+  // be investor-facing at all, matching how real selective platforms
+  // actually work: not everyone gets shown, not just everyone ranked.
+  const MIN_READINESS_FOR_INVESTOR_VISIBILITY = 35;
+
   const ranked = [];
   for (const startup of startupsResult.rows) {
     const readinessResult = await pool.query(
       'SELECT * FROM readiness_assessments WHERE startup_id = $1 ORDER BY generated_at DESC LIMIT 1',
       [startup.id]
     );
+    const latestReadiness = readinessResult.rows[0];
+
+    // Real admission gate — an unassessed venture hasn't proven itself
+    // yet either, so it doesn't qualify until it has a real score.
+    if (!latestReadiness || latestReadiness.overall_score < MIN_READINESS_FOR_INVESTOR_VISIBILITY) continue;
+
     const risksResult = await pool.query('SELECT * FROM risks WHERE startup_id = $1', [startup.id]);
 
     const signalKeys = [`stage:${(startup.stage || '').toLowerCase()}`, ...(startup.domain || []).map(d => `domain:${d.toLowerCase()}`)];
     const feedbackAdjustment = await getPreferenceAdjustment(investorUserId, signalKeys);
 
     const { score, breakdown, domainOverlap } = scoreStartupForInvestor(
-      investor, startup, readinessResult.rows[0], risksResult.rows, feedbackAdjustment
+      investor, startup, latestReadiness, risksResult.rows, feedbackAdjustment
     );
     const explanation = explainInvestorScore(breakdown, domainOverlap, risksResult.rows);
     ranked.push({ startup, score, breakdown, explanation });
@@ -143,7 +158,11 @@ async function rankStartupsForInvestor(investorUserId) {
       inserted.push({ ...row.rows[0], startup_name: r.startup.name });
     }
     await client.query('COMMIT');
-    return { success: true, recommendations: inserted };
+    return {
+      success: true,
+      recommendations: inserted,
+      note: inserted.length === 0 ? `${startupsResult.rows.length} startups exist, but none have yet crossed the ${MIN_READINESS_FOR_INVESTOR_VISIBILITY}-point readiness bar for investor visibility.` : undefined
+    };
   } catch (err) {
     await client.query('ROLLBACK');
     return { success: false, error: 'PERSISTENCE_FAILED', detail: err.message };
