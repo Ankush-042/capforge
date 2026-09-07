@@ -56,6 +56,20 @@ async function sendMessage(conversationId, senderId, content) {
     [conversationId, senderId, content.trim()]
   );
   await pool.query('UPDATE conversations SET last_message_at = now() WHERE id = $1', [conversationId]);
+
+  // Real fix for a confirmed gap: no notification existed for a new
+  // message arriving at all — someone could message you and you'd
+  // never know unless you happened to check Inbox.
+  const otherUserId = c.participant_a_id === senderId ? c.participant_b_id : c.participant_a_id;
+  const { createNotification } = require('../notifications/notificationService');
+  await createNotification(otherUserId, {
+    type: 'NEW_MESSAGE',
+    title: 'New message',
+    message: content.trim().slice(0, 100),
+    referenceType: 'conversation',
+    referenceId: conversationId
+  });
+
   return { success: true, message: result.rows[0] };
 }
 
@@ -150,6 +164,15 @@ async function confirmTeamFormation(conversationId, userId) {
   if (!teamResult.success) return { success: false, error: teamResult.error, detail: teamResult.detail };
 
   await pool.query('UPDATE conversations SET team_formed_at = now() WHERE id = $1', [conversationId]);
+
+  // Real fix for a confirmed gap: addContributorToTeam() only handles
+  // propagation (team membership, gap/readiness recalculation) — it
+  // never notifies anyone. Neither side was ever told the team actually
+  // formed, arguably the single biggest moment in the whole flow.
+  await Promise.all([
+    createNotification(c.participant_a_id, { type: 'TEAM_FORMED', title: 'Team formed!', message: 'A real team was just formed — gaps and readiness have been recalculated.', referenceType: 'conversation', referenceId: conversationId }),
+    createNotification(c.participant_b_id, { type: 'TEAM_FORMED', title: 'Team formed!', message: 'A real team was just formed — gaps and readiness have been recalculated.', referenceType: 'conversation', referenceId: conversationId })
+  ]);
 
   return { success: true, bothConfirmed: true, conversation: updatedConvo, propagation: teamResult.propagation };
 }
