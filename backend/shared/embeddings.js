@@ -1,21 +1,64 @@
 /**
- * Real semantic embeddings — runs on a genuinely separate OS thread
- * per call (Node worker_threads, one-shot, spawned fresh every time),
- * not the main server thread, and not a reused persistent worker.
+ * Real semantic embeddings — runs in a genuinely separate OS process
+ * (child_process.fork, not a worker thread), persistent for real
+ * performance, with real automatic self-healing.
  *
- * REAL FIX HISTORY (kept honest, not hidden): a persistent worker
- * (spawned once, reused across many calls) worked on its first call
- * but hung on the second, reliably reproducible on the affected
- * machine. Spawning a fresh worker per call sidesteps that specific
- * failure mode entirely — each worker does exactly one piece of work
- * and is terminated immediately after, so there is no "second call on
- * the same worker" to hang on. Slower per-call (model reloads every
- * time) but correctness took priority over speed here.
+ * WHY THIS ARCHITECTURE, stated plainly: every previous attempt
+ * (direct blocking call, fire-and-forget, persistent worker_thread,
+ * one-shot worker per call) hit a real failure eventually. The
+ * pattern across all of them: it works once, then breaks on reuse or
+ * under specific conditions this environment couldn't be fully
+ * reproduced in. Rather than guess at one more specific cause, this
+ * builds real resilience that doesn't depend on guessing correctly:
+ * a genuinely separate process (the strongest isolation available),
+ * with automatic detection and silent respawn if it ever hangs or
+ * dies — no manual restart, ever, and every existing caller already
+ * treats a failed/timed-out embedding as a graceful null, so a
+ * respawn cycle never breaks the app, it just means one request
+ * proceeds without the semantic boost.
  */
-const { Worker } = require('worker_threads');
+const { fork } = require('child_process');
 const path = require('path');
 
-const EMBEDDING_TIMEOUT_MS = 90000; // generous for a full model load on every call
+const EMBEDDING_TIMEOUT_MS = 90000;
+const SERVER_PATH = path.join(__dirname, 'embeddingServer.js');
+
+let child = null;
+let requestId = 0;
+const pending = new Map();
+
+function spawnChild() {
+  const proc = fork(SERVER_PATH, [], { silent: false });
+
+  proc.on('message', ({ id, success, embedding, error }) => {
+    const entry = pending.get(id);
+    if (!entry) return;
+    pending.delete(id);
+    clearTimeout(entry.timer);
+    if (success) entry.resolve(embedding);
+    else { console.error('Embedding computation failed (non-fatal):', error); entry.resolve(null); }
+  });
+
+  // Real self-healing: if the process dies or errors for ANY reason,
+  // fail every request currently waiting on it gracefully (null, not
+  // a hang), and clear the reference so the NEXT call spawns a fresh
+  // process automatically — no manual restart is ever required.
+  const handleFailure = (reason) => {
+    console.error(`Embedding process ${reason} — respawning automatically on next request (non-fatal).`);
+    for (const [, entry] of pending) { clearTimeout(entry.timer); entry.resolve(null); }
+    pending.clear();
+    if (child === proc) child = null;
+  };
+  proc.on('error', (err) => handleFailure(`errored: ${err.message}`));
+  proc.on('exit', (code) => { if (code !== 0 && code !== null) handleFailure(`exited unexpectedly (code ${code})`); });
+
+  return proc;
+}
+
+function getChild() {
+  if (!child) child = spawnChild();
+  return child;
+}
 
 /**
  * @param {string} text
@@ -24,40 +67,28 @@ const EMBEDDING_TIMEOUT_MS = 90000; // generous for a full model load on every c
 async function generateEmbedding(text) {
   if (!text || text.trim().length === 0) return null;
 
-  // Real, immediate bypass: set SKIP_EMBEDDINGS=true in .env to disable
-  // embedding generation entirely. Recommended for bulk seeding
-  // scripts specifically, since fresh-worker-per-call means real
-  // per-call latency that adds up fast across many rapid calls.
+  // Real, immediate bypass — kept as a permanent, available escape
+  // hatch, but no longer the required default now that real
+  // self-healing exists.
   if (process.env.SKIP_EMBEDDINGS === 'true') return null;
 
-  return new Promise((resolve) => {
-    let settled = false;
-    const worker = new Worker(path.join(__dirname, 'embeddingWorker.js'), { workerData: { text } });
+  const id = ++requestId;
+  const proc = getChild();
 
+  return new Promise((resolve) => {
     const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      console.error(`Embedding request timed out after ${EMBEDDING_TIMEOUT_MS}ms (non-fatal, caller handles gracefully).`);
-      worker.terminate();
+      pending.delete(id);
+      console.error(`Embedding request ${id} timed out after ${EMBEDDING_TIMEOUT_MS}ms — respawning process (non-fatal).`);
+      // A genuine timeout means this process may be stuck — kill and
+      // let the next call spawn a fresh one, rather than leaving a
+      // possibly-hung process around to fail future requests too.
+      try { proc.kill(); } catch (e) { /* already dead, fine */ }
+      if (child === proc) child = null;
       resolve(null);
     }, EMBEDDING_TIMEOUT_MS);
 
-    worker.once('message', ({ success, embedding, error }) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      worker.terminate();
-      if (success) resolve(embedding);
-      else { console.error('Embedding generation failed (non-fatal):', error); resolve(null); }
-    });
-
-    worker.once('error', (err) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      console.error('Embedding worker crashed (non-fatal):', err.message);
-      resolve(null);
-    });
+    pending.set(id, { resolve, timer });
+    proc.send({ id, text });
   });
 }
 
