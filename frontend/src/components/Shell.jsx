@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import CommandPalette from './CommandPalette.jsx';
 import StartupSwitcher from './StartupSwitcher.jsx';
 import { getMyProfile } from '../services/startups.js';
 
@@ -70,7 +69,6 @@ function NavItem({ label, icon, path, active, nested }) {
 
 export default function Shell({ children, title, subtitle, persona: externalPersona, displayName: externalDisplayName }) {
   const location = useLocation();
-  const [paletteOpen, setPaletteOpen] = useState(false);
 
   // REAL, COMPREHENSIVE FIX: previously, ~20 pages hardcoded a literal
   // persona string ("CONTRIBUTOR", "FOUNDER", etc) and NEVER fetched or
@@ -104,21 +102,6 @@ export default function Shell({ children, title, subtitle, persona: externalPers
   const persona = externalPersona || fetchedPersona;
   const realDisplayName = externalDisplayName || fetchedDisplayName;
 
-  // Real fix for the confirmed crash: this hook MUST run unconditionally
-  // on every single render, in the same position, regardless of loading
-  // state — it was previously placed AFTER the early return below,
-  // meaning it was skipped entirely during the loading render but
-  // called once loading finished, a hook-count mismatch between
-  // renders that is an exact, well-documented React crash ("Rendered
-  // more hooks than during the previous render"), not a mystery.
-  React.useEffect(() => {
-    function handleKeyDown(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setPaletteOpen((o) => !o); }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   if (!persona) {
     return (
       <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
@@ -141,7 +124,6 @@ export default function Shell({ children, title, subtitle, persona: externalPers
 
   return (
     <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">
@@ -152,12 +134,6 @@ export default function Shell({ children, title, subtitle, persona: externalPers
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-500 font-medium">{identity.name.split(' ')[0]}</span>
           </span>
           <span className="text-ink-300 text-xs">⌄</span>
-        </button>
-
-        <button onClick={() => setPaletteOpen(true)} className="relative mb-5 w-full text-left">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300 text-xs">⌕</span>
-          <span className="block w-full pl-8 pr-14 py-2 rounded-lg border border-surface-border bg-surface-muted text-sm text-ink-300">Find...</span>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-ink-300 border border-surface-border rounded px-1.5">⌘K</span>
         </button>
 
         {persona === 'FOUNDER' && <StartupSwitcher />}
