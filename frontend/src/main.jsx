@@ -61,6 +61,7 @@ import './styles/index.css';
  * Shell nav.
  */
 import { ActiveStartupProvider } from './context/ActiveStartupContext.jsx';
+import { MyIdentityProvider } from './context/MyIdentityContext.jsx';
 // Real fix for a confirmed stale-session symptom: browsers can restore
 // an ENTIRE previous page — including its full in-memory JavaScript
 // state — from the back/forward cache (bfcache) when navigating via
@@ -77,6 +78,7 @@ window.addEventListener('pageshow', (event) => {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ToastProvider>
+    <MyIdentityProvider>
     <ActiveStartupProvider>
     <BrowserRouter>
       <Routes>
@@ -133,6 +135,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       </Routes>
     </BrowserRouter>
     </ActiveStartupProvider>
+    </MyIdentityProvider>
     </ToastProvider>
   </React.StrictMode>
 );

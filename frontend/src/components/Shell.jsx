@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import StartupSwitcher from './StartupSwitcher.jsx';
-import { getMyProfile } from '../services/startups.js';
+import { useMyIdentity } from '../context/MyIdentityContext.jsx';
 
 /**
  * App shell — persona-aware sidebar (Sprint 20). Same Vercel-style nav
@@ -80,24 +80,14 @@ export default function Shell({ children, title, subtitle, persona: externalPers
   // 'Arjun Mehta' (its own separate fetch) while the sidebar still said
   // 'Priya Data' (Shell had no real name passed in at all).
   //
-  // Shell now fetches the real identity ITSELF, once, internally —
-  // this is no longer a per-page responsibility that can be missed.
-  // An externally-passed persona (from the ~20 hardcoded pages) is
-  // still used immediately for NAV purposes, avoiding any loading
-  // flash for pages that already know their persona synchronously —
-  // but the real display name always comes from this internal fetch,
-  // never a hardcoded fallback.
-  const [fetchedPersona, setFetchedPersona] = useState(null);
-  const [fetchedDisplayName, setFetchedDisplayName] = useState(null);
-
-  React.useEffect(() => {
-    getMyProfile().then(({ ok, data }) => {
-      if (ok && data.success) {
-        if (data.profile.primary_role) setFetchedPersona(data.profile.primary_role);
-        if (data.profile.display_name) setFetchedDisplayName(data.profile.display_name);
-      }
-    });
-  }, []);
+  // Shell now consumes the SHARED identity context instead of fetching
+  // internally on every mount — real fix for a confirmed follow-up
+  // symptom: fetching on every Shell mount meant a fresh fetch cycle
+  // (and a brief fallback-name flash) on EVERY navigation, since React
+  // Router remounts the page/Shell on each route change. The shared
+  // context fetches ONCE per real session; every subsequent navigation
+  // reads the already-resolved value instantly, with zero flash.
+  const { persona: fetchedPersona, displayName: fetchedDisplayName } = useMyIdentity();
 
   const persona = externalPersona || fetchedPersona;
   const realDisplayName = externalDisplayName || fetchedDisplayName;
