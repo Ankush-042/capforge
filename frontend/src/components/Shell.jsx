@@ -104,6 +104,21 @@ export default function Shell({ children, title, subtitle, persona: externalPers
   const persona = externalPersona || fetchedPersona;
   const realDisplayName = externalDisplayName || fetchedDisplayName;
 
+  // Real fix for the confirmed crash: this hook MUST run unconditionally
+  // on every single render, in the same position, regardless of loading
+  // state — it was previously placed AFTER the early return below,
+  // meaning it was skipped entirely during the loading render but
+  // called once loading finished, a hook-count mismatch between
+  // renders that is an exact, well-documented React crash ("Rendered
+  // more hooks than during the previous render"), not a mystery.
+  React.useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setPaletteOpen((o) => !o); }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (!persona) {
     return (
       <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
@@ -123,14 +138,6 @@ export default function Shell({ children, title, subtitle, persona: externalPers
   const NAV = NAV_BY_PERSONA[persona];
   const identity = { ...IDENTITY_BY_PERSONA[persona], ...(realDisplayName ? { name: realDisplayName } : {}) };
   const homePath = NAV[0].path;
-
-  React.useEffect(() => {
-    function handleKeyDown(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setPaletteOpen((o) => !o); }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   return (
     <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
