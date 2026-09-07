@@ -51,7 +51,24 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   // Falls back cleanly to pure deterministic scoring when either side
   // lacks an embedding yet (candidate.semantic_similarity is null),
   // rather than treating a missing embedding as zero similarity.
-  const overlap = requiredSkills.filter(s => candidateSkills.has(s));
+  //
+  // REAL FIX, confirmed necessary by direct evidence: exact-string
+  // equality alone treated 'aml' and 'aml kyc' as completely unrelated,
+  // despite being the same real-world skill — a genuine, serious gap
+  // when running without embeddings (SKIP_EMBEDDINGS=true), since exact
+  // match was the ONLY signal left. Real substring/token matching now
+  // catches this class of case with zero dependency on any external ML
+  // infrastructure — a candidate skill counts as overlapping if it
+  // contains, is contained by, or shares a real word token with a
+  // required skill (not just character-for-character equality).
+  function skillsMatch(required, candidateSkill) {
+    if (required === candidateSkill) return true;
+    if (required.includes(candidateSkill) || candidateSkill.includes(required)) return true;
+    const requiredTokens = new Set(required.split(/[\s/,-]+/).filter(t => t.length > 2));
+    const candidateTokens = candidateSkill.split(/[\s/,-]+/).filter(t => t.length > 2);
+    return candidateTokens.some(t => requiredTokens.has(t));
+  }
+  const overlap = requiredSkills.filter(s => [...candidateSkills].some(cs => skillsMatch(s, cs)));
   const deterministicSkillFit = requiredSkills.length > 0 ? overlap.length / requiredSkills.length : 0;
   const hasSemanticSignal = candidate.semantic_similarity !== null && candidate.semantic_similarity !== undefined;
   const skillFit = hasSemanticSignal
