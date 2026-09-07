@@ -68,9 +68,18 @@ router.get('/me/views', requireAuth, async (req, res) => {
 router.patch('/me', requireAuth, async (req, res) => {
   const result = await updateBaseProfile(req.user.userId, req.body);
   if (!result.success) return res.status(400).json(result);
+
+  // REAL FIX for a confirmed timeout: refreshOpenGapRankings() loops
+  // through EVERY currently-open gap on the ENTIRE PLATFORM, sequentially,
+  // awaited — with 19+ real gaps now on the platform (vs. a handful when
+  // this was first built), this alone could take well over 15 seconds,
+  // blocking the actual profile save response the whole time. The save
+  // itself has already succeeded above; the platform-wide re-ranking is
+  // a background enhancement and must never block the response the user
+  // is actually waiting on — exact same class of fix as the earlier
+  // embedding-generation timeout, just a different cause this time.
   if ('skills' in req.body) {
-    const refresh = await refreshOpenGapRankings();
-    return res.json({ ...result, matching_refresh: refresh });
+    refreshOpenGapRankings().catch(err => console.error('Background matching refresh failed (non-fatal):', err.message));
   }
   res.json(result);
 });
@@ -78,8 +87,9 @@ router.patch('/me', requireAuth, async (req, res) => {
 router.post('/contributor', requireAuth, requireRole('CONTRIBUTOR'), async (req, res) => {
   const result = await upsertContributorProfile(req.user.userId, req.body);
   if (!result.success) return res.status(400).json(result);
-  const refresh = await refreshOpenGapRankings();
-  res.json({ ...result, matching_refresh: refresh });
+  // Same real fix as PATCH /me — this must never block the response.
+  refreshOpenGapRankings().catch(err => console.error('Background matching refresh failed (non-fatal):', err.message));
+  res.json(result);
 });
 
 router.post('/investor', requireAuth, requireRole('INVESTOR'), async (req, res) => {
