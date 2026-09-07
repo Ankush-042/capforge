@@ -17,7 +17,9 @@ export default function MyProfile() {
   const { persona, displayName } = useMyPersona();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingBase, setSavingBase] = useState(false);
+  const [savingContrib, setSavingContrib] = useState(false);
+  const [savingInvestor, setSavingInvestor] = useState(false);
   const [base, setBase] = useState({ displayName: '', headline: '', bio: '', location: '', skillsInput: '' });
   const [contrib, setContrib] = useState({ availability: '', lookingFor: '', portfolioUrl: '', preferredDomains: '', preferredStage: '', experienceYears: '' });
   const [investor, setInvestor] = useState({ thesis: '', ticketMin: '', ticketMax: '', preferredDomains: '', preferredStages: '', investmentType: '' });
@@ -40,37 +42,50 @@ export default function MyProfile() {
     });
   }, [persona]);
 
+  /** Real safety net: if a request genuinely never responds (network
+   * issue or otherwise), the button must never be stuck forever —
+   * confirmed directly from a screenshot showing exactly that. */
+  async function withTimeout(promise, ms = 15000) {
+    let timeoutId;
+    const timeout = new Promise((resolve) => {
+      timeoutId = setTimeout(() => resolve({ ok: false, data: { error: 'TIMED_OUT', detail: 'The request took too long — check your connection and try again.' } }), ms);
+    });
+    const result = await Promise.race([promise, timeout]);
+    clearTimeout(timeoutId);
+    return result;
+  }
+
   async function handleSaveBase() {
-    setSaving(true);
+    setSavingBase(true);
     const skills = base.skillsInput.split(',').map(s => s.trim()).filter(Boolean);
-    const { ok, data } = await updateBaseProfile({ displayName: base.displayName, headline: base.headline, bio: base.bio, location: base.location, skills });
-    setSaving(false);
+    const { ok, data } = await withTimeout(updateBaseProfile({ displayName: base.displayName, headline: base.headline, bio: base.bio, location: base.location, skills }));
+    setSavingBase(false);
     if (ok && data.success) showToast('Profile updated.');
     else showToast(data.error || 'Could not save.', 'error');
   }
 
   async function handleSaveContrib() {
-    setSaving(true);
-    const { ok, data } = await upsertContributorProfile({
+    setSavingContrib(true);
+    const { ok, data } = await withTimeout(upsertContributorProfile({
       availability: contrib.availability, lookingFor: contrib.lookingFor, portfolioUrl: contrib.portfolioUrl,
       preferredDomains: contrib.preferredDomains.split(',').map(s => s.trim()).filter(Boolean),
       preferredStage: contrib.preferredStage.split(',').map(s => s.trim()).filter(Boolean),
       experienceYears: parseInt(contrib.experienceYears) || 0
-    });
-    setSaving(false);
+    }));
+    setSavingContrib(false);
     if (ok && data.success) showToast('Contributor details updated — real recommendations will refresh.');
     else showToast(data.error || 'Could not save.', 'error');
   }
 
   async function handleSaveInvestor() {
-    setSaving(true);
-    const { ok, data } = await upsertInvestorProfile({
+    setSavingInvestor(true);
+    const { ok, data } = await withTimeout(upsertInvestorProfile({
       thesis: investor.thesis, ticketMin: parseFloat(investor.ticketMin) || null, ticketMax: parseFloat(investor.ticketMax) || null,
       preferredDomains: investor.preferredDomains.split(',').map(s => s.trim()).filter(Boolean),
       preferredStages: investor.preferredStages.split(',').map(s => s.trim()).filter(Boolean),
       investmentType: investor.investmentType
-    });
-    setSaving(false);
+    }));
+    setSavingInvestor(false);
     if (ok && data.success) showToast('Investor thesis updated.');
     else showToast(data.error || 'Could not save.', 'error');
   }
@@ -99,8 +114,8 @@ export default function MyProfile() {
           <div><label className="text-[13px] font-medium text-ink-500 mb-1.5 block">Skills (comma-separated)</label>
             <input value={base.skillsInput} onChange={(e) => setBase({ ...base, skillsInput: e.target.value })} className={inputClass} /></div>
         </div>
-        <button onClick={handleSaveBase} disabled={saving} className="bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
-          {saving ? 'Saving…' : 'Save basics'}
+        <button onClick={handleSaveBase} disabled={savingBase} className="bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+          {savingBase ? 'Saving…' : 'Save basics'}
         </button>
       </div>
 
@@ -124,8 +139,8 @@ export default function MyProfile() {
           </div>
           <div className="mb-5"><label className="text-[13px] font-medium text-ink-500 mb-1.5 block">Portfolio URL</label>
             <input value={contrib.portfolioUrl} onChange={(e) => setContrib({ ...contrib, portfolioUrl: e.target.value })} className={inputClass} /></div>
-          <button onClick={handleSaveContrib} disabled={saving} className="bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
-            {saving ? 'Saving…' : 'Save contributor details'}
+          <button onClick={handleSaveContrib} disabled={savingContrib} className="bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+            {savingContrib ? 'Saving…' : 'Save contributor details'}
           </button>
         </div>
       )}
@@ -147,8 +162,8 @@ export default function MyProfile() {
             <div><label className="text-[13px] font-medium text-ink-500 mb-1.5 block">Preferred stages (comma-separated)</label>
               <input value={investor.preferredStages} onChange={(e) => setInvestor({ ...investor, preferredStages: e.target.value })} className={inputClass} /></div>
           </div>
-          <button onClick={handleSaveInvestor} disabled={saving} className="bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
-            {saving ? 'Saving…' : 'Save thesis'}
+          <button onClick={handleSaveInvestor} disabled={savingInvestor} className="bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+            {savingInvestor ? 'Saving…' : 'Save thesis'}
           </button>
         </div>
       )}
