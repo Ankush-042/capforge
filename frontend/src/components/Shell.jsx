@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import CommandPalette from './CommandPalette.jsx';
 import StartupSwitcher from './StartupSwitcher.jsx';
+import { getMyProfile } from '../services/startups.js';
 
 /**
  * App shell — persona-aware sidebar (Sprint 20). Same Vercel-style nav
@@ -67,21 +68,43 @@ function NavItem({ label, icon, path, active, nested }) {
   );
 }
 
-export default function Shell({ children, title, subtitle, persona = 'FOUNDER', displayName }) {
+export default function Shell({ children, title, subtitle, persona: externalPersona, displayName: externalDisplayName }) {
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Real fix: persona === null (explicitly, not undefined) means one of
-  // the 7 dynamic-persona pages is still waiting on useMyPersona()'s
-  // real fetch to resolve — JS's own '= FOUNDER' default above only
-  // triggers for undefined, so the ~20 founder-only pages that never
-  // pass a persona prop at all are completely unaffected by this check
-  // and continue working exactly as before. Previously this either
-  // crashed (NAV[0] on an undefined lookup) or, before that, silently
-  // showed FOUNDER's full nav as a wrong guess (the confirmed 'flashes
-  // founder sidebar every time' bug) — now a genuine, neutral loading
-  // state until the real persona is actually known.
-  if (persona === null) {
+  // REAL, COMPREHENSIVE FIX: previously, ~20 pages hardcoded a literal
+  // persona string ("CONTRIBUTOR", "FOUNDER", etc) and NEVER fetched or
+  // passed a real display name at all — only the 7 pages using the
+  // useMyPersona hook ever did. This meant the sidebar identity fell
+  // back to a HARDCODED WRONG NAME ('Priya Data' for every contributor,
+  // 'Raj Capital' for every investor) on every one of those ~20 pages,
+  // confirmed directly: Dashboard's own main content correctly showed
+  // 'Arjun Mehta' (its own separate fetch) while the sidebar still said
+  // 'Priya Data' (Shell had no real name passed in at all).
+  //
+  // Shell now fetches the real identity ITSELF, once, internally —
+  // this is no longer a per-page responsibility that can be missed.
+  // An externally-passed persona (from the ~20 hardcoded pages) is
+  // still used immediately for NAV purposes, avoiding any loading
+  // flash for pages that already know their persona synchronously —
+  // but the real display name always comes from this internal fetch,
+  // never a hardcoded fallback.
+  const [fetchedPersona, setFetchedPersona] = useState(null);
+  const [fetchedDisplayName, setFetchedDisplayName] = useState(null);
+
+  React.useEffect(() => {
+    getMyProfile().then(({ ok, data }) => {
+      if (ok && data.success) {
+        if (data.profile.primary_role) setFetchedPersona(data.profile.primary_role);
+        if (data.profile.display_name) setFetchedDisplayName(data.profile.display_name);
+      }
+    });
+  }, []);
+
+  const persona = externalPersona || fetchedPersona;
+  const realDisplayName = externalDisplayName || fetchedDisplayName;
+
+  if (!persona) {
     return (
       <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
         <aside className="w-64 border-r border-surface-border bg-white p-4 flex flex-col">
@@ -98,7 +121,7 @@ export default function Shell({ children, title, subtitle, persona = 'FOUNDER', 
   }
 
   const NAV = NAV_BY_PERSONA[persona];
-  const identity = { ...IDENTITY_BY_PERSONA[persona], ...(displayName ? { name: displayName } : {}) };
+  const identity = { ...IDENTITY_BY_PERSONA[persona], ...(realDisplayName ? { name: realDisplayName } : {}) };
   const homePath = NAV[0].path;
 
   React.useEffect(() => {
