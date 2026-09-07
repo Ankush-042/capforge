@@ -14,7 +14,7 @@ import { useToast } from '../components/Toast.jsx';
  * editable, not locked in at onboarding and forgotten.
  */
 export default function MyProfile() {
-  const persona = useMyPersona();
+  const { persona, displayName } = useMyPersona();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,12 +75,12 @@ export default function MyProfile() {
     else showToast(data.error || 'Could not save.', 'error');
   }
 
-  if (loading) return <Shell persona={persona} title="My Profile"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell persona={persona} displayName={displayName} title="My Profile"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20";
 
   return (
-    <Shell persona={persona} title="My Profile">
+    <Shell persona={persona} displayName={displayName} title="My Profile">
       <PageHeader icon={User} iconBg="bg-violet-50" iconColor="text-violet-600" title="My Profile" subtitle="This is the main ingredient matching runs on — keep it real and current." />
 
       <div className="bg-white rounded-xl border border-surface-border shadow-card p-7 mb-6">

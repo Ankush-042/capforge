@@ -10,7 +10,7 @@ import { useToast } from '../components/Toast.jsx';
 const FUNDING_STAGES = ['Bootstrapped', 'Pre-seed', 'Seed', 'Series A+'];
 
 export default function Search() {
-  const persona = useMyPersona();
+  const { persona, displayName } = useMyPersona();
   const showToast = useToast();
   const [tab, setTab] = useState('startups');
   const [mode, setMode] = useState('keyword'); // 'keyword' | 'semantic'
@@ -52,7 +52,7 @@ export default function Search() {
   }
 
   return (
-    <Shell persona={persona} title="Search" subtitle="Real, live results">
+    <Shell persona={persona} displayName={displayName} title="Search" subtitle="Real, live results">
       <PageHeader icon={SearchIcon} iconBg="bg-violet-50" iconColor="text-violet-600" title="Search" subtitle="Real, live results" />
 
       <div className="relative mb-4">

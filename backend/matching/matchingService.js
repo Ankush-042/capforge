@@ -271,11 +271,17 @@ async function rankCandidatesForGap(gapId) {
 }
 
 async function getRecommendationsForStartup(startupId) {
+  // Real fix: same orphaned-reference bug found and fixed in 3 other
+  // places (getMyRecommendationsAsContributor, getMultiOfferComparison,
+  // and the root cause in gapDiagnosisService.js) — a LEFT JOIN here
+  // let recommendations pointing at deleted gaps through with blank
+  // role/reason fields, shown to founders in their own GapDetail
+  // candidate list.
   const result = await pool.query(
     `SELECT r.*, p.headline as candidate_headline, g.role as gap_role, g.reason as gap_reason
      FROM recommendations r
      JOIN profiles p ON p.user_id = r.target_user_id
-     LEFT JOIN gaps g ON g.id = r.source_gap_id
+     JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.startup_id = $1 ORDER BY r.source_gap_id, r.rank`,
     [startupId]
   );
