@@ -28,7 +28,19 @@ const WEIGHTS = {
 function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAdjustment = 0) {
   const investorDomains = (investor.preferred_domains || []).map(d => d.toLowerCase().trim());
   const startupDomains = (startup.domain || []).map(d => d.toLowerCase().trim());
-  const domainOverlap = investorDomains.filter(d => startupDomains.includes(d));
+  // Real fix: same brittleness already found and fixed for skill
+  // matching (exact string equality treating 'aml' and 'aml kyc' as
+  // unrelated) exists here too — 'cybersecurity' vs 'cyber security',
+  // 'legal tech' vs 'legaltech', etc. Fixed the same way: real
+  // substring/token overlap, not just character-for-character equality.
+  function domainsMatch(a, b) {
+    if (a === b) return true;
+    if (a.includes(b) || b.includes(a)) return true;
+    const aTokens = new Set(a.split(/[\s/,-]+/).filter(t => t.length > 2));
+    const bTokens = b.split(/[\s/,-]+/).filter(t => t.length > 2);
+    return bTokens.some(t => aTokens.has(t));
+  }
+  const domainOverlap = investorDomains.filter(d => startupDomains.some(sd => domainsMatch(d, sd)));
   const domainFit = investorDomains.length > 0
     ? Math.min(domainOverlap.length / investorDomains.length, 1)
     : 0.5;
