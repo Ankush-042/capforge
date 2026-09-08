@@ -82,3 +82,11 @@ export const setUserStatus = (userId, status) => apiFetch(`/admin/users/${userId
 export const setUserAdmin = (userId, isAdmin) => apiFetch(`/admin/users/${userId}/admin`, { method: 'PATCH', body: JSON.stringify({ isAdmin }) });
 export const getIntegrityCheck = () => apiFetch('/admin/integrity-check');
 export const fixIntegrityIssue = (checkId) => apiFetch(`/admin/integrity-check/${checkId}/fix`, { method: 'POST' });
+
+// Phase 2: The First Act — sparks, the moment before a startup exists.
+export const createSpark = (data) => apiFetch('/sparks', { method: 'POST', body: JSON.stringify(data) });
+export const listSparks = (tag) => apiFetch(`/sparks${tag ? `?tag=${encodeURIComponent(tag)}` : ''}`);
+export const getMySparks = () => apiFetch('/sparks/mine');
+export const getSpark = (id) => apiFetch(`/sparks/${id}`);
+export const resonateWithSpark = (id, message) => apiFetch(`/sparks/${id}/resonate`, { method: 'POST', body: JSON.stringify({ message }) });
+export const commitToSpark = (id) => apiFetch(`/sparks/${id}/commit`, { method: 'POST' });
