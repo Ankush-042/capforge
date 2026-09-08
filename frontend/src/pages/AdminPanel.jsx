@@ -1,11 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Search, Ban, CheckCircle2, Shield, ShieldOff, Trash2, AlertTriangle, Wrench } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
+import { ShieldCheck, Search, Ban, CheckCircle2, Shield, ShieldOff, Trash2, AlertTriangle, Wrench, Users2, Building2, Link2, Layers } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import StatCard, { STAT_PALETTE } from '../components/charts/StatCard.jsx';
 import { getAdminStats, getAdminUsers, getAdminStartups, setStartupVerification, deleteAdminStartup, setUserStatus, setUserAdmin, getIntegrityCheck, fixIntegrityIssue } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 const VERIFICATION_STATUSES = ['CLAIMED', 'PENDING_VERIFICATION', 'VERIFIED', 'UNVERIFIED'];
 const SEVERITY_STYLE = { critical: 'bg-signal-critical/10 text-signal-critical', high: 'bg-amber-100 text-amber-700', medium: 'bg-blue-50 text-blue-600', low: 'bg-surface-muted text-ink-500' };
+const BAR_COLORS = ['#6D28D9', '#1677E8', '#E84C32', '#C58A00', '#16A34A'];
+
+/** Real, dedicated bar-chart treatment for a breakdown — replaces flat text rows with an actual visual comparison. */
+function BreakdownChart({ title, rows }) {
+  const data = rows.map(r => ({ name: Object.values(r)[0], value: parseInt(Object.values(r)[1]) }));
+  return (
+    <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
+      <p className="text-[13px] font-medium text-ink-500 mb-4">{title}</p>
+      <ResponsiveContainer width="100%" height={Math.max(data.length * 44, 90)}>
+        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
+          <XAxis type="number" hide />
+          <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 13, fill: '#57534E' }} axisLine={false} tickLine={false} />
+          <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20} label={{ position: 'right', fontSize: 13, fontWeight: 600, fill: '#1C1917' }}>
+            {data.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 /**
  * Real fix for a confirmed complaint: the admin panel was genuinely
@@ -91,14 +113,20 @@ export default function AdminPanel() {
       </div>
 
       {tab === 'stats' && stats && (
-        <div className="grid grid-cols-2 gap-6">
-          {Object.entries(stats).map(([key, rows]) => (
-            <div key={key} className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-              <p className="text-[13px] font-medium text-ink-500 mb-3 capitalize">{key.replace(/_/g, ' ')}</p>
-              {rows.map((r, i) => <div key={i} className="flex justify-between text-[15px] py-1"><span className="text-ink-700">{Object.values(r)[0]}</span><span className="font-medium text-ink-900">{Object.values(r)[1]}</span></div>)}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-4 gap-5 mb-6">
+            <StatCard label="Total Users" value={stats.users_by_role.reduce((s, r) => s + parseInt(r.count), 0)} sub="Founders, contributors, investors" icon={<Users2 size={18} />} {...STAT_PALETTE.lavender} />
+            <StatCard label="Total Startups" value={stats.startups_by_status.reduce((s, r) => s + parseInt(r.count), 0)} sub="Across every status" icon={<Building2 size={18} />} {...STAT_PALETTE.blue} />
+            <StatCard label="Connections" value={stats.connections_by_status.reduce((s, r) => s + parseInt(r.count), 0)} sub="Accepted requests" icon={<Link2 size={18} />} {...STAT_PALETTE.cream} />
+            <StatCard label="Critical Gaps" value={stats.gaps_by_priority.find(r => r.priority_level === 'CRITICAL')?.count || 0} sub="Need real candidates" icon={<Layers size={18} />} {...STAT_PALETTE.peach} />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <BreakdownChart title="Users By Role" rows={stats.users_by_role} />
+            <BreakdownChart title="Startups By Status" rows={stats.startups_by_status} />
+            <BreakdownChart title="Connections By Status" rows={stats.connections_by_status} />
+            <BreakdownChart title="Gaps By Priority" rows={stats.gaps_by_priority} />
+          </div>
+        </>
       )}
 
       {tab === 'health' && health && (
