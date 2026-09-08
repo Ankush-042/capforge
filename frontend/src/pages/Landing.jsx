@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { motion } from 'motion/react';
 import { ArrowUpRight, ArrowDownRight, Menu, X } from 'lucide-react';
 import '@fontsource/geist-sans/400.css';
 import '@fontsource/geist-sans/500.css';
@@ -43,22 +43,28 @@ function Eyebrow({ children }) {
   );
 }
 
-/** Real animated count-up, driven by real fetched data, not decoration. */
+/** Real animated count-up, driven by real fetched data, not decoration. Plain React state + requestAnimationFrame — no dependency on unverified library hooks. */
 function LiveCounter({ value, label }) {
-  const motionVal = useMotionValue(0);
-  const spring = useSpring(motionVal, { duration: 1.4, bounce: 0 });
-  const rounded = useTransform(spring, (v) => Math.round(v).toLocaleString());
-  const [display, setDisplay] = useState('0');
+  const [display, setDisplay] = useState(0);
 
   useEffect(() => {
-    if (typeof value === 'number') motionVal.set(value);
-    const unsub = rounded.on('change', (v) => setDisplay(v));
-    return unsub;
+    if (typeof value !== 'number') return;
+    const duration = 1200;
+    const start = performance.now();
+    let frameId;
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(eased * value));
+      if (progress < 1) frameId = requestAnimationFrame(tick);
+    }
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
   }, [value]);
 
   return (
     <div>
-      <p className="font-display text-4xl lg:text-5xl font-semibold text-white tabular-nums">{typeof value === 'number' ? display : '···'}</p>
+      <p className="font-display text-4xl lg:text-5xl font-semibold text-white tabular-nums">{typeof value === 'number' ? display.toLocaleString() : '···'}</p>
       <p className="text-sm text-ink-300 mt-1.5">{label}</p>
     </div>
   );
@@ -89,7 +95,10 @@ export default function Landing() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch('/api/public/stats').then(r => r.json()).then(data => { if (data.success) setStats(data.stats); }).catch(() => {});
+    fetch('/api/public/stats')
+      .then(r => r.json())
+      .then(data => { if (data.success) setStats(data.stats); else console.error('Public stats fetch returned failure:', data); })
+      .catch(err => console.error('Public stats fetch failed:', err));
   }, []);
 
   return (
