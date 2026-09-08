@@ -60,6 +60,8 @@ const conversationRoutes = require('./conversations/conversationRoutes');
 app.use('/api', conversationRoutes);
 const savedSearchRoutes = require('./savedsearches/savedSearchRoutes');
 app.use('/api', savedSearchRoutes);
+const publicRoutes = require('./public/publicRoutes');
+app.use('/api', publicRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

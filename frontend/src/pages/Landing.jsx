@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { ArrowUpRight, ArrowDownRight, Check, Menu, X } from 'lucide-react';
 import '@fontsource/geist-sans/400.css';
 import '@fontsource/geist-sans/500.css';
@@ -7,14 +8,14 @@ import '@fontsource/geist-sans/600.css';
 import '@fontsource/geist-sans/700.css';
 
 /**
- * Landing page — complete rebuild, pure Tailwind utility classes only.
- * Zero external CSS file: this permanently eliminates the entire class of
- * cascade-specificity bugs that plagued the earlier custom-CSS approach
- * (Tailwind's own reset vs. a competing stylesheet fighting over h1/h2
- * sizing depending on unpredictable load order). Every size/color/spacing
- * decision here is a co-located Tailwind class — same proven, bug-free
- * system already running across all 13 dashboard screens.
+ * Landing page — real motion added (was confirmed completely static —
+ * zero animation anywhere in the previous version, the exact 'feels
+ * static' problem named directly), and real live platform data
+ * replacing the hardcoded fake trust-bar numbers ('500+', '2,400+',
+ * '92%' were never real — this now fetches the actual, honest counts
+ * from a real, newly-built public endpoint).
  */
+const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
 
 const NAV = ['Product', 'How it works', 'For Founders', 'For Contributors', 'For Investors'];
 
@@ -37,16 +38,21 @@ function Eyebrow({ children }) {
 
 function StepCard({ n, title, desc }) {
   return (
-    <div className="bg-white rounded-xl border border-surface-border shadow-card p-7">
+    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, delay: (n - 1) * 0.1, ease: [0.16, 1, 0.3, 1] }} className="bg-white rounded-xl border border-surface-border shadow-card p-7">
       <span className="text-xs font-mono text-forest-600">0{n}</span>
       <p className="text-lg font-semibold text-ink-900 mt-3 mb-2">{title}</p>
       <p className="text-[15px] text-ink-500 leading-relaxed">{desc}</p>
-    </div>
+    </motion.div>
   );
 }
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/public/stats').then(r => r.json()).then(data => { if (data.success) setStats(data.stats); }).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-canvas font-sans">
@@ -78,7 +84,7 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="max-w-[1280px] mx-auto px-6 lg:px-10 pt-16 pb-20 grid lg:grid-cols-2 gap-14 items-center">
-        <div>
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
           <Eyebrow>The intelligent startup ecosystem</Eyebrow>
           <h1 className="font-display text-[40px] sm:text-[48px] lg:text-[56px] font-semibold leading-[1.08] tracking-tight text-ink-950">
             Build the team your startup was <span className="italic font-normal text-forest-600">missing.</span>
@@ -94,9 +100,9 @@ export default function Landing() {
               Explore how it works <ArrowDownRight size={16} />
             </a>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-2xl border border-surface-border shadow-elevated p-7">
+        <motion.div initial={{ opacity: 0, y: 32, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }} className="bg-white rounded-2xl border border-surface-border shadow-elevated p-7">
           <div className="flex items-center justify-between mb-6">
             <span className="text-xs font-mono text-ink-300">CAPFORGE INTELLIGENCE / 01</span>
             <span className="text-xs font-medium text-forest-600 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" />LIVE</span>
@@ -119,14 +125,22 @@ export default function Landing() {
           <div className="mt-4 bg-forest-50 text-forest-600 text-sm font-medium rounded-lg px-4 py-3 flex items-center gap-2">
             <Check size={15} /> 94% capability match
           </div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* Trust bar */}
+      {/* Trust bar — real, live platform data, never hardcoded fake numbers */}
       <section className="border-y border-surface-border bg-white py-10">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {[['500+', 'Startups diagnosed'], ['2,400+', 'Contributors matched'], ['92%', 'Explainable match accuracy'], ['3', 'Personas, one intelligence layer']].map(([n, l]) => (
-            <div key={l}><p className="text-2xl lg:text-3xl font-display font-semibold text-ink-900">{n}</p><p className="text-sm text-ink-500 mt-1">{l}</p></div>
+          {[
+            [stats ? stats.activeVentures : '—', 'Real active ventures'],
+            [stats ? stats.realContributors : '—', 'Real people on the platform'],
+            [stats ? stats.teamsFormed : '—', 'Real team members joined'],
+            ['3', 'Personas, one intelligence layer'],
+          ].map(([n, l], i) => (
+            <motion.div key={l} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.08 }}>
+              <p className="text-2xl lg:text-3xl font-display font-semibold text-ink-900">{n}</p>
+              <p className="text-sm text-ink-500 mt-1">{l}</p>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -155,12 +169,12 @@ export default function Landing() {
               ['For Founders', 'Find the people your startup needs, ranked and explained.', 'bg-forest-50 text-forest-700'],
               ['For Contributors', 'Discover ventures where your skills genuinely matter.', 'bg-violet-50 text-violet-700'],
               ['For Investors', 'Discover promising ventures early, with real readiness signal.', 'bg-ink-950 text-white'],
-            ].map(([title, desc, cls]) => (
-              <div key={title} className={`rounded-xl p-8 ${cls}`}>
+            ].map(([title, desc, cls], i) => (
+              <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className={`rounded-xl p-8 ${cls}`}>
                 <p className="font-display text-xl font-semibold mb-3">{title}</p>
                 <p className="text-[15px] opacity-80 leading-relaxed mb-6">{desc}</p>
                 <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
