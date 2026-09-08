@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Scale } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { rankCandidates, sendConnection } from '../services/startups.js';
+import { rankCandidates, startConversation } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 export default function CandidateComparison() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const gapId = searchParams.get('gap');
   const startupId = searchParams.get('startup');
@@ -25,9 +26,11 @@ export default function CandidateComparison() {
   }, [gapId]);
 
   async function handleConnect(c) {
-    const { ok, data } = await sendConnection({ receiverId: c.target_user_id, startupId, sourceGapId: gapId });
-    if (ok && data.success) showToast('Connection request sent.');
-    else showToast(data.error === 'DUPLICATE_PENDING_REQUEST' ? 'Already sent.' : 'Could not send request.', 'error');
+    // Real fix: migrated off the old instant accept/reject system,
+    // consistent with the redesigned real-conversation flow.
+    const { ok, data } = await startConversation(c.target_user_id, { startupId, gapId });
+    if (ok && data.success) navigate(`/app/inbox/${data.conversation.id}`);
+    else showToast(data.error || 'Could not start a conversation.', 'error');
   }
 
   if (loading) return <Shell title="Compare candidates"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
@@ -60,7 +63,7 @@ export default function CandidateComparison() {
                   <td className="px-6 py-4 text-ink-700">{Math.round((c.score_breakdown?.domainFit || 0) * 100)}%</td>
                   <td className="px-6 py-4 text-ink-700">{Math.round((c.score_breakdown?.stageFit || 0) * 100)}%</td>
                   <td className="px-6 py-4 text-ink-700">{Math.round((c.score_breakdown?.experienceFit || 0) * 100)}%</td>
-                  <td className="px-6 py-4"><button onClick={() => handleConnect(c)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">Connect</button></td>
+                  <td className="px-6 py-4"><button onClick={() => handleConnect(c)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">Message</button></td>
                 </tr>
               ))}
             </tbody>

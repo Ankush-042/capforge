@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Target } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import Badge from '../components/charts/Badge.jsx';
 import AvatarRow from '../components/charts/AvatarRow.jsx';
-import { getGaps, rankCandidates, sendConnection } from '../services/startups.js';
+import { getGaps, rankCandidates, startConversation } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 export default function GapDetail() {
+  const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const startupId = searchParams.get('startup');
@@ -47,9 +48,13 @@ export default function GapDetail() {
   }
 
   async function handleConnect(candidate) {
-    const { ok, data } = await sendConnection({ receiverId: candidate.target_user_id, startupId, sourceGapId: id, message: `Would love to have you help with ${gap.role}` });
-    if (ok && data.success) showToast(`Connection request sent to ${candidate.candidate_headline || 'candidate'}.`);
-    else showToast(data.error === 'DUPLICATE_PENDING_REQUEST' ? 'Already sent a request.' : data.error === 'ALREADY_ON_TEAM' ? 'Already on your team.' : 'Could not send request.', 'error');
+    // Real fix: this used the OLD instant accept/reject 'connections'
+    // system, directly contradicting the redesigned flow (express
+    // interest → real conversation → mutual confirm → team join)
+    // already built and working everywhere else. Migrated to match.
+    const { ok, data } = await startConversation(candidate.target_user_id, { startupId, gapId: id });
+    if (ok && data.success) navigate(`/app/inbox/${data.conversation.id}`);
+    else showToast(data.error || 'Could not start a conversation.', 'error');
   }
 
   if (loading) return <Shell title="Gap detail"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
@@ -101,7 +106,7 @@ export default function GapDetail() {
               <div className="flex items-center justify-end gap-3 mt-2">
                 <span className="text-sm font-medium text-violet-600">{Math.round(c.score * 100)}%</span>
                 <button onClick={() => handleConnect(c)} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-medium hover:bg-violet-100 transition-colors">
-                  {gap.seeking_type === 'CO_FOUNDER' ? 'Explore co-founder match' : 'Connect'}
+                  {gap.seeking_type === 'CO_FOUNDER' ? 'Explore co-founder match' : 'Message'}
                 </button>
               </div>
               <div className="mt-3 pl-12">
