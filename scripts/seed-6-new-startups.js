@@ -44,6 +44,12 @@ async function post(path, body, token) {
   const res = await fetch(`${BASE}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
   return { ok: res.ok, data: await res.json().catch(() => ({})) };
 }
+async function patch(path, body, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${BASE}${path}`, { method: 'PATCH', headers, body: JSON.stringify(body) });
+  return { ok: res.ok, data: await res.json().catch(() => ({})) };
+}
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function run() {
@@ -52,16 +58,33 @@ async function run() {
   for (const f of FOUNDERS) {
     await sleep(8000); // real AI rate limit is 10/min on POST /startups — 8s spacing stays safely under it
 
+    let token;
     const reg = await post('/auth/register', { email: f.email, password: PASSWORD, primaryRole: 'FOUNDER', displayName: f.displayName });
-    if (!reg.ok) { console.log(`  ✗ ${f.startup}: registration failed — ${reg.data.error}`); continue; }
-    const token = reg.data.token;
+    if (reg.ok) {
+      token = reg.data.token;
+    } else if (reg.data.error === 'EMAIL_ALREADY_EXISTS') {
+      // Real, correct resume path: this founder + their AI-structured
+      // startup already exist from an earlier partial run — log in
+      // instead of failing, and pick up from here.
+      const login = await post('/auth/login', { email: f.email, password: PASSWORD });
+      if (!login.ok) { console.log(`  ✗ ${f.startup}: exists but login failed — ${login.data.error}`); continue; }
+      token = login.data.token;
+    } else {
+      console.log(`  ✗ ${f.startup}: registration failed — ${reg.data.error}`); continue;
+    }
 
-    const create = await post('/startups', { name: f.startup, rawIdea: f.idea }, token);
-    if (!create.ok || !create.data.success) { console.log(`  ✗ ${f.startup}: creation/structuring failed — ${create.data.error}, ${create.data.detail}`); continue; }
-    const startupId = create.data.startup.id;
+    let startupId;
+    const mine = await fetch(`${BASE}/startups/mine`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+    if (mine.success && mine.startups.length > 0) {
+      startupId = mine.startups[0].id; // real resume: use the already-structured startup, don't re-create
+    } else {
+      const create = await post('/startups', { name: f.startup, rawIdea: f.idea }, token);
+      if (!create.ok || !create.data.success) { console.log(`  ✗ ${f.startup}: creation/structuring failed — ${create.data.error}, ${create.data.detail}`); continue; }
+      startupId = create.data.startup.id;
+    }
 
-    const confirmRes = await post(`/startups/${startupId}/confirm`, {}, token);
-    if (!confirmRes.ok || !confirmRes.data.success) { console.log(`  ✗ ${f.startup}: confirm failed — ${confirmRes.data.error}`); continue; }
+    const confirmRes = await patch(`/startups/${startupId}/confirm`, {}, token);
+    if (!confirmRes.ok || !confirmRes.data.success) { console.log(`  ✗ ${f.startup}: confirm failed — ${confirmRes.data.error}, ${confirmRes.data.detail}`); continue; }
 
     const diagRes = await post(`/startups/${startupId}/diagnose`, {}, token);
     if (!diagRes.ok || !diagRes.data.success) { console.log(`  ✗ ${f.startup}: diagnosis failed — ${diagRes.data.error}, ${diagRes.data.detail}`); continue; }
