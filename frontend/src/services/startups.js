@@ -80,3 +80,5 @@ export const setStartupVerification = (startupId, status) => apiFetch(`/admin/st
 export const deleteAdminStartup = (startupId) => apiFetch(`/admin/startups/${startupId}`, { method: 'DELETE' });
 export const setUserStatus = (userId, status) => apiFetch(`/admin/users/${userId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
 export const setUserAdmin = (userId, isAdmin) => apiFetch(`/admin/users/${userId}/admin`, { method: 'PATCH', body: JSON.stringify({ isAdmin }) });
+export const getIntegrityCheck = () => apiFetch('/admin/integrity-check');
+export const fixIntegrityIssue = (checkId) => apiFetch(`/admin/integrity-check/${checkId}/fix`, { method: 'POST' });

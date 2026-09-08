@@ -2,7 +2,14 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { requireAdmin } = require('./adminMiddleware');
-const { listAllUsers, listAllStartups, setVerificationStatus, getPlatformStats, setUserStatus, setUserAdmin, deleteStartup } = require('./adminService');
+const { listAllUsers, listAllStartups, setVerificationStatus, getPlatformStats, setUserStatus, setUserAdmin, deleteStartup, runIntegrityCheck, fixIntegrityIssue } = require('./adminService');
+
+router.get('/integrity-check', requireAuth, requireAdmin, async (req, res) => res.json(await runIntegrityCheck()));
+router.post('/integrity-check/:checkId/fix', requireAuth, requireAdmin, async (req, res) => {
+  const result = await fixIntegrityIssue(req.params.checkId);
+  if (!result.success) return res.status(400).json(result);
+  res.json(result);
+});
 
 router.get('/users', requireAuth, requireAdmin, async (req, res) => res.json(await listAllUsers(req.query.search)));
 router.get('/startups', requireAuth, requireAdmin, async (req, res) => res.json(await listAllStartups(req.query.search)));
