@@ -164,8 +164,80 @@ async function commitToSpark(sparkId, userId) {
     return { success: true, formed: false, awaitingOther: true };
   }
 
-  // Both committed. This is the founding moment.
-  return { success: true, formed: true, bothCommitted: true, spark, coFounderId: r.user_id };
+  // Both committed. This is the actual founding moment: the spark stops
+  // being an idea and becomes a real venture.
+  return await formVenture(spark, r.user_id);
+}
+
+/**
+ * The founding moment made real.
+ *
+ * Runs the SAME structuring pipeline every other venture goes through
+ * (createStartup already handles AI structuring, gap diagnosis and seeding
+ * the author as a team member), then does the one thing that makes this
+ * different from every other path into the platform: the person who
+ * resonated joins as a genuine CO-FOUNDER from day one, not as a hire
+ * discovered later through gap diagnosis.
+ */
+async function formVenture(spark, coFounderId) {
+  const { createStartup } = require('../startups/startupService');
+
+  // The spark's own text becomes the venture's raw idea. Nothing is
+  // re-typed or lost: what they wrote before the company existed is
+  // literally what the company is built from.
+  const rawIdea = [spark.the_idea, spark.why_me ? `\n\nWhy this founder: ${spark.why_me}` : ''].join('');
+
+  const created = await createStartup(spark.author_id, {
+    name: spark.title.length > 60 ? spark.title.slice(0, 57) + '...' : spark.title,
+    rawIdea,
+    currentTeamSize: 2, // Real from the first moment: two committed people, not one
+    founderVision: spark.why_me || null,
+    founderDomainExpertise: spark.tags || [],
+  });
+
+  // Real failure isolation, matching the pattern already proven in
+  // createStartup: if AI structuring fails, the commitment itself must
+  // NOT be lost. The spark stays FORMING so it can be retried, rather
+  // than being marked FORMED with no venture behind it.
+  if (!created.startup) {
+    return { success: false, error: 'FORMATION_FAILED', detail: created.detail || created.error };
+  }
+  const startup = created.startup;
+
+  // The one thing that makes this path genuinely different: co-founder,
+  // seeded on day one, flagged is_founder like the author.
+  const coFounderProfile = await pool.query(`SELECT headline, skills FROM profiles WHERE user_id = $1`, [coFounderId]);
+  const cp = coFounderProfile.rows[0];
+  await pool.query(
+    `INSERT INTO startup_team_members (startup_id, user_id, role, skills, is_founder)
+     VALUES ($1, $2, $3, $4, true)
+     ON CONFLICT (startup_id, user_id) DO NOTHING`,
+    [startup.id, coFounderId, cp?.headline || 'Co-founder', cp?.skills || []]
+  );
+
+  await pool.query(
+    `UPDATE sparks SET status = 'FORMED', formed_startup_id = $1, updated_at = now() WHERE id = $2`,
+    [startup.id, spark.id]
+  );
+
+  for (const uid of [spark.author_id, coFounderId]) {
+    createNotification(uid, {
+      type: 'SPARK_FORMED',
+      title: 'It is real now',
+      message: `"${spark.title}" is a venture. You are both founders.`,
+      referenceType: 'STARTUP',
+      referenceId: startup.id,
+    }).catch(() => {});
+  }
+
+  return {
+    success: true,
+    formed: true,
+    bothCommitted: true,
+    startupId: startup.id,
+    structured: created.success,
+    detail: created.success ? undefined : 'Venture created, but AI structuring did not complete. You can re-run analysis from the dashboard.',
+  };
 }
 
 async function getMySparks(userId) {

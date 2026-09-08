@@ -212,7 +212,21 @@ async function getStartup(startupId, requestingUserId) {
   const startup = result.rows[0];
 
   // Visibility check: owner always sees it; others only if discoverable+active.
-  const isOwner = startup.founder_id === requestingUserId;
+  //
+  // REAL FIX (found while wiring the spark founding moment): this used to
+  // treat ONLY founder_id as owner. A co-founder who joined at formation
+  // via a spark is a genuine founder of this venture but is not the
+  // founder_id row, so they were locked out of the company they just
+  // committed to build: a DRAFT venture returned NOT_FOUND to them.
+  // Co-founders (is_founder = true on the team) are now real owners.
+  let isOwner = startup.founder_id === requestingUserId;
+  if (!isOwner && requestingUserId) {
+    const coFounder = await pool.query(
+      `SELECT 1 FROM startup_team_members WHERE startup_id = $1 AND user_id = $2 AND is_founder = true`,
+      [startupId, requestingUserId]
+    );
+    if (coFounder.rows.length > 0) isOwner = true;
+  }
   const isVisible = startup.visibility === 'DISCOVERABLE' && startup.status === 'ACTIVE';
   if (!isOwner && !isVisible) {
     return { success: false, error: 'NOT_FOUND' }; // don't leak existence of private startups
@@ -222,7 +236,15 @@ async function getStartup(startupId, requestingUserId) {
 }
 
 async function listMyStartups(founderId) {
-  const result = await pool.query('SELECT * FROM startups WHERE founder_id = $1 ORDER BY created_at DESC', [founderId]);
+  // Same real fix as getStartup: a co-founder who joined at formation via a
+  // spark would otherwise never see their own venture in their list at all.
+  const result = await pool.query(
+    `SELECT DISTINCT s.* FROM startups s
+     LEFT JOIN startup_team_members tm ON tm.startup_id = s.id AND tm.user_id = $1 AND tm.is_founder = true
+     WHERE s.founder_id = $1 OR tm.user_id IS NOT NULL
+     ORDER BY s.created_at DESC`,
+    [founderId]
+  );
   return { success: true, startups: result.rows };
 }
 

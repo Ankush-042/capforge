@@ -52,10 +52,21 @@ export default function SparkDetail() {
     const { ok, data: res } = await commitToSpark(id);
     setCommitting(false);
     if (ok && res.success) {
-      showToast(res.formed ? 'This is real now. Building your venture…' : 'Committed. Waiting on them.');
+      if (res.formed && res.startupId) {
+        // The founding moment actually happened: take them straight into
+        // the venture that now exists, rather than leaving them on a page
+        // that just says it does.
+        showToast(res.structured === false ? 'It is real. Structuring did not finish, you can re-run it.' : 'It is real now. Welcome to your venture.');
+        navigate(`/app/startups/${res.startupId}`);
+        return;
+      }
+      showToast('Committed. Waiting on them.');
       await load();
     } else {
-      showToast(res.error === 'NO_RESONANCE_YET' ? 'Nobody has resonated with this yet.' : 'Could not commit.', 'error');
+      showToast(
+        res.error === 'NO_RESONANCE_YET' ? 'Nobody has resonated with this yet.'
+        : res.error === 'FORMATION_FAILED' ? 'Could not create the venture. Your commitment is saved, try again.'
+        : 'Could not commit.', 'error');
     }
   }
 
@@ -83,6 +94,11 @@ export default function SparkDetail() {
               <span className="text-[11px] font-medium tracking-wide uppercase text-mint-500 bg-mint-500/15 px-2.5 py-1 rounded-md">
                 {spark.status === 'FORMING' ? 'Forming' : spark.status === 'FORMED' ? 'Now a venture' : 'Open'}
               </span>
+              {spark.formed_startup_id && (
+                <Link to={`/app/startups/${spark.formed_startup_id}`} className="text-xs font-medium text-mint-500 hover:text-mint-500/80 transition-colors">
+                  Open the venture
+                </Link>
+              )}
               {parseInt(spark.view_count) > 0 && <span className="text-xs text-white/40">{spark.view_count} views</span>}
             </div>
             <h1 className="font-display text-[30px] lg:text-[36px] font-semibold text-white leading-tight">{spark.title}</h1>
