@@ -11,8 +11,6 @@ const BASE = 'http://localhost:3000/api';
 const PASSWORD = 'SeedPass123!';
 
 const FOUNDERS = [
-  { email: 'test@test.com', headline: 'Founder', bio: 'Testing account for exploring the founder side of the platform.' },
-  { email: 'ankush@founder', headline: 'Founder', bio: 'Testing account for exploring the founder side of the platform.' },
   { email: 'founder.neura@seed.test', headline: 'Founder & CEO, NeuraHealth', bio: 'Building AI-powered telemedicine for rural communities that lack specialist access.' },
   { email: 'founder.ecocharge@seed.test', headline: 'Founder & CEO, EcoCharge', bio: 'Building AI-driven smart-grid infrastructure for EV charging networks.' },
   { email: 'founder.learnloop@seed.test', headline: 'Founder & CEO, LearnLoop', bio: 'Building adaptive K-12 learning software that adjusts in real time to how each student actually learns.' },
@@ -28,7 +26,6 @@ const FOUNDERS = [
 ];
 
 const CONTRIBUTORS = [
-  { email: 'contributor@test.com', bio: 'Data scientist with a background in ML modeling, looking to join an early-stage team.' },
   { email: 'c.priya@seed.test', bio: 'Data scientist focused on ML modeling and applied statistics.' },
   { email: 'c.arjun@seed.test', bio: 'Full stack engineer who recently moved into fintech compliance work.' },
   { email: 'c.sara@seed.test', bio: 'ML engineer specializing in computer vision and model architecture.' },
@@ -76,11 +73,14 @@ const INVESTORS = [
   { email: 'i.nextwave@seed.test', headline: 'Early-stage generalist investor', bio: 'NextWave Angels invests opportunistically across edtech, SaaS, and logistics at the idea and prototype stage.' },
 ];
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 async function login(email) {
   const res = await fetch(`${BASE}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) });
   return (await res.json()).token;
 }
 async function fillProfile(email, headline, bio) {
+  await sleep(3500); // real fix: confirmed authLimit is 20 requests/60s on /auth/login — this paces every account safely under that cap
   const token = await login(email);
   if (!token) { console.log(`  ✗ ${email}: login failed`); return; }
   const body = { bio };
