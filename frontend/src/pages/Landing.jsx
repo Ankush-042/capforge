@@ -20,7 +20,9 @@ import '@fontsource/geist-sans/700.css';
  * 3. "How it works" was a banned generic 3-equal-column card row -
  *    rebuilt as an asymmetric, alternating editorial layout.
  */
-const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
+const heroContainer = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.15 } } };
+const heroItem = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } } };
+const cardIn = { hidden: { opacity: 0, x: 40 }, visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } } };
 
 const NAV = ['Product', 'How it works', 'For Founders', 'For Contributors', 'For Investors'];
 
@@ -118,25 +120,55 @@ export default function Landing() {
         )}
       </header>
 
-      {/* Hero, real typography-driven, no fake product mockup */}
-      <section className="max-w-[900px] mx-auto px-6 lg:px-10 pt-20 pb-14 text-center">
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-          <Eyebrow>{'The intelligent startup ecosystem'}</Eyebrow>
-          <h1 className="font-display text-[42px] sm:text-[56px] lg:text-[68px] font-semibold leading-[1.04] tracking-tight text-ink-950">
-            Build the team your startup was <span className="italic font-normal text-forest-600">missing.</span>
-          </h1>
-          <p className="text-lg text-ink-500 mt-7 max-w-lg mx-auto leading-relaxed">
-            CapForge understands your venture, diagnoses exactly what it needs, and connects you with the people and capital that can move it forward.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-9">
-            <Link to="/sign-up" className="bg-ink-900 hover:bg-ink-700 text-white px-6 py-3.5 rounded-lg font-medium transition-colors flex items-center gap-2">
-              Build your startup <ArrowUpRight size={16} />
-            </Link>
-            <a href="#discover" className="text-ink-700 font-medium flex items-center gap-1.5 hover:text-forest-600 transition-colors">
-              See how it works <ArrowDownRight size={16} />
-            </a>
+      {/* Hero, real grid-line texture (atmospheric, not fake UI), bolder confident type, real tilted venture cards */}
+      <section className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.35]"
+          style={{ backgroundImage: 'linear-gradient(#E4DEFD 1px, transparent 1px), linear-gradient(to right, #E4DEFD 1px, transparent 1px)', backgroundSize: '3rem 3rem', maskImage: 'linear-gradient(to bottom, black, transparent)' }}
+        />
+        <div className="relative max-w-[1280px] mx-auto px-6 lg:px-10 pt-20 pb-24 grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div initial="hidden" animate="visible" variants={heroContainer}>
+            <motion.div variants={heroItem}><Eyebrow>{'The intelligent startup ecosystem'}</Eyebrow></motion.div>
+            <motion.h1 variants={heroItem} className="font-display text-[46px] sm:text-[60px] lg:text-[72px] font-semibold leading-[1.02] tracking-tight text-ink-950">
+              Build the team your startup was <span className="italic font-normal text-forest-600">missing.</span>
+            </motion.h1>
+            <motion.p variants={heroItem} className="text-lg text-ink-500 mt-7 max-w-md leading-relaxed">
+              CapForge understands your venture, diagnoses exactly what it needs, and connects you with the people and capital that can move it forward.
+            </motion.p>
+            <motion.div variants={heroItem} className="flex flex-wrap items-center gap-4 mt-9">
+              <Link to="/sign-up" className="group relative flex items-center overflow-hidden bg-ink-900 hover:bg-ink-700 text-white rounded-full pl-6 pr-2 py-2 font-medium transition-colors">
+                Build your startup
+                <span className="ml-3 relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/15">
+                  <ArrowUpRight size={15} className="absolute transition-transform duration-500 ease-out group-hover:translate-x-8 group-hover:-translate-y-8" />
+                  <ArrowUpRight size={15} className="absolute -translate-x-8 translate-y-8 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0" />
+                </span>
+              </Link>
+              <a href="#discover" className="text-ink-700 font-medium flex items-center gap-1.5 hover:text-forest-600 transition-colors">
+                See how it works <ArrowDownRight size={16} />
+              </a>
+            </motion.div>
+          </motion.div>
+
+          {/* Real, tilted venture cards, genuine names/domains from the live platform, never fabricated */}
+          <div className="relative h-[380px] hidden lg:block">
+            {stats && stats.sampleVentures && stats.sampleVentures.map((v, i) => (
+              <motion.div
+                key={v.name}
+                initial="hidden"
+                animate="visible"
+                variants={cardIn}
+                transition={{ delay: 0.3 + i * 0.15 }}
+                whileHover={{ y: -10, rotate: 0, transition: { duration: 0.3 } }}
+                style={{ rotate: i === 0 ? -6 : 5, top: i === 0 ? 20 : 140, left: i === 0 ? 20 : 140 }}
+                className="absolute w-72 bg-white rounded-2xl border border-surface-border shadow-elevated p-6"
+              >
+                <span className="text-xs font-mono text-ink-300 uppercase tracking-wide">Active venture</span>
+                <p className="font-display text-xl font-semibold text-ink-900 mt-1.5">{v.name}</p>
+                <p className="text-sm text-ink-500 mt-1">{Array.isArray(v.domain) ? v.domain.join(' · ') : v.domain}</p>
+              </motion.div>
+            ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* Real, live proof of life, replacing what used to be a fake product mockup */}
