@@ -62,6 +62,8 @@ const savedSearchRoutes = require('./savedsearches/savedSearchRoutes');
 app.use('/api', savedSearchRoutes);
 const publicRoutes = require('./public/publicRoutes');
 app.use('/api', publicRoutes);
+const sparkRoutes = require('./sparks/sparkRoutes');
+app.use('/api', sparkRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
