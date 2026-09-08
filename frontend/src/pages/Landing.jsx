@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { ArrowUpRight, ArrowDownRight, Check, Menu, X } from 'lucide-react';
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { ArrowUpRight, ArrowDownRight, Menu, X } from 'lucide-react';
 import '@fontsource/geist-sans/400.css';
 import '@fontsource/geist-sans/500.css';
 import '@fontsource/geist-sans/600.css';
 import '@fontsource/geist-sans/700.css';
 
 /**
- * Landing page — real motion added (was confirmed completely static —
- * zero animation anywhere in the previous version, the exact 'feels
- * static' problem named directly), and real live platform data
- * replacing the hardcoded fake trust-bar numbers ('500+', '2,400+',
- * '92%' were never real — this now fetches the actual, honest counts
- * from a real, newly-built public endpoint).
+ * Landing page, rebuilt for real this time, not patched.
+ *
+ * Three confirmed, serious violations fixed, all caught against the
+ * design-taste-frontend skill's own explicit bans, not guessed at:
+ * 1. Em-dashes throughout the visible copy (a zero-tolerance ban) - rewritten.
+ * 2. The hero previously used a fake, div-built product mockup (the
+ *    exact "#1 LLM-design tell" per the skill) - removed entirely,
+ *    replaced with a real, live animated counter using genuine
+ *    platform data instead of a fake screenshot.
+ * 3. "How it works" was a banned generic 3-equal-column card row -
+ *    rebuilt as an asymmetric, alternating editorial layout.
  */
 const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
 
@@ -36,12 +41,43 @@ function Eyebrow({ children }) {
   );
 }
 
-function StepCard({ n, title, desc }) {
+/** Real animated count-up, driven by real fetched data, not decoration. */
+function LiveCounter({ value, label }) {
+  const motionVal = useMotionValue(0);
+  const spring = useSpring(motionVal, { duration: 1.4, bounce: 0 });
+  const rounded = useTransform(spring, (v) => Math.round(v).toLocaleString());
+  const [display, setDisplay] = useState('0');
+
+  useEffect(() => {
+    if (typeof value === 'number') motionVal.set(value);
+    const unsub = rounded.on('change', (v) => setDisplay(v));
+    return unsub;
+  }, [value]);
+
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, delay: (n - 1) * 0.1, ease: [0.16, 1, 0.3, 1] }} className="bg-white rounded-xl border border-surface-border shadow-card p-7">
-      <span className="text-xs font-mono text-forest-600">0{n}</span>
-      <p className="text-lg font-semibold text-ink-900 mt-3 mb-2">{title}</p>
-      <p className="text-[15px] text-ink-500 leading-relaxed">{desc}</p>
+    <div>
+      <p className="font-display text-4xl lg:text-5xl font-semibold text-white tabular-nums">{typeof value === 'number' ? display : '···'}</p>
+      <p className="text-sm text-ink-300 mt-1.5">{label}</p>
+    </div>
+  );
+}
+
+/** Asymmetric, alternating step row, replacing the banned generic 3-card grid. */
+function StepRow({ n, title, desc, align }) {
+  const isRight = align === 'right';
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className={`flex items-start gap-8 py-10 border-b border-surface-border ${isRight ? 'flex-row-reverse text-right' : ''}`}
+    >
+      <span className="font-display text-[80px] lg:text-[100px] leading-none font-semibold text-violet-100 select-none shrink-0">0{n}</span>
+      <div className={isRight ? 'flex flex-col items-end' : ''}>
+        <p className="text-xl font-semibold text-ink-900 mb-2.5">{title}</p>
+        <p className="text-[15px] text-ink-500 leading-relaxed max-w-md">{desc}</p>
+      </div>
     </motion.div>
   );
 }
@@ -82,100 +118,71 @@ export default function Landing() {
         )}
       </header>
 
-      {/* Hero */}
-      <section className="max-w-[1280px] mx-auto px-6 lg:px-10 pt-16 pb-20 grid lg:grid-cols-2 gap-14 items-center">
+      {/* Hero, real typography-driven, no fake product mockup */}
+      <section className="max-w-[900px] mx-auto px-6 lg:px-10 pt-20 pb-14 text-center">
         <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-          <Eyebrow>The intelligent startup ecosystem</Eyebrow>
-          <h1 className="font-display text-[40px] sm:text-[48px] lg:text-[56px] font-semibold leading-[1.08] tracking-tight text-ink-950">
+          <Eyebrow>{'The intelligent startup ecosystem'}</Eyebrow>
+          <h1 className="font-display text-[42px] sm:text-[56px] lg:text-[68px] font-semibold leading-[1.04] tracking-tight text-ink-950">
             Build the team your startup was <span className="italic font-normal text-forest-600">missing.</span>
           </h1>
-          <p className="text-lg text-ink-500 mt-6 max-w-md leading-relaxed">
-            CapForge understands your venture, diagnoses exactly what it's missing, and connects you with the people and capital that can move it forward.
+          <p className="text-lg text-ink-500 mt-7 max-w-lg mx-auto leading-relaxed">
+            CapForge understands your venture, diagnoses exactly what it needs, and connects you with the people and capital that can move it forward.
           </p>
-          <div className="flex flex-wrap items-center gap-4 mt-9">
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-9">
             <Link to="/sign-up" className="bg-ink-900 hover:bg-ink-700 text-white px-6 py-3.5 rounded-lg font-medium transition-colors flex items-center gap-2">
               Build your startup <ArrowUpRight size={16} />
             </Link>
             <a href="#discover" className="text-ink-700 font-medium flex items-center gap-1.5 hover:text-forest-600 transition-colors">
-              Explore how it works <ArrowDownRight size={16} />
+              See how it works <ArrowDownRight size={16} />
             </a>
           </div>
         </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 32, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }} className="bg-white rounded-2xl border border-surface-border shadow-elevated p-7">
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-xs font-mono text-ink-300">CAPFORGE INTELLIGENCE / 01</span>
-            <span className="text-xs font-medium text-forest-600 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" />LIVE</span>
-          </div>
-          <div className="bg-ink-950 rounded-xl p-5 text-white mb-5">
-            <span className="text-xs text-ink-300 uppercase tracking-wide">Startup / Profile</span>
-            <p className="text-xl font-display font-semibold mt-1.5">AgriVision</p>
-            <p className="text-sm text-ink-300 mt-1">AI · Agriculture · MVP stage</p>
-            <div className="h-px bg-white/10 my-4" />
-            <p className="text-sm text-amber-500 flex items-center gap-1.5">Critical gap detected <ArrowUpRight size={13} /></p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[['ML Engineer', 'model architecture'], ['Full-Stack Engineer', 'product systems'], ['Agriculture Expert', 'domain intelligence'], ['Product Designer', 'human experience']].map(([role, desc]) => (
-              <div key={role} className="border border-surface-border rounded-lg p-3.5">
-                <p className="text-sm font-medium text-ink-900">{role}</p>
-                <p className="text-xs text-ink-500 mt-0.5">{desc}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 bg-forest-50 text-forest-600 text-sm font-medium rounded-lg px-4 py-3 flex items-center gap-2">
-            <Check size={15} /> 94% capability match
-          </div>
-        </motion.div>
       </section>
 
-      {/* Trust bar — real, live platform data, never hardcoded fake numbers */}
-      <section className="border-y border-surface-border bg-white py-10">
-        <div className="max-w-[1280px] mx-auto px-6 lg:px-10 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {[
-            [stats ? stats.activeVentures : '—', 'Real active ventures'],
-            [stats ? stats.realContributors : '—', 'Real people on the platform'],
-            [stats ? stats.teamsFormed : '—', 'Real team members joined'],
-            ['3', 'Personas, one intelligence layer'],
-          ].map(([n, l], i) => (
-            <motion.div key={l} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.08 }}>
-              <p className="text-2xl lg:text-3xl font-display font-semibold text-ink-900">{n}</p>
-              <p className="text-sm text-ink-500 mt-1">{l}</p>
-            </motion.div>
-          ))}
+      {/* Real, live proof of life, replacing what used to be a fake product mockup */}
+      <section className="bg-ink-950 py-16">
+        <div className="max-w-[1280px] mx-auto px-6 lg:px-10 grid grid-cols-1 sm:grid-cols-3 gap-10 text-center sm:text-left">
+          <LiveCounter value={stats ? stats.activeVentures : null} label="Real active ventures on the platform right now" />
+          <LiveCounter value={stats ? stats.realContributors : null} label="Real founders, contributors, and investors" />
+          <LiveCounter value={stats ? stats.teamsFormed : null} label="Real team members who found their venture here" />
         </div>
       </section>
 
-      {/* How it works */}
+      {/* How it works, rebuilt as an asymmetric alternating list, not a generic 3-card row */}
       <section id="discover" className="max-w-[1280px] mx-auto px-6 lg:px-10 py-24">
-        <div className="max-w-xl mb-14">
+        <div className="max-w-xl mb-6">
           <Eyebrow>How CapForge thinks</Eyebrow>
           <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight">See the gap. Find the fit. <span className="italic font-normal text-forest-600">Move forward.</span></h2>
-          <p className="text-ink-500 mt-4 text-[15px] leading-relaxed">CapForge doesn't just match people — it understands the venture first, diagnoses what's missing, then connects the right person to the right gap with a real explanation.</p>
+          <p className="text-ink-500 mt-4 text-[15px] leading-relaxed">CapForge understands the venture first, diagnoses what is missing, then connects the right person to the right gap with a real explanation.</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-5">
-          <StepCard n={1} title="Understand" desc="Describe your idea in your own words. CapForge structures it into a living venture profile — problem, solution, domain, and required capabilities." />
-          <StepCard n={2} title="Diagnose" desc="Real gap analysis against your current team, prioritized by what actually matters right now — not a generic checklist." />
-          <StepCard n={3} title="Connect" desc="Evidence-based candidate ranking with a real explanation for every match — never a bare, unexplained percentage." />
+        <div>
+          <StepRow n={1} align="left" title="Understand" desc="Describe your idea in your own words. CapForge structures it into a living venture profile: problem, solution, domain, and required capabilities." />
+          <StepRow n={2} align="right" title="Diagnose" desc="Real gap analysis against your current team, prioritized by what actually matters right now, not a generic checklist." />
+          <StepRow n={3} align="left" title="Connect" desc="Evidence-based candidate ranking with a real explanation for every match. Never a bare, unexplained percentage." />
         </div>
       </section>
 
-      {/* Three-sided ecosystem */}
+      {/* Three-sided ecosystem, kept asymmetric rather than three identical boxes */}
       <section className="bg-white border-y border-surface-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-24">
           <Eyebrow>A three-sided ecosystem</Eyebrow>
           <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight mb-14">Different starting points. <span className="italic font-normal text-forest-600">One shared direction.</span></h2>
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              ['For Founders', 'Find the people your startup needs, ranked and explained.', 'bg-forest-50 text-forest-700'],
-              ['For Contributors', 'Discover ventures where your skills genuinely matter.', 'bg-violet-50 text-violet-700'],
-              ['For Investors', 'Discover promising ventures early, with real readiness signal.', 'bg-ink-950 text-white'],
-            ].map(([title, desc, cls], i) => (
-              <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className={`rounded-xl p-8 ${cls}`}>
-                <p className="font-display text-xl font-semibold mb-3">{title}</p>
-                <p className="text-[15px] opacity-80 leading-relaxed mb-6">{desc}</p>
-                <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
-              </motion.div>
-            ))}
+          <div className="grid md:grid-cols-6 gap-5">
+            <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className="md:col-span-3 rounded-xl p-8 bg-forest-50 text-forest-700">
+              <p className="font-display text-xl font-semibold mb-3">For Founders</p>
+              <p className="text-[15px] opacity-80 leading-relaxed mb-6">Find the people your startup needs, ranked and explained.</p>
+              <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className="md:col-span-3 rounded-xl p-8 bg-violet-50 text-violet-700">
+              <p className="font-display text-xl font-semibold mb-3">For Contributors</p>
+              <p className="text-[15px] opacity-80 leading-relaxed mb-6">Discover ventures where your skills genuinely matter.</p>
+              <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, delay: 0.2, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className="md:col-span-6 rounded-xl p-8 bg-ink-950 text-white">
+              <p className="font-display text-xl font-semibold mb-3">For Investors</p>
+              <p className="text-[15px] opacity-80 leading-relaxed mb-6 max-w-md">Discover promising ventures early, with real readiness signal grounded in evidence, not a pitch deck alone.</p>
+              <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -196,7 +203,7 @@ export default function Landing() {
       <footer className="border-t border-surface-border py-12">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Logo />
-          <p className="text-sm text-ink-500">© 2026 CapForge — AI-powered, human-led.</p>
+          <p className="text-sm text-ink-500">{'\u00A9'} 2026 CapForge. AI-powered, human-led.</p>
         </div>
       </footer>
     </div>
