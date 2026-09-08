@@ -19,11 +19,12 @@ export default function ContributorDashboard() {
   const [profile, setProfile] = useState(null);
   const [recs, setRecs] = useState([]);
   const [connections, setConnections] = useState([]);
+  const [hasRoleProfile, setHasRoleProfile] = useState(true);
 
   useEffect(() => {
     async function load() {
       const [profileRes, recsRes, connRes] = await Promise.all([getMyProfile(), getMyRecommendationsAsContributor(), getMyConnections()]);
-      if (profileRes.ok && profileRes.data.success) setProfile(profileRes.data.profile);
+      if (profileRes.ok && profileRes.data.success) { setProfile(profileRes.data.profile); setHasRoleProfile(!!profileRes.data.roleProfile); }
       if (recsRes.ok && recsRes.data.success) setRecs(recsRes.data.recommendations);
       if (connRes.ok && connRes.data.success) setConnections(connRes.data.connections);
       setLoading(false);
@@ -38,6 +39,15 @@ export default function ContributorDashboard() {
 
   return (
     <Shell persona="CONTRIBUTOR" title={profile?.display_name || 'Dashboard'} subtitle={profile?.headline}>
+      {!hasRoleProfile && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-[15px] font-semibold text-amber-800">Your profile isn't finished — you're invisible to matching right now</p>
+            <p className="text-[13px] text-amber-700 mt-0.5">Availability, domains, and stage were never set. No founder can be matched to you until this is complete.</p>
+          </div>
+          <Link to="/app/contributor/onboarding" className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Finish now</Link>
+        </div>
+      )}
       <div className="mb-6">
         <p className="text-xs text-ink-500 mb-1">Good evening, {profile?.display_name?.split(' ')[0]}</p>
         <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Where your skills create the most value</h1>
