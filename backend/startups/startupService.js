@@ -51,6 +51,15 @@ async function createStartup(founderId, { name, rawIdea, currentTeamSize, fundin
     [startup.id, founderId, founderProfile?.headline || 'Founder', founderProfile?.skills || []]
   );
 
+  // Phase 3: generate the vision embedding so co-founder matching can use
+  // real conviction alignment. Fire-and-forget by design: this must never
+  // block or fail venture creation, and a missing embedding degrades
+  // cleanly to logistics-only scoring rather than to a zero score.
+  if (founderVision && founderVision.trim().length >= 20) {
+    const { refreshVisionEmbedding } = require('../matching/visionAlignmentService');
+    refreshVisionEmbedding(startup.id).catch(err => console.error('Vision embedding failed (non-fatal):', err.message));
+  }
+
   // Auto-trigger structuring (App Flow §4.2). The raw idea/draft is
   // already durable at this point regardless of what happens next
   // (TRD §101 — AI failure must never destroy founder input).

@@ -137,6 +137,16 @@ async function upsertContributorProfile(userId, data) {
      RETURNING *`,
     [profileId, availability, commitmentType, preferredStage || [], preferredDomains || [], experienceYears, equityPreference, portfolioUrl, lookingFor || null]
   );
+
+  // Phase 3: regenerate the motivation embedding so co-founder matching can
+  // use real conviction alignment. Fire-and-forget, matching the proven
+  // pattern already used for refreshOpenGapRankings on this same route: an
+  // embedding call must never block a profile save or exceed client timeout.
+  if (lookingFor && lookingFor.trim().length >= 20) {
+    const { refreshMotivationEmbedding } = require('../matching/visionAlignmentService');
+    refreshMotivationEmbedding(userId).catch(err => console.error('Motivation embedding failed (non-fatal):', err.message));
+  }
+
   return { success: true, contributorProfile: result.rows[0] };
 }
 

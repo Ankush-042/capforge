@@ -113,14 +113,29 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   if (seekingType === 'CO_FOUNDER') {
     const commitmentScore = candidate.availability === 'full-time' ? 1.0 : candidate.availability === 'part-time' ? 0.4 : 0.1;
     const equityMindedness = candidate.equity_preference ? 1.0 : 0.3;
-    compatibilityFit = (commitmentScore * 0.6) + (equityMindedness * 0.4);
+    const logisticsFit = (commitmentScore * 0.6) + (equityMindedness * 0.4);
+
+    // Phase 3: REAL vision alignment. Everything above measures LOGISTICS
+    // (are you full-time, do you want equity). This is the first signal in
+    // the engine that measures CONVICTION: cosine similarity between why
+    // this founder is building this venture and why this person says they
+    // want to build something.
+    //
+    // Deliberately null-safe rather than zero-safe: a candidate with no
+    // stated motivation gets pure logistics scoring, exactly as before,
+    // rather than being punished for a field they never filled in.
+    if (typeof candidate.vision_alignment === 'number') {
+      compatibilityFit = (logisticsFit * 0.45) + (candidate.vision_alignment * 0.55);
+    } else {
+      compatibilityFit = logisticsFit;
+    }
   } else if (seekingType === 'CONTRACTOR') {
     compatibilityFit = 0.7; // commitment depth barely matters for a defined-scope engagement
   } else {
     compatibilityFit = candidate.availability === 'full-time' ? 0.8 : candidate.availability === 'part-time' ? 0.6 : 0.4;
   }
 
-  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null };
+  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null, visionAlignment: typeof candidate.vision_alignment === 'number' ? candidate.vision_alignment : null };
 
   const weights = getWeights(seekingType);
   const baseScore = Object.keys(weights).reduce(
@@ -154,6 +169,16 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
 
   if (breakdown.roleFit === 1.0) {
     strengths.push(`Profile headline directly matches the "${gap.role}" role.`);
+  }
+
+  // Phase 3: real vision alignment, only ever present for co-founder
+  // searches where both sides actually wrote something. Never invented:
+  // this only appears when a real number was computed.
+  if (typeof breakdown.visionAlignment === 'number') {
+    const { explainVisionAlignment } = require('./visionAlignmentService');
+    const line = explainVisionAlignment(breakdown.visionAlignment);
+    if (breakdown.visionAlignment >= 0.55) strengths.push(line);
+    else if (breakdown.visionAlignment < 0.35) limitations.push(line);
   }
 
   if (breakdown.domainFit >= 0.6) {
@@ -266,8 +291,22 @@ async function rankCandidatesForGap(gapId) {
   const signalKeys = [`stage:${(startup.stage || '').toLowerCase()}`, ...(startup.domain || []).map(d => `domain:${d.toLowerCase()}`)];
   const feedbackAdjustment = await getPreferenceAdjustment(startup.founder_id, signalKeys);
 
+  // Phase 3: real vision alignment, computed ONLY for co-founder searches.
+  // Skipped entirely for every other seeking type, so the proven CORE_HIRE
+  // path does no extra work and behaves exactly as before.
+  let visionMap = {};
+  if ((gap.seeking_type || 'CORE_HIRE') === 'CO_FOUNDER') {
+    try {
+      const { getVisionAlignment } = require('./visionAlignmentService');
+      visionMap = await getVisionAlignment(startup.id, candidatesResult.rows.map(c => c.user_id));
+    } catch (err) {
+      console.error('Vision alignment lookup failed (non-fatal, falling back to logistics-only):', err.message);
+    }
+  }
+
   const ranked = candidatesResult.rows
     .map(candidate => {
+      if (visionMap[candidate.user_id] !== undefined) candidate.vision_alignment = visionMap[candidate.user_id];
       const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate, feedbackAdjustment);
       const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
       const causalNarrative = buildCausalNarrative(gap, candidate.headline || 'This candidate', explanation);
