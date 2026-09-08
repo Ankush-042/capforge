@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast.jsx';
 
 const VERIFICATION_STATUSES = ['CLAIMED', 'PENDING_VERIFICATION', 'VERIFIED', 'UNVERIFIED'];
 const SEVERITY_STYLE = { critical: 'bg-signal-critical/10 text-signal-critical', high: 'bg-amber-100 text-amber-700', medium: 'bg-blue-50 text-blue-600', low: 'bg-surface-muted text-ink-500' };
-const BAR_COLORS = ['#6D28D9', '#1677E8', '#E84C32', '#C58A00', '#16A34A'];
+const BAR_COLORS = ['#7C5CFC', '#4C86F9', '#F0A84E', '#EF6E85', '#3FB081'];
 
 /** Real, dedicated bar-chart treatment for a breakdown — replaces flat text rows with an actual visual comparison. */
 function BreakdownChart({ title, rows }) {
@@ -19,8 +19,8 @@ function BreakdownChart({ title, rows }) {
       <ResponsiveContainer width="100%" height={Math.max(data.length * 44, 90)}>
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
           <XAxis type="number" hide />
-          <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 13, fill: '#57534E' }} axisLine={false} tickLine={false} />
-          <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20} label={{ position: 'right', fontSize: 13, fontWeight: 600, fill: '#1C1917' }}>
+          <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 13, fontWeight: 700, fill: '#161719' }} axisLine={false} tickLine={false} />
+          <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20} label={{ position: 'right', fontSize: 14, fontWeight: 700, fill: '#161719' }}>
             {data.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
           </Bar>
         </BarChart>
