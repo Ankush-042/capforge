@@ -38,4 +38,11 @@ const { refreshVisionEmbedding, refreshMotivationEmbedding } = require('../backe
 
   console.log(`\nDone. ${sOk}/${startups.rows.length} ventures, ${cOk}/${contributors.rows.length} contributors.`);
   await pool.end();
+
+  // The embedding worker runs as a genuinely separate long-lived child
+  // process (the self-healing architecture), and it has no shutdown export.
+  // Closing the DB pool alone therefore leaves the event loop occupied and
+  // the script hangs after finishing all its real work. Exit explicitly:
+  // every write above is already committed at this point.
+  process.exit(0);
 })();
