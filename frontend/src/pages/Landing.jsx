@@ -26,10 +26,10 @@ const heroItem = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, t
 const cardIn = { hidden: { opacity: 0, x: 40 }, visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } } };
 
 const NAV = [
-  { label: 'The flow', href: '#discover' },
-  { label: 'Who it is for', href: '#who' },
-  { label: 'Why it works', href: '#why' },
-  { label: 'Questions', href: '#faq' },
+  { label: 'Flow', href: '#discover' },
+  { label: 'Roles', href: '#who' },
+  { label: 'Why', href: '#why' },
+  { label: 'FAQ', href: '#faq' },
 ];
 
 function Logo() {
@@ -87,7 +87,7 @@ function StepRow({ n, title, desc, align }) {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className={`flex items-start gap-8 py-10 border-b border-surface-border ${isRight ? 'flex-row-reverse text-right' : ''}`}
     >
-      <span className="font-display text-[80px] lg:text-[100px] leading-none font-semibold text-violet-500/25 select-none shrink-0">0{n}</span>
+      <span className="font-display text-[80px] lg:text-[100px] leading-none font-bold text-violet-500 select-none shrink-0">0{n}</span>
       <div className={isRight ? 'flex flex-col items-end' : ''}>
         <p className="text-xl font-semibold text-ink-900 mb-2.5">{title}</p>
         <p className="text-[16px] text-ink-700 leading-relaxed max-w-md">{desc}</p>
@@ -197,8 +197,8 @@ export default function Landing() {
 
       {/* How it works, rebuilt as an asymmetric alternating list, not a generic 3-card row */}
       <section id="discover" className="relative overflow-hidden py-24">
-        <div className="absolute inset-0 bg-gradient-to-b from-canvas via-violet-50/40 to-canvas" />
-        <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: 'radial-gradient(#C9BEFB 1px, transparent 1px)', backgroundSize: '28px 28px', maskImage: 'radial-gradient(ellipse 70% 60% at 50% 50%, black, transparent)' }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-violet-50 via-violet-100/70 to-violet-50" />
+        <div className="absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(#A78BFA 1.2px, transparent 1.2px)', backgroundSize: '26px 26px', maskImage: 'radial-gradient(ellipse 75% 65% at 50% 50%, black, transparent)' }} />
         <div className="relative max-w-[1280px] mx-auto px-6 lg:px-10">
         <div className="max-w-xl mb-6">
           <Eyebrow>The flow</Eyebrow>
@@ -268,16 +268,25 @@ export default function Landing() {
       <section id="faq" className="max-w-[900px] mx-auto px-6 lg:px-10 py-28">
         <Eyebrow>Questions</Eyebrow>
         <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight mb-12">The things people <span className="italic font-normal text-forest-600">actually ask.</span></h2>
-        <div className="divide-y divide-surface-border border-y border-surface-border">
+        <div className="grid md:grid-cols-2 gap-5">
           {[
             ['I only have an idea. Is that enough?', 'That is the entire point. CapForge is built for the stage before a company exists. You do not need a deck, a name, or a plan. You need the thing you cannot stop thinking about.'],
             ['How is this different from a job board?', 'A job board fills a role at a company that already exists. This finds the person who wants to build the company with you, and gives them a real stake in it rather than a listing to apply to.'],
             ['What if nobody responds to my idea?', 'Then you have learned something real, cheaply. But the matching works on what your venture needs, not on how polished your writing is, so a rough idea in a domain people care about reaches the right people.'],
             ['When do investors actually see me?', 'Only once your venture crosses a real readiness bar, measured on what you have built and who has joined. Nothing is shown to investors before it is genuinely ready to be seen.'],
           ].map(([q, a], i) => (
-            <motion.div key={q} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.5, delay: i * 0.07 }} className="py-7">
-              <p className="text-lg font-semibold text-ink-900 mb-2.5">{q}</p>
-              <p className="text-[16px] text-ink-700 leading-relaxed">{a}</p>
+            <motion.div
+              key={q}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+              whileHover={{ y: -5 }}
+              className="group relative bg-white rounded-2xl border border-surface-border p-7 shadow-card hover:shadow-elevated hover:border-violet-500/40 transition-all duration-300"
+            >
+              <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-2xl bg-gradient-to-r from-violet-500 to-forest-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <p className="text-[17px] font-semibold text-ink-900 mb-3">{q}</p>
+              <p className="text-[15px] text-ink-700 leading-relaxed">{a}</p>
             </motion.div>
           ))}
         </div>
