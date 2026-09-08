@@ -4,7 +4,7 @@ import { LineChart } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import Badge from '../components/charts/Badge.jsx';
-import { getInvestorRecommendations, refreshInvestorRecommendations, sendConnection } from '../services/startups.js';
+import { getInvestorRecommendations, refreshInvestorRecommendations } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 export default function InvestorDealFlow() {

@@ -18,7 +18,6 @@ const NAV_BY_PERSONA = {
     { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Gaps', icon: '◈', path: '/app/gaps', nested: true },
     { label: 'Team', icon: '◎', path: '/app/team' },
-    { label: 'Connections', icon: '◐', path: '/app/connections' },
     { label: 'Readiness', icon: '◒', path: '/app/readiness' },
     { label: 'Risk', icon: '◑', path: '/app/risk' },
     { label: 'Milestones', icon: '◇', path: '/app/milestones' },
@@ -36,7 +35,6 @@ const NAV_BY_PERSONA = {
     { label: 'Skill Demand', icon: '◒', path: '/app/contributor/skill-demand' },
     { label: 'Learning', icon: '◇', path: '/app/contributor/learning' },
     { label: 'Equity Ask', icon: '◍', path: '/app/contributor/equity-ask' },
-    { label: 'Connections', icon: '◐', path: '/app/contributor/connections' },
   ],
   INVESTOR: [
     { label: 'Dashboard', icon: '▦', path: '/app/investor' },
@@ -44,7 +42,6 @@ const NAV_BY_PERSONA = {
     { label: 'Deal Flow', icon: '◈', path: '/app/investor/deal-flow' },
     { label: 'Saved Searches', icon: '◍', path: '/app/investor/saved-searches' },
     { label: 'Portfolio', icon: '◫', path: '/app/investor/portfolio' },
-    { label: 'Connections', icon: '◐', path: '/app/investor/connections' },
   ],
 };
 
