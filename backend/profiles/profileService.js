@@ -57,7 +57,13 @@ async function getMyProfile(userId, role) {
     await pool.query('UPDATE profiles SET completion_score = $1, updated_at = now() WHERE id = $2', [completeness, profile.id]);
   }
 
-  return { success: true, profile: { ...profile, completion_score: completeness, primary_role: role }, roleProfile };
+  // Real fix: expose is_admin so the frontend can show a genuinely
+  // separate, dedicated admin nav instead of confusingly inheriting
+  // whatever primary_role the account happens to have.
+  const userResult = await pool.query('SELECT is_admin FROM users WHERE id = $1', [userId]);
+  const isAdmin = userResult.rows[0]?.is_admin || false;
+
+  return { success: true, profile: { ...profile, completion_score: completeness, primary_role: role, is_admin: isAdmin }, roleProfile };
 }
 
 async function updateBaseProfile(userId, updates) {
