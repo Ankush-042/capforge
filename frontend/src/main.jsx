@@ -8,6 +8,9 @@ import SignIn from './pages/SignIn.jsx';
 import SignUp from './pages/SignUp.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import ContributorOnboarding from './pages/ContributorOnboarding.jsx';
+import SparkFeed from './pages/SparkFeed.jsx';
+import SparkCompose from './pages/SparkCompose.jsx';
+import SparkDetail from './pages/SparkDetail.jsx';
 import InvestorOnboarding from './pages/InvestorOnboarding.jsx';
 
 import FounderDashboard from './pages/FounderDashboard.jsx';
@@ -104,6 +107,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         {/* Authenticated app — Contributor */}
         <Route path="/app/contributor" element={<ProtectedRoute><ContributorDashboard /></ProtectedRoute>} />
         <Route path="/app/contributor/onboarding" element={<ProtectedRoute><ContributorOnboarding /></ProtectedRoute>} />
+        <Route path="/app/sparks" element={<ProtectedRoute><SparkFeed /></ProtectedRoute>} />
+        <Route path="/app/sparks/new" element={<ProtectedRoute><SparkCompose /></ProtectedRoute>} />
+        <Route path="/app/sparks/:id" element={<ProtectedRoute><SparkDetail /></ProtectedRoute>} />
         <Route path="/app/contributor/opportunities" element={<ProtectedRoute><ContributorOpportunities /></ProtectedRoute>} />
         <Route path="/app/contributor/skill-demand" element={<ProtectedRoute><SkillDemand /></ProtectedRoute>} />
         <Route path="/app/contributor/equity-ask" element={<ProtectedRoute><ContributorEquityAsk /></ProtectedRoute>} />

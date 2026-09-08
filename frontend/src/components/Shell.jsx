@@ -15,6 +15,7 @@ const NAV_BY_PERSONA = {
   ],
   FOUNDER: [
     { label: 'Dashboard', icon: '▦', path: '/app' },
+    { label: 'Sparks', icon: '✦', path: '/app/sparks' },
     { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Gaps', icon: '◈', path: '/app/gaps', nested: true },
     { label: 'Team', icon: '◎', path: '/app/team' },
@@ -29,6 +30,7 @@ const NAV_BY_PERSONA = {
   ],
   CONTRIBUTOR: [
     { label: 'Dashboard', icon: '▦', path: '/app/contributor' },
+    { label: 'Sparks', icon: '✦', path: '/app/sparks' },
     { label: 'Inbox', icon: '✉', path: '/app/inbox' },
     { label: 'Opportunities', icon: '◈', path: '/app/contributor/opportunities' },
     { label: 'Compare offers', icon: '◎', path: '/app/contributor/offers' },
