@@ -25,7 +25,12 @@ const heroContainer = { hidden: { opacity: 0 }, visible: { opacity: 1, transitio
 const heroItem = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } } };
 const cardIn = { hidden: { opacity: 0, x: 40 }, visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } } };
 
-const NAV = ['Product', 'How it works', 'For Founders', 'For Contributors', 'For Investors'];
+const NAV = [
+  { label: 'The flow', href: '#discover' },
+  { label: 'Who it is for', href: '#who' },
+  { label: 'Why it works', href: '#why' },
+  { label: 'Questions', href: '#faq' },
+];
 
 function Logo() {
   return (
@@ -85,7 +90,7 @@ function StepRow({ n, title, desc, align }) {
       <span className="font-display text-[80px] lg:text-[100px] leading-none font-semibold text-violet-500/25 select-none shrink-0">0{n}</span>
       <div className={isRight ? 'flex flex-col items-end' : ''}>
         <p className="text-xl font-semibold text-ink-900 mb-2.5">{title}</p>
-        <p className="text-[15px] text-ink-500 leading-relaxed max-w-md">{desc}</p>
+        <p className="text-[16px] text-ink-700 leading-relaxed max-w-md">{desc}</p>
       </div>
     </motion.div>
   );
@@ -110,7 +115,7 @@ export default function Landing() {
           <Logo />
           <nav className="hidden lg:flex items-center gap-8">
             {NAV.map((n) => (
-              <a key={n} href="#" className="text-sm text-ink-500 hover:text-ink-900 transition-colors">{n}</a>
+              <a key={n.label} href={n.href} className="text-sm text-ink-500 hover:text-ink-900 transition-colors">{n.label}</a>
             ))}
           </nav>
           <div className="hidden lg:flex items-center gap-3">
@@ -123,7 +128,7 @@ export default function Landing() {
         </div>
         {menuOpen && (
           <div className="lg:hidden px-6 pb-5 flex flex-col gap-3 border-t border-surface-border pt-4">
-            {NAV.map((n) => <a key={n} href="#" className="text-sm text-ink-700">{n}</a>)}
+            {NAV.map((n) => <a key={n.label} href={n.href} onClick={() => setMenuOpen(false)} className="text-sm text-ink-700">{n.label}</a>)}
             <Link to="/sign-in" className="text-sm text-ink-700">Sign in</Link>
             <Link to="/sign-up" className="text-sm bg-ink-900 text-white px-4 py-2.5 rounded-lg font-medium text-center">Get started</Link>
           </div>
@@ -191,11 +196,14 @@ export default function Landing() {
       </section>
 
       {/* How it works, rebuilt as an asymmetric alternating list, not a generic 3-card row */}
-      <section id="discover" className="max-w-[1280px] mx-auto px-6 lg:px-10 py-24">
+      <section id="discover" className="relative overflow-hidden py-24">
+        <div className="absolute inset-0 bg-gradient-to-b from-canvas via-violet-50/40 to-canvas" />
+        <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: 'radial-gradient(#C9BEFB 1px, transparent 1px)', backgroundSize: '28px 28px', maskImage: 'radial-gradient(ellipse 70% 60% at 50% 50%, black, transparent)' }} />
+        <div className="relative max-w-[1280px] mx-auto px-6 lg:px-10">
         <div className="max-w-xl mb-6">
           <Eyebrow>The flow</Eyebrow>
           <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight">A spark. A believer. <span className="italic font-normal text-forest-600">A company.</span></h2>
-          <p className="text-ink-500 mt-4 text-[15px] leading-relaxed">Most platforms start after the company exists. CapForge starts before it does, at the moment two people decide to build something together.</p>
+          <p className="text-ink-700 mt-4 text-[16px] leading-relaxed">Most platforms start after the company exists. CapForge starts before it does, at the moment two people decide to build something together.</p>
         </div>
         <div>
           <StepRow n={1} align="left" title="You share the spark" desc="Not a business plan. Not a pitch deck. Just the thing you cannot stop thinking about, in your own words, before it is anything official." />
@@ -203,10 +211,11 @@ export default function Landing() {
           <StepRow n={3} align="left" title="You build it together" desc="The moment you both commit, CapForge turns the spark into a real venture: structured, understood, and honest about what it still needs." />
           <StepRow n={4} align="right" title="Investors find you" desc="Keep building and the platform notices. Cross the readiness bar and you show up in front of investors who back exactly your kind of company." />
         </div>
+        </div>
       </section>
 
       {/* Three-sided ecosystem, kept asymmetric rather than three identical boxes */}
-      <section className="bg-white border-y border-surface-border">
+      <section id="who" className="bg-white border-y border-surface-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-24">
           <Eyebrow>Who this is for</Eyebrow>
           <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight mb-14">Three ways in. <span className="italic font-normal text-forest-600">One thing being built.</span></h2>
@@ -230,16 +239,63 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Why it works, real differentiation stated plainly */}
+      <section id="why" className="relative overflow-hidden bg-ink-950 py-28">
+        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 30%, #7C5CFC 0%, transparent 45%), radial-gradient(circle at 80% 70%, #1F5D52 0%, transparent 45%)' }} />
+        <div className="relative max-w-[1280px] mx-auto px-6 lg:px-10">
+          <p className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] uppercase text-mint-500 mb-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-mint-500" />Why it works
+          </p>
+          <h2 className="font-display text-3xl lg:text-[44px] font-semibold text-white leading-tight max-w-2xl mb-16">
+            Most matching is a keyword search wearing <span className="italic font-normal text-mint-500">a nicer coat.</span>
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              ['It reads the venture, not the résumé', 'CapForge understands what your company actually is before it suggests a single person. The match comes from what the venture needs, not from who happens to share a keyword.'],
+              ['Every match explains itself', 'You never see a bare number. You see why this person, for this gap, right now, in plain language you can argue with.'],
+              ['It knows what is missing', 'Honest gap analysis, ranked by what matters at your stage. It will tell you the uncomfortable thing rather than flatter your progress.'],
+            ].map(([title, body], i) => (
+              <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }} className="border-t border-white/15 pt-6">
+                <p className="font-display text-xl font-semibold text-white mb-3">{title}</p>
+                <p className="text-[15px] text-white/60 leading-relaxed">{body}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Questions, real objections answered honestly */}
+      <section id="faq" className="max-w-[900px] mx-auto px-6 lg:px-10 py-28">
+        <Eyebrow>Questions</Eyebrow>
+        <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight mb-12">The things people <span className="italic font-normal text-forest-600">actually ask.</span></h2>
+        <div className="divide-y divide-surface-border border-y border-surface-border">
+          {[
+            ['I only have an idea. Is that enough?', 'That is the entire point. CapForge is built for the stage before a company exists. You do not need a deck, a name, or a plan. You need the thing you cannot stop thinking about.'],
+            ['How is this different from a job board?', 'A job board fills a role at a company that already exists. This finds the person who wants to build the company with you, and gives them a real stake in it rather than a listing to apply to.'],
+            ['What if nobody responds to my idea?', 'Then you have learned something real, cheaply. But the matching works on what your venture needs, not on how polished your writing is, so a rough idea in a domain people care about reaches the right people.'],
+            ['When do investors actually see me?', 'Only once your venture crosses a real readiness bar, measured on what you have built and who has joined. Nothing is shown to investors before it is genuinely ready to be seen.'],
+          ].map(([q, a], i) => (
+            <motion.div key={q} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.5, delay: i * 0.07 }} className="py-7">
+              <p className="text-lg font-semibold text-ink-900 mb-2.5">{q}</p>
+              <p className="text-[16px] text-ink-700 leading-relaxed">{a}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* Closing CTA */}
-      <section className="max-w-[1280px] mx-auto px-6 lg:px-10 py-28 text-center">
+      <section className="relative overflow-hidden py-28 text-center">
+        <div className="absolute inset-0 bg-gradient-to-b from-canvas via-violet-50/60 to-canvas" />
+        <div className="relative max-w-[1280px] mx-auto px-6 lg:px-10">
         <Eyebrow>Your move</Eyebrow>
         <h2 className="font-display text-3xl lg:text-[44px] font-semibold text-ink-950 leading-tight max-w-2xl mx-auto">
           Somewhere out there is the person <span className="italic font-normal text-forest-600">who gets it.</span>
         </h2>
-        <p className="text-ink-500 mt-5 text-lg">Start with the idea you cannot let go of.</p>
-        <Link to="/sign-up" className="inline-flex items-center gap-2 bg-ink-900 hover:bg-ink-700 text-white px-7 py-3.5 rounded-lg font-medium transition-colors mt-8">
-          Get started <ArrowUpRight size={16} />
+        <p className="text-ink-700 mt-5 text-lg">Start with the idea you cannot let go of.</p>
+        <Link to="/sign-up" className="inline-flex items-center gap-2 bg-ink-900 hover:bg-ink-700 text-white px-7 py-3.5 rounded-full font-medium transition-colors mt-8">
+          Share your idea <ArrowUpRight size={16} />
         </Link>
+        </div>
       </section>
 
       {/* Footer */}
