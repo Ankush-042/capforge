@@ -78,7 +78,7 @@ async function login({ email, password }) {
   }
 
   const result = await pool.query(
-    'SELECT id, email, password_hash, primary_role FROM users WHERE email = $1',
+    'SELECT id, email, password_hash, primary_role, is_admin FROM users WHERE email = $1',
     [email.toLowerCase()]
   );
 
@@ -95,7 +95,7 @@ async function login({ email, password }) {
   await pool.query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
 
   const token = signToken(user);
-  return { success: true, user: { id: user.id, email: user.email, primaryRole: user.primary_role }, token };
+  return { success: true, user: { id: user.id, email: user.email, primaryRole: user.primary_role, isAdmin: user.is_admin }, token };
 }
 
 function signToken(user) {

@@ -53,7 +53,13 @@ export function AuthShell({ mode }) {
     localStorage.setItem('capforge_token', data.token);
     const userRole = data.user?.primaryRole;
     let destination;
-    if (isSignUp) {
+    // Real fix for a confirmed bug: an admin account's primary_role is
+    // technically FOUNDER (required by the schema enum), so without
+    // this check, an admin would land on FounderDashboard's "describe
+    // your idea" screen — nonsensical for an account with no startup.
+    if (data.user?.isAdmin) {
+      destination = '/app/admin';
+    } else if (isSignUp) {
       destination = userRole === 'CONTRIBUTOR' ? '/app/contributor/onboarding' : userRole === 'INVESTOR' ? '/app/investor/onboarding' : '/app/onboarding';
     } else {
       destination = userRole === 'CONTRIBUTOR' ? '/app/contributor' : userRole === 'INVESTOR' ? '/app/investor' : '/app';
