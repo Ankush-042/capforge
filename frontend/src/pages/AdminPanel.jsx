@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Search, Ban, CheckCircle2, Shield, ShieldOff, Trash2 } from 'lucide-react';
+import { ShieldCheck, Search, Ban, CheckCircle2, Shield, ShieldOff, Trash2, AlertTriangle, Wrench } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getAdminStats, getAdminUsers, getAdminStartups, setStartupVerification, deleteAdminStartup, setUserStatus, setUserAdmin } from '../services/startups.js';
+import { getAdminStats, getAdminUsers, getAdminStartups, setStartupVerification, deleteAdminStartup, setUserStatus, setUserAdmin, getIntegrityCheck, fixIntegrityIssue } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 const VERIFICATION_STATUSES = ['CLAIMED', 'PENDING_VERIFICATION', 'VERIFIED', 'UNVERIFIED'];
+const SEVERITY_STYLE = { critical: 'bg-signal-critical/10 text-signal-critical', high: 'bg-amber-100 text-amber-700', medium: 'bg-blue-50 text-blue-600', low: 'bg-surface-muted text-ink-500' };
 
 /**
  * Real fix for a confirmed complaint: the admin panel was genuinely
@@ -24,14 +25,25 @@ export default function AdminPanel() {
   const [startups, setStartups] = useState([]);
   const [userSearch, setUserSearch] = useState('');
   const [startupSearch, setStartupSearch] = useState('');
+  const [health, setHealth] = useState(null);
+  const [fixingId, setFixingId] = useState(null);
 
   async function loadAll(uSearch = userSearch, sSearch = startupSearch) {
-    const [statsRes, usersRes, startupsRes] = await Promise.all([getAdminStats(), getAdminUsers(uSearch), getAdminStartups(sSearch)]);
+    const [statsRes, usersRes, startupsRes, healthRes] = await Promise.all([getAdminStats(), getAdminUsers(uSearch), getAdminStartups(sSearch), getIntegrityCheck()]);
     if (statsRes.data?.error === 'FORBIDDEN') { setForbidden(true); setLoading(false); return; }
     if (statsRes.ok && statsRes.data.success) setStats(statsRes.data.stats);
     if (usersRes.ok && usersRes.data.success) setUsers(usersRes.data.users);
     if (startupsRes.ok && startupsRes.data.success) setStartups(startupsRes.data.startups);
+    if (healthRes.ok && healthRes.data.success) setHealth(healthRes.data.checks);
     setLoading(false);
+  }
+
+  async function handleFix(checkId) {
+    setFixingId(checkId);
+    const { ok, data } = await fixIntegrityIssue(checkId);
+    setFixingId(null);
+    if (ok && data.success) { showToast(`Fixed ${data.fixed} record${data.fixed !== 1 ? 's' : ''}.`); await loadAll(); }
+    else showToast(data.error || 'Could not fix automatically.', 'error');
   }
 
   useEffect(() => { loadAll(); }, []);
@@ -73,7 +85,7 @@ export default function AdminPanel() {
       </div>
 
       <div className="flex gap-2 mb-5">
-        {['stats', 'users', 'startups'].map((t) => (
+        {['stats', 'health', 'users', 'startups'].map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`text-sm px-4 py-2 rounded-lg font-medium capitalize transition-colors ${tab === t ? 'bg-ink-900 text-white' : 'bg-surface-muted text-ink-500'}`}>{t}</button>
         ))}
       </div>
@@ -84,6 +96,39 @@ export default function AdminPanel() {
             <div key={key} className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
               <p className="text-[13px] font-medium text-ink-500 mb-3 capitalize">{key.replace(/_/g, ' ')}</p>
               {rows.map((r, i) => <div key={i} className="flex justify-between text-[15px] py-1"><span className="text-ink-700">{Object.values(r)[0]}</span><span className="font-medium text-ink-900">{Object.values(r)[1]}</span></div>)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'health' && health && (
+        <div className="space-y-3">
+          <p className="text-[13px] text-ink-500 mb-2">Every check here is drawn from a real, confirmed bug found during this build — not a hypothetical.</p>
+          {health.map((check) => (
+            <div key={check.id} className="bg-surface rounded-xl border border-surface-border shadow-card p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  {check.count > 0 ? <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" /> : <CheckCircle2 size={18} className="text-mint-500 shrink-0 mt-0.5" />}
+                  <div>
+                    <p className="text-[15px] font-medium text-ink-900">{check.label}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-[13px] font-semibold px-2 py-0.5 rounded-md ${SEVERITY_STYLE[check.severity]}`}>{check.count} affected</span>
+                      <span className="text-[11px] text-ink-300 uppercase font-medium">{check.severity}</span>
+                    </div>
+                    {check.count > 0 && check.detail && (
+                      <p className="text-[12px] text-ink-500 mt-2 max-w-2xl">{check.detail.filter(Boolean).slice(0, 8).join(', ')}{check.detail.length > 8 ? `, +${check.detail.length - 8} more` : ''}</p>
+                    )}
+                  </div>
+                </div>
+                {check.count > 0 && check.fixable && (
+                  <button onClick={() => handleFix(check.id)} disabled={fixingId === check.id} className="shrink-0 flex items-center gap-1.5 text-xs bg-ink-900 hover:bg-ink-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50">
+                    <Wrench size={12} /> {fixingId === check.id ? 'Fixing…' : 'Fix now'}
+                  </button>
+                )}
+                {check.count > 0 && !check.fixable && (
+                  <span className="shrink-0 text-[11px] text-ink-300 italic">Needs a real decision, not auto-fixable</span>
+                )}
+              </div>
             </div>
           ))}
         </div>
