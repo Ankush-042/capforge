@@ -10,6 +10,9 @@ import { useMyIdentity } from '../context/MyIdentityContext.jsx';
  */
 
 const NAV_BY_PERSONA = {
+  ADMIN: [
+    { label: 'Admin Panel', icon: '◆', path: '/app/admin' },
+  ],
   FOUNDER: [
     { label: 'Dashboard', icon: '▦', path: '/app' },
     { label: 'Inbox', icon: '✉', path: '/app/inbox' },
@@ -46,6 +49,7 @@ const NAV_BY_PERSONA = {
 };
 
 const IDENTITY_BY_PERSONA = {
+  ADMIN: { name: 'Platform Admin', gradient: 'from-ink-700 to-ink-900', initial: 'A' },
   FOUNDER: { name: 'Founder', gradient: 'from-amber-500 to-rose-500', initial: 'F' },
   CONTRIBUTOR: { name: 'Priya Data', gradient: 'from-blue-500 to-violet-500', initial: 'P' },
   INVESTOR: { name: 'Raj Capital', gradient: 'from-mint-500 to-blue-500', initial: 'R' },
@@ -87,9 +91,9 @@ export default function Shell({ children, title, subtitle, persona: externalPers
   // Router remounts the page/Shell on each route change. The shared
   // context fetches ONCE per real session; every subsequent navigation
   // reads the already-resolved value instantly, with zero flash.
-  const { persona: fetchedPersona, displayName: fetchedDisplayName } = useMyIdentity();
+  const { persona: fetchedPersona, displayName: fetchedDisplayName, isAdmin } = useMyIdentity();
 
-  const persona = externalPersona || fetchedPersona;
+  const persona = isAdmin ? 'ADMIN' : (externalPersona || fetchedPersona);
   const realDisplayName = externalDisplayName || fetchedDisplayName;
 
   if (!persona) {

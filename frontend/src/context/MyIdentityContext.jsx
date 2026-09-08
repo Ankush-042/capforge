@@ -21,18 +21,20 @@ const MyIdentityContext = createContext(null);
 export function MyIdentityProvider({ children }) {
   const [persona, setPersona] = useState(null);
   const [displayName, setDisplayName] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     getMyProfile().then(({ ok, data }) => {
       if (ok && data.success) {
         if (data.profile.primary_role) setPersona(data.profile.primary_role);
         if (data.profile.display_name) setDisplayName(data.profile.display_name);
+        setIsAdmin(!!data.profile.is_admin);
       }
     });
   }, []);
 
   return (
-    <MyIdentityContext.Provider value={{ persona, displayName }}>
+    <MyIdentityContext.Provider value={{ persona, displayName, isAdmin }}>
       {children}
     </MyIdentityContext.Provider>
   );
