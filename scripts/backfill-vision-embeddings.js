@@ -6,6 +6,7 @@
  * migration 023, and every existing venture would silently fall back to
  * logistics-only co-founder scoring.
  */
+require('dotenv').config();
 const pool = require('../backend/shared/db');
 const { refreshVisionEmbedding, refreshMotivationEmbedding } = require('../backend/matching/visionAlignmentService');
 

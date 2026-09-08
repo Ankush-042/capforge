@@ -11,6 +11,7 @@
  *   B) The rows exist but is_founder is wrong
  *   C) The rows exist and are correct, so the bug is display-side only
  */
+require('dotenv').config();
 const pool = require('../backend/shared/db');
 
 (async () => {
