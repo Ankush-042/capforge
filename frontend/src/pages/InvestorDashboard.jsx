@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 import StatCard, { STAT_PALETTE } from '../components/charts/StatCard.jsx';
 import Badge from '../components/charts/Badge.jsx';
@@ -9,11 +10,12 @@ export default function InvestorDashboard() {
   const [profile, setProfile] = useState(null);
   const [deals, setDeals] = useState([]);
   const [connections, setConnections] = useState([]);
+  const [hasRoleProfile, setHasRoleProfile] = useState(true);
 
   useEffect(() => {
     async function load() {
       const [profileRes, dealsRes, connRes] = await Promise.all([getMyProfile(), getInvestorRecommendations(), getMyConnections()]);
-      if (profileRes.ok && profileRes.data.success) setProfile(profileRes.data.profile);
+      if (profileRes.ok && profileRes.data.success) { setProfile(profileRes.data.profile); setHasRoleProfile(!!profileRes.data.roleProfile); }
       if (dealsRes.ok && dealsRes.data.success) setDeals(dealsRes.data.recommendations);
       if (connRes.ok && connRes.data.success) setConnections(connRes.data.connections);
       setLoading(false);
@@ -27,6 +29,15 @@ export default function InvestorDashboard() {
 
   return (
     <Shell persona="INVESTOR" title={profile?.display_name || 'Dashboard'}>
+      {!hasRoleProfile && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-[15px] font-semibold text-amber-800">Your thesis isn't set — you have zero real deal flow right now</p>
+            <p className="text-[13px] text-amber-700 mt-0.5">Domains, stages, and ticket size were never set. No ventures can be matched to you until this is complete.</p>
+          </div>
+          <Link to="/app/investor/onboarding" className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Finish now</Link>
+        </div>
+      )}
       <div className="mb-6">
         <p className="text-xs text-ink-500 mb-1">Good evening, {profile?.display_name?.split(' ')[0]}</p>
         <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Which ventures deserve your attention</h1>
@@ -41,7 +52,7 @@ export default function InvestorDashboard() {
 
       <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
         <p className="text-[15px] font-semibold text-ink-900 mb-4">Top matches</p>
-        {deals.length === 0 ? <p className="text-[13px] text-ink-500 py-6 text-center">No deal flow yet — complete your thesis in onboarding.</p> : deals.slice(0, 5).map((d) => (
+        {deals.length === 0 ? <p className="text-[13px] text-ink-500 py-6 text-center">{hasRoleProfile ? 'No ventures currently match your thesis — check back as new ventures cross the readiness bar.' : 'Complete your thesis in onboarding to start seeing real deal flow.'}</p> : deals.slice(0, 5).map((d) => (
           <div key={d.id} className="flex items-center justify-between py-3">
             <div>
               <p className="text-[15px] font-medium text-ink-900">{d.startup_name}</p>
