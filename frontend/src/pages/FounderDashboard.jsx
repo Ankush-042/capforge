@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import RoleCoverageGrid from '../components/charts/RoleCoverageGrid.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
+import { useMyIdentity } from '../context/MyIdentityContext.jsx';
 import { getGaps, getReadiness, getReadinessHistory } from '../services/startups.js';
 
 /**
@@ -17,6 +18,7 @@ import { getGaps, getReadiness, getReadinessHistory } from '../services/startups
  * persisted design system (design-system/capforge/MASTER.md).
  */
 export default function FounderDashboard() {
+  const { isAdmin } = useMyIdentity();
   const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [startup, setStartup] = useState(null);
@@ -46,6 +48,8 @@ export default function FounderDashboard() {
       gsap.from(gridRef.current.children, { opacity: 0, scale: 0.94, y: 16, duration: 0.5, stagger: { each: 0.07, from: 'start' }, ease: 'back.out(1.4)' });
     }
   }, [loading]);
+
+  if (isAdmin) return <Navigate to="/app/admin" replace />;
 
   if (loading) return <Shell title="Dashboard"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-trust animate-spin" /></div></Shell>;
 
