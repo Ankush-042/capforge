@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, ArrowDownRight, Menu, X } from 'lucide-react';
+import AuroraShader from '../components/AuroraShader.jsx';
 import '@fontsource/geist-sans/400.css';
 import '@fontsource/geist-sans/500.css';
 import '@fontsource/geist-sans/600.css';
@@ -81,7 +82,7 @@ function StepRow({ n, title, desc, align }) {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className={`flex items-start gap-8 py-10 border-b border-surface-border ${isRight ? 'flex-row-reverse text-right' : ''}`}
     >
-      <span className="font-display text-[80px] lg:text-[100px] leading-none font-semibold text-violet-100 select-none shrink-0">0{n}</span>
+      <span className="font-display text-[80px] lg:text-[100px] leading-none font-semibold text-violet-500/25 select-none shrink-0">0{n}</span>
       <div className={isRight ? 'flex flex-col items-end' : ''}>
         <p className="text-xl font-semibold text-ink-900 mb-2.5">{title}</p>
         <p className="text-[15px] text-ink-500 leading-relaxed max-w-md">{desc}</p>
@@ -130,29 +131,29 @@ export default function Landing() {
       </header>
 
       {/* Hero, real grid-line texture (atmospheric, not fake UI), bolder confident type, real tilted venture cards */}
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.35]"
-          style={{ backgroundImage: 'linear-gradient(#E4DEFD 1px, transparent 1px), linear-gradient(to right, #E4DEFD 1px, transparent 1px)', backgroundSize: '3rem 3rem', maskImage: 'linear-gradient(to bottom, black, transparent)' }}
-        />
+      <section className="relative overflow-hidden bg-ink-950">
+        <AuroraShader className="absolute inset-0 w-full h-full" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-canvas" />
         <div className="relative max-w-[1280px] mx-auto px-6 lg:px-10 pt-20 pb-24 grid lg:grid-cols-2 gap-16 items-center">
           <motion.div initial="hidden" animate="visible" variants={heroContainer}>
-            <motion.div variants={heroItem}><Eyebrow>{'The intelligent startup ecosystem'}</Eyebrow></motion.div>
-            <motion.h1 variants={heroItem} className="font-display text-[46px] sm:text-[60px] lg:text-[72px] font-semibold leading-[1.02] tracking-tight text-ink-950">
-              Build the team your startup was <span className="italic font-normal text-forest-600">missing.</span>
+            <motion.p variants={heroItem} className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] uppercase text-mint-500 mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-mint-500" />Where startups actually begin
+            </motion.p>
+            <motion.h1 variants={heroItem} className="font-display text-[46px] sm:text-[60px] lg:text-[72px] font-semibold leading-[1.02] tracking-tight text-white">
+              It starts with one idea<br />and one person who <span className="italic font-normal text-mint-500">believes it.</span>
             </motion.h1>
-            <motion.p variants={heroItem} className="text-lg text-ink-500 mt-7 max-w-md leading-relaxed">
-              CapForge understands your venture, diagnoses exactly what it needs, and connects you with the people and capital that can move it forward.
+            <motion.p variants={heroItem} className="text-lg text-white/70 mt-7 max-w-md leading-relaxed">
+              Share the thing you cannot stop thinking about. Find the person who wants to build it with you. CapForge takes it from a spark to a real company, and puts it in front of the investors who back that kind of thing.
             </motion.p>
             <motion.div variants={heroItem} className="flex flex-wrap items-center gap-4 mt-9">
-              <Link to="/sign-up" className="group relative flex items-center overflow-hidden bg-ink-900 hover:bg-ink-700 text-white rounded-full pl-6 pr-2 py-2 font-medium transition-colors">
-                Build your startup
-                <span className="ml-3 relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/15">
+              <Link to="/sign-up" className="group relative flex items-center overflow-hidden bg-white hover:bg-white/90 text-ink-950 rounded-full pl-6 pr-2 py-2 font-medium transition-colors">
+                Share your idea
+                <span className="ml-3 relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-ink-950/10">
                   <ArrowUpRight size={15} className="absolute transition-transform duration-500 ease-out group-hover:translate-x-8 group-hover:-translate-y-8" />
                   <ArrowUpRight size={15} className="absolute -translate-x-8 translate-y-8 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0" />
                 </span>
               </Link>
-              <a href="#discover" className="text-ink-700 font-medium flex items-center gap-1.5 hover:text-forest-600 transition-colors">
+              <a href="#discover" className="text-white/70 font-medium flex items-center gap-1.5 hover:text-white transition-colors">
                 See how it works <ArrowDownRight size={16} />
               </a>
             </motion.div>
@@ -169,11 +170,11 @@ export default function Landing() {
                 transition={{ delay: 0.3 + i * 0.15 }}
                 whileHover={{ y: -10, rotate: 0, transition: { duration: 0.3 } }}
                 style={{ rotate: i === 0 ? -6 : 5, top: i === 0 ? 20 : 140, left: i === 0 ? 20 : 140 }}
-                className="absolute w-72 bg-white rounded-2xl border border-surface-border shadow-elevated p-6"
+                className="absolute w-72 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-elevated p-6"
               >
-                <span className="text-xs font-mono text-ink-300 uppercase tracking-wide">Active venture</span>
-                <p className="font-display text-xl font-semibold text-ink-900 mt-1.5">{v.name}</p>
-                <p className="text-sm text-ink-500 mt-1">{Array.isArray(v.domain) ? v.domain.join(' · ') : v.domain}</p>
+                <span className="text-xs font-mono text-mint-500 uppercase tracking-wide">Building now</span>
+                <p className="font-display text-xl font-semibold text-white mt-1.5">{v.name}</p>
+                <p className="text-sm text-white/60 mt-1">{Array.isArray(v.domain) ? v.domain.join(' · ') : v.domain}</p>
               </motion.div>
             ))}
           </div>
@@ -192,36 +193,37 @@ export default function Landing() {
       {/* How it works, rebuilt as an asymmetric alternating list, not a generic 3-card row */}
       <section id="discover" className="max-w-[1280px] mx-auto px-6 lg:px-10 py-24">
         <div className="max-w-xl mb-6">
-          <Eyebrow>How CapForge thinks</Eyebrow>
-          <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight">See the gap. Find the fit. <span className="italic font-normal text-forest-600">Move forward.</span></h2>
-          <p className="text-ink-500 mt-4 text-[15px] leading-relaxed">CapForge understands the venture first, diagnoses what is missing, then connects the right person to the right gap with a real explanation.</p>
+          <Eyebrow>The flow</Eyebrow>
+          <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight">A spark. A believer. <span className="italic font-normal text-forest-600">A company.</span></h2>
+          <p className="text-ink-500 mt-4 text-[15px] leading-relaxed">Most platforms start after the company exists. CapForge starts before it does, at the moment two people decide to build something together.</p>
         </div>
         <div>
-          <StepRow n={1} align="left" title="Understand" desc="Describe your idea in your own words. CapForge structures it into a living venture profile: problem, solution, domain, and required capabilities." />
-          <StepRow n={2} align="right" title="Diagnose" desc="Real gap analysis against your current team, prioritized by what actually matters right now, not a generic checklist." />
-          <StepRow n={3} align="left" title="Connect" desc="Evidence-based candidate ranking with a real explanation for every match. Never a bare, unexplained percentage." />
+          <StepRow n={1} align="left" title="You share the spark" desc="Not a business plan. Not a pitch deck. Just the thing you cannot stop thinking about, in your own words, before it is anything official." />
+          <StepRow n={2} align="right" title="Someone believes it too" desc="Your idea reaches people who care about the same problem. Not applicants looking for a job. People who read it and want in." />
+          <StepRow n={3} align="left" title="You build it together" desc="The moment you both commit, CapForge turns the spark into a real venture: structured, understood, and honest about what it still needs." />
+          <StepRow n={4} align="right" title="Investors find you" desc="Keep building and the platform notices. Cross the readiness bar and you show up in front of investors who back exactly your kind of company." />
         </div>
       </section>
 
       {/* Three-sided ecosystem, kept asymmetric rather than three identical boxes */}
       <section className="bg-white border-y border-surface-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-24">
-          <Eyebrow>A three-sided ecosystem</Eyebrow>
-          <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight mb-14">Different starting points. <span className="italic font-normal text-forest-600">One shared direction.</span></h2>
+          <Eyebrow>Who this is for</Eyebrow>
+          <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight mb-14">Three ways in. <span className="italic font-normal text-forest-600">One thing being built.</span></h2>
           <div className="grid md:grid-cols-6 gap-5">
             <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className="md:col-span-3 rounded-xl p-8 bg-forest-50 text-forest-700">
-              <p className="font-display text-xl font-semibold mb-3">For Founders</p>
-              <p className="text-[15px] opacity-80 leading-relaxed mb-6">Find the people your startup needs, ranked and explained.</p>
+              <p className="font-display text-xl font-semibold mb-3">You have the idea</p>
+              <p className="text-[15px] opacity-80 leading-relaxed mb-6">Share it before it is polished. Find the person who wants to build it with you.</p>
               <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className="md:col-span-3 rounded-xl p-8 bg-violet-50 text-violet-700">
-              <p className="font-display text-xl font-semibold mb-3">For Contributors</p>
-              <p className="text-[15px] opacity-80 leading-relaxed mb-6">Discover ventures where your skills genuinely matter.</p>
+              <p className="font-display text-xl font-semibold mb-3">You want to build</p>
+              <p className="text-[15px] opacity-80 leading-relaxed mb-6">Find the idea worth your years. Join early enough that it is yours too.</p>
               <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.55, delay: 0.2, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }} className="md:col-span-6 rounded-xl p-8 bg-ink-950 text-white">
-              <p className="font-display text-xl font-semibold mb-3">For Investors</p>
-              <p className="text-[15px] opacity-80 leading-relaxed mb-6 max-w-md">Discover promising ventures early, with real readiness signal grounded in evidence, not a pitch deck alone.</p>
+              <p className="font-display text-xl font-semibold mb-3">You back what is real</p>
+              <p className="text-[15px] opacity-80 leading-relaxed mb-6 max-w-md">See ventures as they form, with honest readiness signal grounded in what the team has actually built, not what a deck claims.</p>
               <Link to="/sign-up" className="text-sm font-medium flex items-center gap-1.5">Get started <ArrowUpRight size={14} /></Link>
             </motion.div>
           </div>
@@ -230,11 +232,11 @@ export default function Landing() {
 
       {/* Closing CTA */}
       <section className="max-w-[1280px] mx-auto px-6 lg:px-10 py-28 text-center">
-        <Eyebrow>Start here</Eyebrow>
+        <Eyebrow>Your move</Eyebrow>
         <h2 className="font-display text-3xl lg:text-[44px] font-semibold text-ink-950 leading-tight max-w-2xl mx-auto">
-          Build something worth building. <span className="italic font-normal text-forest-600">With the right people.</span>
+          Somewhere out there is the person <span className="italic font-normal text-forest-600">who gets it.</span>
         </h2>
-        <p className="text-ink-500 mt-5 text-lg">CapForge turns startup discovery into startup formation.</p>
+        <p className="text-ink-500 mt-5 text-lg">Start with the idea you cannot let go of.</p>
         <Link to="/sign-up" className="inline-flex items-center gap-2 bg-ink-900 hover:bg-ink-700 text-white px-7 py-3.5 rounded-lg font-medium transition-colors mt-8">
           Get started <ArrowUpRight size={16} />
         </Link>
