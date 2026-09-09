@@ -84,8 +84,8 @@ export default function PitchMode() {
         <p className="text-white/60 text-[15px]">
           {routeId ? 'This venture could not be found.' : 'You do not have a venture yet. Share an idea and find someone to build it with.'}
         </p>
-        <Link to={routeId ? '/app' : '/app/sparks'} className="text-mint-500 text-sm hover:underline">
-          {routeId ? 'Back to CapForge' : 'Go to Sparks'}
+        <Link to={routeId ? '/app/inbox' : '/app/sparks'} className="text-mint-500 text-sm hover:underline">
+          {routeId ? 'Back to your inbox' : 'Go to Sparks'}
         </Link>
       </div>
     );
@@ -102,10 +102,10 @@ export default function PitchMode() {
     <div className="bg-ink-950 min-h-screen text-white">
       {/* Minimal exit affordance. No sidebar: this is meant to be shown. */}
       <Link
-        to={`/app/startups/${pitch.id}`}
+        to={isOwner ? `/app/startups/${pitch.id}` : '/app/inbox'}
         className="fixed top-6 left-6 z-30 flex items-center gap-1.5 text-[13px] text-white/40 hover:text-white/80 transition-colors"
       >
-        <ArrowLeft size={14} /> Exit pitch
+        <ArrowLeft size={14} /> {isOwner ? 'Exit preview' : 'Back to the conversation'}
       </Link>
       {isOwner && (
         <Link

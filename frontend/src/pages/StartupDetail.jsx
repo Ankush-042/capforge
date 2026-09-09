@@ -56,9 +56,15 @@ export default function StartupDetail() {
       <div className="flex items-start justify-between mb-1">
         <PageHeader icon={Building2} iconBg="bg-violet-50" iconColor="text-violet-600" title={startup.name} subtitle={`${(startup.domain || []).join(', ')} · ${startup.stage} stage · ${startup.visibility}`} />
         <div className="flex items-center gap-3 shrink-0">
-          <Link to={`/app/pitch/${startup.id}`} className="flex items-center gap-2 bg-ink-900 hover:bg-ink-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            <Presentation size={16} /> Pitch mode
-          </Link>
+          {/* Pitch mode is deliberately NOT here. A pitch is something a
+              founder chooses to send inside a conversation, not something an
+              investor browses to before any contact. Owners preview theirs
+              from their own sidebar. */}
+          {isOwnStartup && (
+            <Link to={`/app/pitch/${startup.id}`} className="flex items-center gap-2 bg-ink-900 hover:bg-ink-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+              <Presentation size={16} /> Preview your pitch
+            </Link>
+          )}
           {!isOwnStartup && myUserId && (
             <button onClick={handleMessage} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
               <MessageCircle size={16} /> Message founder

@@ -34,7 +34,26 @@ async function getPitch(startupId, viewerId) {
     if (coFounder.rows.length > 0) isOwner = true;
   }
   const isVisible = startup.visibility === 'DISCOVERABLE' && startup.status === 'ACTIVE';
-  if (!isOwner && !isVisible) return { success: false, error: 'NOT_FOUND' };
+
+  // REAL FIX: a pitch that was explicitly SENT to someone must be viewable
+  // by that person, full stop. Confirmed bug: a venture formed from a spark
+  // is still DRAFT, so isVisible was false, so an investor the founder had
+  // just deliberately pitched to got NOT_FOUND. The founder chose to show
+  // them this. That choice is the permission.
+  let wasPitchedToViewer = false;
+  if (!isOwner && viewerId) {
+    const pitched = await pool.query(
+      `SELECT 1 FROM messages m
+       JOIN conversations c ON c.id = m.conversation_id
+       WHERE m.message_type = 'PITCH' AND m.pitch_startup_id = $1
+         AND (c.participant_a_id = $2 OR c.participant_b_id = $2)
+       LIMIT 1`,
+      [startupId, viewerId]
+    );
+    wasPitchedToViewer = pitched.rows.length > 0;
+  }
+
+  if (!isOwner && !isVisible && !wasPitchedToViewer) return { success: false, error: 'NOT_FOUND' };
 
   const [readiness, team, milestones, gaps, custom] = await Promise.all([
     pool.query(
