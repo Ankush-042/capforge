@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMyPersona } from '../hooks/useMyPersona.js';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Handshake, CheckCircle2 } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Send, Handshake, CheckCircle2, Presentation } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getConversationMessages, sendMessage, getMyProfile, confirmTeamFormation } from '../services/startups.js';
+import { getConversationMessages, sendMessage, getMyProfile, confirmTeamFormation, sendPitch } from '../services/startups.js';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 /**
@@ -20,6 +21,8 @@ export default function ConversationThread() {
   const [messages, setMessages] = useState([]);
   const [conversation, setConversation] = useState(null);
   const [myUserId, setMyUserId] = useState(null);
+  const [pitchSending, setPitchSending] = useState(false);
+  const { activeStartup } = useActiveStartup();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -57,6 +60,14 @@ export default function ConversationThread() {
     await load();
   }
 
+  async function handleSendPitch() {
+    if (!activeStartup?.id || pitchSending) return;
+    setPitchSending(true);
+    const { ok, data } = await sendPitch(activeStartup.id, id, draft.trim() || null);
+    setPitchSending(false);
+    if (ok && data.success) { setDraft(''); await load(); }
+  }
+
   if (loading) return <Shell persona={persona} displayName={displayName} title="Conversation"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
   const myConfirmed = conversation?.myConfirmed || false;
@@ -81,6 +92,29 @@ export default function ConversationThread() {
             <p className="text-[13px] text-ink-500 text-center py-10">No messages yet — say hello and see where it goes.</p>
           ) : messages.map((m) => {
             const mine = m.sender_id === myUserId;
+
+            // A pitch is not a line of chat text. It renders as a real card
+            // so the person it was sent to cannot miss it.
+            if (m.message_type === 'PITCH' && m.pitch_startup_id) {
+              return (
+                <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                  <div className="max-w-[80%] relative overflow-hidden rounded-2xl bg-ink-950 p-6">
+                    <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 20% 30%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 80% 70%, #1F5D52 0%, transparent 55%)' }} />
+                    <div className="relative">
+                      <p className="flex items-center gap-2 text-[11px] font-medium tracking-[0.14em] uppercase text-mint-500 mb-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-mint-500" />{mine ? 'You sent a pitch' : 'They sent you their pitch'}
+                      </p>
+                      <p className="text-[15px] text-white/85 leading-relaxed mb-5">{m.content}</p>
+                      <Link to={`/app/pitch/${m.pitch_startup_id}`} className="inline-flex items-center gap-2 bg-white hover:bg-white/90 text-ink-950 px-5 py-2.5 rounded-full text-[14px] font-medium transition-colors">
+                        <Presentation size={15} /> {mine ? 'View what they see' : 'Hear the pitch'}
+                      </Link>
+                      <p className="text-[10px] text-white/30 mt-4">{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[70%] rounded-xl px-4 py-2.5 text-[14px] ${mine ? 'bg-violet-600 text-white' : 'bg-surface-muted text-ink-900'}`}>
@@ -92,6 +126,18 @@ export default function ConversationThread() {
           })}
           <div ref={bottomRef} />
         </div>
+        {persona === 'FOUNDER' && activeStartup?.id && (
+          <div className="border-t border-surface-border px-4 pt-3 pb-1">
+            <button
+              onClick={handleSendPitch}
+              disabled={pitchSending}
+              className="flex items-center gap-2 text-[13px] font-medium text-violet-700 hover:text-violet-600 transition-colors disabled:opacity-50"
+            >
+              <Presentation size={14} />
+              {pitchSending ? 'Sending your pitch…' : `Pitch ${activeStartup.name} to them`}
+            </button>
+          </div>
+        )}
         <div className="border-t border-surface-border p-4 flex gap-2">
           <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type a message…" className="flex-1 px-4 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />

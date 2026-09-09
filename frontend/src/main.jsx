@@ -12,6 +12,7 @@ import SparkFeed from './pages/SparkFeed.jsx';
 import SparkCompose from './pages/SparkCompose.jsx';
 import SparkDetail from './pages/SparkDetail.jsx';
 import PitchMode from './pages/PitchMode.jsx';
+import PitchEditor from './pages/PitchEditor.jsx';
 import InvestorOnboarding from './pages/InvestorOnboarding.jsx';
 
 import FounderDashboard from './pages/FounderDashboard.jsx';
@@ -112,6 +113,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/sparks/new" element={<ProtectedRoute><SparkCompose /></ProtectedRoute>} />
         <Route path="/app/sparks/:id" element={<ProtectedRoute><SparkDetail /></ProtectedRoute>} />
         <Route path="/app/pitch" element={<ProtectedRoute><PitchMode /></ProtectedRoute>} />
+        <Route path="/app/pitch/edit" element={<ProtectedRoute><PitchEditor /></ProtectedRoute>} />
+        <Route path="/app/pitch/:id/edit" element={<ProtectedRoute><PitchEditor /></ProtectedRoute>} />
         <Route path="/app/pitch/:id" element={<ProtectedRoute><PitchMode /></ProtectedRoute>} />
         <Route path="/app/contributor/opportunities" element={<ProtectedRoute><ContributorOpportunities /></ProtectedRoute>} />
         <Route path="/app/contributor/skill-demand" element={<ProtectedRoute><SkillDemand /></ProtectedRoute>} />
