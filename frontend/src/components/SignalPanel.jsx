@@ -41,7 +41,7 @@ export default function SignalPanel({ endpoint }) {
         <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 40%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 80% 60%, #1F5D52 0%, transparent 55%)' }} />
         <div className="relative flex items-center gap-3">
           <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-mint-500 animate-spin" />
-          <p className="text-[15px] text-white/60">Reading the market…</p>
+          <p className="text-[15px] text-white/60">Reading current trends in your market…</p>
         </div>
       </div>
     );
@@ -61,9 +61,9 @@ export default function SignalPanel({ endpoint }) {
       <div className="rounded-2xl border border-surface-border bg-surface p-7">
         <div className="flex items-center gap-2 mb-2">
           <Radio size={16} className="text-ink-300" />
-          <p className="text-[15px] font-semibold text-ink-900">Signal</p>
+          <p className="text-[15px] font-semibold text-ink-900">What is moving in your market</p>
         </div>
-        <p className="text-[14px] text-ink-500 leading-relaxed">{messages[error] || 'Market intelligence is unavailable right now.'}</p>
+        <p className="text-[14px] text-ink-500 leading-relaxed">{messages[error] || 'Current market trends are unavailable right now.'}</p>
         <button onClick={() => load(true)} className="mt-4 text-[13px] font-medium text-violet-700 hover:text-violet-600 transition-colors">Try again</button>
       </div>
     );
@@ -84,7 +84,7 @@ export default function SignalPanel({ endpoint }) {
       <div className="relative">
         <div className="flex items-start justify-between gap-4 mb-5">
           <p className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] uppercase text-mint-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-mint-500 animate-pulse" />Signal
+            <span className="w-1.5 h-1.5 rounded-full bg-mint-500 animate-pulse" />What is moving in your market
           </p>
           <button
             onClick={() => load(true)}
@@ -96,9 +96,12 @@ export default function SignalPanel({ endpoint }) {
           </button>
         </div>
 
-        <h3 className="font-display text-[22px] lg:text-[26px] font-semibold text-white leading-snug mb-4">
+        <h3 className="font-display text-[22px] lg:text-[26px] font-semibold text-white leading-snug mb-2">
           {signal.headline}
         </h3>
+        <p className="text-[13px] text-white/40 mb-5">
+          Current industry trends, pulled from the live web in the last month. Not about your venture.
+        </p>
 
         <div className="text-[15px] text-white/70 leading-relaxed space-y-3">
           {signal.body.split('\n').filter(Boolean).map((para, i) => <p key={i}>{para}</p>)}
