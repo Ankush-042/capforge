@@ -26,7 +26,13 @@ export default function InvestorDashboard() {
 
   if (loading) return <Shell persona="INVESTOR" title="Dashboard"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
-  const avgFit = deals.length > 0 ? Math.round(deals.reduce((s, d) => s + d.score, 0) / deals.length * 100) : 0;
+  // Postgres returns NUMERIC as a STRING, so `s + d.score` concatenates
+  // instead of adding and the result is NaN. The DealFlow page happens to
+  // work because Math.round(string * 100) coerces, but reduce with + does
+  // not. Parse explicitly, and guard against any unparseable value.
+  const avgFit = deals.length > 0
+    ? Math.round(deals.reduce((s, d) => s + (parseFloat(d.score) || 0), 0) / deals.length * 100)
+    : 0;
 
   return (
     <Shell persona="INVESTOR" title={profile?.display_name || 'Dashboard'}>
