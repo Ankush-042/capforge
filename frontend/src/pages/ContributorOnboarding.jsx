@@ -25,6 +25,14 @@ export default function ContributorOnboarding() {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   }
 
+  // CONFIRMED PROBLEM from live testing: a real contributor completed this
+  // form, wrote a detailed mission, and left domains and stages unselected
+  // because nothing indicated they mattered. Their matches were then driven
+  // by skills alone and had nothing to do with what they said they cared
+  // about. These toggles silently control the entire matching experience,
+  // so the form now says so rather than letting someone skip them blind.
+  const missingSignal = preferredDomains.length === 0 || preferredStage.length === 0;
+
   async function handleSubmit() {
     setSaving(true);
     const skills = skillsInput.split(',').map((s) => s.trim()).filter(Boolean);
@@ -114,6 +122,20 @@ export default function ContributorOnboarding() {
             <input value={equityPreference} onChange={(e) => setEquityPreference(e.target.value)} placeholder="e.g. 3-5% for full-time technical co-founder role"
               className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[15px] focus:outline-none focus:ring-2 focus:ring-violet-500/20" />
           </div>
+          {missingSignal && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+              <p className="text-[14px] font-semibold text-amber-800 mb-1">
+                {preferredDomains.length === 0 && preferredStage.length === 0
+                  ? 'You have not picked any domains or stages yet'
+                  : preferredDomains.length === 0
+                    ? 'You have not picked any domains yet'
+                    : 'You have not picked any stages yet'}
+              </p>
+              <p className="text-[13px] text-amber-700 leading-relaxed">
+                These decide which ventures reach you. Without them your matches come from skills alone, which is how a backend engineer ends up being shown a design role at a company they would never join.
+              </p>
+            </div>
+          )}
           <button onClick={handleSubmit} disabled={saving}
             className="w-full bg-ink-900 hover:bg-ink-700 text-white py-2.5 rounded-lg text-[15px] font-medium transition-colors disabled:opacity-50">
             {saving ? 'Saving…' : 'Complete profile'}
