@@ -164,8 +164,21 @@ async function runGapDiagnosis(startupId) {
     const inserted = [];
     for (const g of gaps) {
       const r = await client.query(
+        // Migration 026 adds a unique index on (startup_id, lower(trim(role))),
+        // because re-diagnosis was creating duplicate gaps that showed up
+        // twice in a contributor's list. Re-diagnosing the same role now
+        // UPDATES it rather than inserting a second copy or throwing.
         `INSERT INTO gaps (startup_id, role, required_skills, seeking_type, priority_score, priority_level, coverage, reason, evidence, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (startup_id, lower(trim(role))) DO UPDATE SET
+           required_skills = EXCLUDED.required_skills,
+           seeking_type = EXCLUDED.seeking_type,
+           priority_score = EXCLUDED.priority_score,
+           priority_level = EXCLUDED.priority_level,
+           coverage = EXCLUDED.coverage,
+           reason = EXCLUDED.reason,
+           evidence = EXCLUDED.evidence
+         RETURNING *`,
         [startupId, g.role, g.required_skills, g.seeking_type, g.priority_score, g.priority_level, g.coverage, g.reason, JSON.stringify(g.evidence), g.status]
       );
       inserted.push(r.rows[0]);

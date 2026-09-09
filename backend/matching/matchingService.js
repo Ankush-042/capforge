@@ -40,6 +40,21 @@ function getWeights(seekingType) {
  * @param {object} startup - needs .domain, .stage
  * @param {object} candidate - { headline, skills, preferred_domains, preferred_stage, experience_years, availability }
  */
+/**
+ * Generic words that appear in skills across completely unrelated
+ * disciplines. Sharing ONLY one of these is not evidence of a real skill
+ * match. Deliberately conservative: only words that genuinely carry no
+ * discipline-specific meaning on their own.
+ */
+const GENERIC_SKILL_TOKENS = new Set([
+  'design', 'designer', 'engineer', 'engineering', 'development', 'developer',
+  'management', 'manager', 'analysis', 'analyst', 'specialist', 'architecture',
+  'architect', 'system', 'systems', 'software', 'technical', 'tools', 'tool',
+  'platform', 'platforms', 'service', 'services', 'solution', 'solutions',
+  'experience', 'senior', 'junior', 'lead', 'strategy', 'planning', 'process',
+  'operations', 'support', 'integration', 'implementation', 'consulting',
+]);
+
 function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   const requiredSkills = (gap.required_skills || []).map(s => s.toLowerCase().trim());
   const candidateSkills = new Set((candidate.skills || []).map(s => s.toLowerCase().trim()));
@@ -61,12 +76,36 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   // infrastructure — a candidate skill counts as overlapping if it
   // contains, is contained by, or shares a real word token with a
   // required skill (not just character-for-character equality).
+  //
+  // CONFIRMED FALSE-POSITIVE BUG, found in live testing: a backend engineer
+  // with the skill "api design" scored 36% on a UX/UI Designer gap requiring
+  // "user experience design" and "learning interface design", with the
+  // explanation confidently claiming a strong skill match. Cause: both
+  // strings share the token "design", and a single shared token was enough.
+  //
+  // Generic role words like design, engineer, management and analysis appear
+  // in skills across completely unrelated disciplines, so matching on them
+  // alone cross-matches everything. They are now excluded from being the
+  // sole basis of a match. Genuine cases still work: "aml" vs "aml kyc"
+  // matches by substring, "machine learning" vs "machine learning engineer"
+  // matches by substring, "postgresql" vs "sql" matches by substring.
   function skillsMatch(required, candidateSkill) {
     if (required === candidateSkill) return true;
     if (required.includes(candidateSkill) || candidateSkill.includes(required)) return true;
+
     const requiredTokens = new Set(required.split(/[\s/,-]+/).filter(t => t.length > 2));
     const candidateTokens = candidateSkill.split(/[\s/,-]+/).filter(t => t.length > 2);
-    return candidateTokens.some(t => requiredTokens.has(t));
+    const shared = candidateTokens.filter(t => requiredTokens.has(t));
+    if (shared.length === 0) return false;
+
+    // A single shared GENERIC word is not a skill match.
+    const distinctive = shared.filter(t => !GENERIC_SKILL_TOKENS.has(t));
+    if (distinctive.length > 0) return true;
+
+    // Only generic words in common: require at least two of them, so
+    // "product management" vs "product manager" still matches while
+    // "api design" vs "user experience design" does not.
+    return shared.length >= 2;
   }
   const overlap = requiredSkills.filter(s => [...candidateSkills].some(cs => skillsMatch(s, cs)));
   const deterministicSkillFit = requiredSkills.length > 0 ? overlap.length / requiredSkills.length : 0;
@@ -132,7 +171,17 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   } else if (seekingType === 'CONTRACTOR') {
     compatibilityFit = 0.7; // commitment depth barely matters for a defined-scope engagement
   } else {
-    compatibilityFit = candidate.availability === 'full-time' ? 0.8 : candidate.availability === 'part-time' ? 0.6 : 0.4;
+    // CORE_HIRE and ADVISOR. Availability is the base signal, but a stated
+    // mission now genuinely counts here too, at a lower weight than for a
+    // co-founder. This is what makes the onboarding promise true: someone
+    // who writes about wanting health stakes should rank higher on a health
+    // venture than an identical candidate who wrote nothing.
+    const availabilityBase = candidate.availability === 'full-time' ? 0.8 : candidate.availability === 'part-time' ? 0.6 : 0.4;
+    if (typeof candidate.vision_alignment === 'number') {
+      compatibilityFit = (availabilityBase * 0.6) + (candidate.vision_alignment * 0.4);
+    } else {
+      compatibilityFit = availabilityBase;
+    }
   }
 
   const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null, visionAlignment: typeof candidate.vision_alignment === 'number' ? candidate.vision_alignment : null };
@@ -180,6 +229,7 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
     if (breakdown.visionAlignment >= 0.55) strengths.push(line);
     else if (breakdown.visionAlignment < 0.35) limitations.push(line);
   }
+
 
   if (breakdown.domainFit >= 0.6) {
     strengths.push(`Domain preference aligns with this venture (${domainOverlap.join(', ')}).`);
@@ -294,14 +344,20 @@ async function rankCandidatesForGap(gapId) {
   // Phase 3: real vision alignment, computed ONLY for co-founder searches.
   // Skipped entirely for every other seeking type, so the proven CORE_HIRE
   // path does no extra work and behaves exactly as before.
+  // CONFIRMED PROBLEM from live testing: this ran ONLY for CO_FOUNDER gaps,
+  // but the contributor onboarding field is labelled "what real alignment is
+  // built on, not just a skill match". Every gap a real contributor sees is
+  // CORE_HIRE, so that field affected nothing and the label was a lie.
+  // Vision alignment now runs for every seeking type. It is weighted far
+  // more heavily for co-founders (a years-long commitment) than for a hire,
+  // but it is never zero, because why someone wants to build something
+  // matters for any role.
   let visionMap = {};
-  if ((gap.seeking_type || 'CORE_HIRE') === 'CO_FOUNDER') {
-    try {
-      const { getVisionAlignment } = require('./visionAlignmentService');
-      visionMap = await getVisionAlignment(startup.id, candidatesResult.rows.map(c => c.user_id));
-    } catch (err) {
-      console.error('Vision alignment lookup failed (non-fatal, falling back to logistics-only):', err.message);
-    }
+  try {
+    const { getVisionAlignment } = require('./visionAlignmentService');
+    visionMap = await getVisionAlignment(startup.id, candidatesResult.rows.map(c => c.user_id));
+  } catch (err) {
+    console.error('Vision alignment lookup failed (non-fatal, falling back to skill-only):', err.message);
   }
 
   const ranked = candidatesResult.rows
@@ -341,8 +397,19 @@ async function rankCandidatesForGap(gapId) {
     for (let i = 0; i < ranked.length; i++) {
       const r = ranked[i];
       const row = await client.query(
+        // Migration 026 adds a unique index on (source_gap_id, target_user_id).
+        // Re-ranking the same gap now UPDATES each candidate's row instead of
+        // inserting a duplicate, which is what put the same venture and role
+        // in a contributor's list twice at an identical score.
         `INSERT INTO recommendations (startup_id, target_user_id, source_gap_id, recommendation_type, score, rank, score_breakdown, explanation)
-         VALUES ($1, $2, $3, 'CONTRIBUTOR', $4, $5, $6, $7) RETURNING *`,
+         VALUES ($1, $2, $3, 'CONTRIBUTOR', $4, $5, $6, $7)
+         ON CONFLICT (source_gap_id, target_user_id) DO UPDATE SET
+           score = EXCLUDED.score,
+           rank = EXCLUDED.rank,
+           score_breakdown = EXCLUDED.score_breakdown,
+           explanation = EXCLUDED.explanation,
+           status = 'ACTIVE'
+         RETURNING *`,
         [startup.id, r.candidate.user_id, gapId, r.score, i + 1, JSON.stringify(r.breakdown), JSON.stringify(r.explanation)]
       );
       inserted.push({ ...row.rows[0], candidate_headline: r.candidate.headline, causal_narrative: r.causalNarrative });
