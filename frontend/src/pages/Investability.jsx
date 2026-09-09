@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import VentureSummaryCard from '../components/VentureSummaryCard.jsx';
+import SignalPanel from '../components/SignalPanel.jsx';
 import { getVentureSummary } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
@@ -32,6 +33,7 @@ export default function Investability() {
 
   return (
     <Shell title="Investability" subtitle="What an investor sees">
+      {activeStartup?.id && <div className="mb-7"><SignalPanel endpoint={`/signal/startup/${activeStartup.id}`} /></div>}
       <div className="mb-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center"><Eye size={18} /></div>
         <div>

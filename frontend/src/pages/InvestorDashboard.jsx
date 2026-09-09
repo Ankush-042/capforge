@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 import StatCard, { STAT_PALETTE } from '../components/charts/StatCard.jsx';
+import SignalPanel from '../components/SignalPanel.jsx';
 import Badge from '../components/charts/Badge.jsx';
 import { getMyProfile, getInvestorRecommendations, getMyConnections } from '../services/startups.js';
 
@@ -49,6 +50,8 @@ export default function InvestorDashboard() {
         <StatCard label="Connections" value={connections.length} sub="Total" icon="◐" {...STAT_PALETTE.peach} />
         <StatCard label="Pending" value={connections.filter((c) => c.status === 'PENDING').length} sub="Awaiting response" icon="◍" {...STAT_PALETTE.cream} />
       </div>
+
+      <div className="mb-7"><SignalPanel endpoint="/signal/investor" /></div>
 
       <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
         <p className="text-[15px] font-semibold text-ink-900 mb-4">Top matches</p>
