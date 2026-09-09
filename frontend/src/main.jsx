@@ -111,6 +111,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/sparks" element={<ProtectedRoute><SparkFeed /></ProtectedRoute>} />
         <Route path="/app/sparks/new" element={<ProtectedRoute><SparkCompose /></ProtectedRoute>} />
         <Route path="/app/sparks/:id" element={<ProtectedRoute><SparkDetail /></ProtectedRoute>} />
+        <Route path="/app/pitch" element={<ProtectedRoute><PitchMode /></ProtectedRoute>} />
         <Route path="/app/pitch/:id" element={<ProtectedRoute><PitchMode /></ProtectedRoute>} />
         <Route path="/app/contributor/opportunities" element={<ProtectedRoute><ContributorOpportunities /></ProtectedRoute>} />
         <Route path="/app/contributor/skill-demand" element={<ProtectedRoute><SkillDemand /></ProtectedRoute>} />

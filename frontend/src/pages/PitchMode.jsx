@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowDown, Users, TrendingUp, Target } from 'lucide-react';
 import AuroraShader from '../components/AuroraShader.jsx';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 /**
  * Phase 5: Pitch Mode.
@@ -38,15 +39,26 @@ function Section({ children, className = '' }) {
 }
 
 export default function PitchMode() {
-  const { id } = useParams();
+  // Works BOTH ways: /app/pitch/:id for a specific venture (e.g. an
+  // investor viewing one), and /app/pitch with no id, which resolves the
+  // founder's own active venture. The second form is what makes this
+  // reachable from the sidebar without anyone needing to know a UUID.
+  const { id: routeId } = useParams();
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [pitch, setPitch] = useState(null);
 
+  const targetId = routeId || activeStartup?.id;
+
   useEffect(() => {
     async function load() {
+      // Wait for the active-startup context before deciding there is nothing
+      // to show, otherwise the no-id route flashes "not found" on every load.
+      if (!routeId && startupLoading) return;
+      if (!targetId) { setLoading(false); return; }
       try {
         const token = localStorage.getItem('capforge_token');
-        const res = await fetch(`/api/pitch/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`/api/pitch/${targetId}`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (data.success) setPitch(data.pitch);
       } catch (err) {
@@ -55,7 +67,7 @@ export default function PitchMode() {
       setLoading(false);
     }
     load();
-  }, [id]);
+  }, [targetId, startupLoading, routeId]);
 
   if (loading) {
     return (
@@ -67,9 +79,13 @@ export default function PitchMode() {
 
   if (!pitch) {
     return (
-      <div className="min-h-screen bg-ink-950 flex flex-col items-center justify-center gap-4">
-        <p className="text-white/60 text-[15px]">This venture could not be found.</p>
-        <Link to="/app" className="text-mint-500 text-sm hover:underline">Back to CapForge</Link>
+      <div className="min-h-screen bg-ink-950 flex flex-col items-center justify-center gap-4 px-8 text-center">
+        <p className="text-white/60 text-[15px]">
+          {routeId ? 'This venture could not be found.' : 'You do not have a venture yet. Share an idea and find someone to build it with.'}
+        </p>
+        <Link to={routeId ? '/app' : '/app/sparks'} className="text-mint-500 text-sm hover:underline">
+          {routeId ? 'Back to CapForge' : 'Go to Sparks'}
+        </Link>
       </div>
     );
   }
