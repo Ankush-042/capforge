@@ -116,7 +116,7 @@ async function getSignalForStartup(startupId, { force = false } = {}) {
 
   // What makes this personal: the venture's actual weakest dimension.
   const readinessRes = await pool.query(
-    `SELECT overall_score, dimensions FROM readiness_assessments WHERE startup_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    `SELECT overall_score, dimensions FROM readiness_assessments WHERE startup_id = $1 ORDER BY generated_at DESC LIMIT 1`,
     [startupId]
   );
   let weakest = null;
