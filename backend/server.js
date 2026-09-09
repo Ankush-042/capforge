@@ -66,6 +66,8 @@ const sparkRoutes = require('./sparks/sparkRoutes');
 app.use('/api', sparkRoutes);
 const signalRoutes = require('./signal/signalRoutes');
 app.use('/api', signalRoutes);
+const pitchRoutes = require('./pitch/pitchRoutes');
+app.use('/api', pitchRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
