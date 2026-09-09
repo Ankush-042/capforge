@@ -90,3 +90,7 @@ export const getMySparks = () => apiFetch('/sparks/mine');
 export const getSpark = (id) => apiFetch(`/sparks/${id}`);
 export const resonateWithSpark = (id, message) => apiFetch(`/sparks/${id}/resonate`, { method: 'POST', body: JSON.stringify({ message }) });
 export const commitToSpark = (id) => apiFetch(`/sparks/${id}/commit`, { method: 'POST' });
+
+// Phase 5: Pitch Mode — founder editing and sending their pitch.
+export const savePitchContent = (startupId, fields) => apiFetch(`/pitch/${startupId}/content`, { method: 'PATCH', body: JSON.stringify(fields) });
+export const sendPitch = (startupId, conversationId, note) => apiFetch(`/pitch/${startupId}/send`, { method: 'POST', body: JSON.stringify({ conversationId, note }) });

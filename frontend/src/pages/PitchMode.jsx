@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, ArrowDown, Users, TrendingUp, Target } from 'lucide-react';
+import { ArrowLeft, ArrowDown, Users, TrendingUp, Target, Pencil } from 'lucide-react';
 import AuroraShader from '../components/AuroraShader.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
@@ -47,6 +47,7 @@ export default function PitchMode() {
   const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [pitch, setPitch] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
 
   const targetId = routeId || activeStartup?.id;
 
@@ -60,7 +61,7 @@ export default function PitchMode() {
         const token = localStorage.getItem('capforge_token');
         const res = await fetch(`/api/pitch/${targetId}`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
-        if (data.success) setPitch(data.pitch);
+        if (data.success) { setPitch(data.pitch); setIsOwner(!!data.isOwner); }
       } catch (err) {
         console.error('Pitch load failed:', err);
       }
@@ -106,6 +107,14 @@ export default function PitchMode() {
       >
         <ArrowLeft size={14} /> Exit pitch
       </Link>
+      {isOwner && (
+        <Link
+          to={`/app/pitch/${pitch.id}/edit`}
+          className="fixed top-6 right-6 z-30 flex items-center gap-1.5 text-[13px] text-white/40 hover:text-white/80 transition-colors"
+        >
+          <Pencil size={13} /> Edit your pitch
+        </Link>
+      )}
 
       {/* Opening: the venture, full bleed */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -126,7 +135,7 @@ export default function PitchMode() {
             transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="font-display text-[44px] sm:text-[60px] lg:text-[72px] font-semibold leading-[1.03] tracking-tight"
           >
-            {pitch.name}
+            {pitch.headline || pitch.name}
           </motion.h1>
           {pitch.founder.vision && (
             <motion.p
@@ -283,6 +292,31 @@ export default function PitchMode() {
                 </motion.div>
               ))}
             </div>
+          </div>
+        </Section>
+      )}
+
+      {/* The ask. Only shown when the founder actually wrote one: never invented. */}
+      {pitch.the_ask && (
+        <Section className="min-h-screen flex items-center border-t border-white/5 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #7C5CFC 0%, transparent 60%)' }} />
+          <div className="relative max-w-4xl mx-auto px-8 py-24">
+            <p className="text-xs font-medium tracking-[0.16em] uppercase text-mint-500 mb-8">What we are asking for</p>
+            <p className="font-display text-[28px] sm:text-[36px] lg:text-[42px] font-semibold leading-[1.2] tracking-tight whitespace-pre-wrap">
+              {pitch.the_ask}
+            </p>
+          </div>
+        </Section>
+      )}
+
+      {/* The founder's closing words, if they wrote any. */}
+      {pitch.closing && (
+        <Section className="border-t border-white/5">
+          <div className="max-w-3xl mx-auto px-8 py-28">
+            <p className="font-display text-[22px] lg:text-[26px] font-normal italic leading-relaxed text-white/80 whitespace-pre-wrap">
+              {pitch.closing}
+            </p>
+            <p className="text-[14px] text-white/40 mt-6">{pitch.founder.name}</p>
           </div>
         </Section>
       )}
