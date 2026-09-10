@@ -329,10 +329,19 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
   const strengths = [];
   const limitations = [];
 
-  if (breakdown.skillFit >= 0.6) {
+  // CONFIRMED BUG: skillFit can be above zero from SEMANTIC similarity alone
+  // while the deterministic overlap list is empty, and this printed
+  // "Partial skill overlap: ." with nothing after the colon. It appeared on
+  // five ventures at once for a hardware engineer, claiming an overlap that
+  // did not exist. An explanation must never assert something it cannot name.
+  if (breakdown.skillFit >= 0.6 && overlap.length > 0) {
     strengths.push(`Strong skill match for "${gap.role}" — covers ${overlap.join(', ')}.`);
-  } else if (breakdown.skillFit > 0) {
+  } else if (overlap.length > 0) {
     strengths.push(`Partial skill overlap: ${overlap.join(', ')}.`);
+  } else if (breakdown.skillFit > 0) {
+    // Real signal, but nothing nameable behind it. Say so honestly rather
+    // than implying a skill match that cannot be pointed at.
+    limitations.push(`No directly matching skills listed for "${gap.role}", though the profile is broadly related.`);
   } else {
     limitations.push(`No overlapping skills found for the specific requirements of "${gap.role}".`);
   }
