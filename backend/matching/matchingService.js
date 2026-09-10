@@ -552,6 +552,32 @@ async function rankCandidatesForGap(gapId) {
       );
       inserted.push({ ...row.rows[0], candidate_headline: r.candidate.headline, causal_narrative: r.causalNarrative });
     }
+
+    // CONFIRMED BUG: re-ranking inserted and updated rows for whoever
+    // qualifies NOW, but left every previous ACTIVE row untouched. So a
+    // contributor who changed from a backend engineer to a UX researcher
+    // still saw "profile headline directly matches the Backend Engineer
+    // role" at 65%, because that row was written when it WAS true and
+    // nothing ever expired it.
+    //
+    // Anyone not in the current ranking no longer qualifies for this gap,
+    // and their row must be expired in the same transaction.
+    const stillQualify = ranked.map(r => r.candidate.user_id);
+    if (stillQualify.length > 0) {
+      await client.query(
+        `UPDATE recommendations SET status = 'EXPIRED'
+         WHERE source_gap_id = $1 AND status = 'ACTIVE'
+           AND target_user_id != ALL($2::uuid[])`,
+        [gapId, stillQualify]
+      );
+    } else {
+      await client.query(
+        `UPDATE recommendations SET status = 'EXPIRED'
+         WHERE source_gap_id = $1 AND status = 'ACTIVE'`,
+        [gapId]
+      );
+    }
+
     await client.query('COMMIT');
     return { success: true, recommendations: inserted };
   } catch (err) {
