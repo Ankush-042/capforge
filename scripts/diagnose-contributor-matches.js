@@ -45,7 +45,7 @@ const pool = require('../backend/shared/db');
   if (p.looking_for) console.log(`  mission text: "${p.looking_for.slice(0, 120)}..."`);
 
   const recs = await pool.query(
-    `SELECT r.score, r.status, s.name AS startup, s.domain, g.role, g.seeking_type, r.explanation
+    `SELECT r.score, r.status, s.name AS startup, s.domain, g.role, g.seeking_type, r.explanation, r.score_breakdown
      FROM recommendations r
      JOIN startups s ON s.id = r.startup_id
      JOIN gaps g ON g.id = r.source_gap_id
@@ -61,6 +61,11 @@ const pool = require('../backend/shared/db');
     const shown = parseFloat(r.score) >= 0.20 && r.status === 'ACTIVE';
     console.log(`  ${shown ? 'SHOWN  ' : 'HIDDEN '} ${(parseFloat(r.score) * 100).toFixed(0).padStart(3)}%  ${r.startup} — ${r.role} (${r.seeking_type || 'CORE_HIRE'})`);
     console.log(`           domains: ${(r.domain || []).join(', ')}`);
+    // The actual point of this diagnostic now: is domain preference and the
+    // stated mission genuinely contributing, or is skill fit the only signal?
+    const b = r.score_breakdown || {};
+    const pct = (v) => (typeof v === 'number' ? `${Math.round(v * 100)}%` : 'null');
+    console.log(`           skill:${pct(b.skillFit)}  role:${pct(b.roleFit)}  DOMAIN:${pct(b.domainFit)}  stage:${pct(b.stageFit)}  compat:${pct(b.compatibilityFit)}  VISION:${pct(b.visionAlignment)}`);
     if (!shown) console.log(`           reason hidden: ${r.status !== 'ACTIVE' ? r.status : 'below 0.20 threshold'}`);
   }
 
