@@ -720,9 +720,20 @@ async function refreshRankingsForContributor(userId) {
 
     const { score, breakdown, overlap, domainOverlap } = scoreCandidate(g, startup, c, 0);
 
-    // Same threshold the ranking path uses, so a person appears and
-    // disappears from lists on exactly the same rule either way.
-    if (score < 0.20) {
+    // CONFIRMED BUG I INTRODUCED: this originally checked only score < 0.20,
+    // but the main ranking path ALSO requires genuine role-level evidence —
+    // real skill overlap, or semantic similarity of at least 0.5. Without
+    // that check, a profile save wrote rows for gaps the person has no real
+    // relevance to (a hardware engineer appearing for Legal Advisor and
+    // Bioinformatics Engineer), and the proper re-rank then correctly
+    // expired them. Two paths, two different rules, so results depended on
+    // which one ran last.
+    //
+    // Both paths now apply the identical rule.
+    const hasRealEvidence = overlap.length > 0
+      || (breakdown.semanticSimilarity !== null && breakdown.semanticSimilarity >= 0.5);
+
+    if (score < 0.20 || !hasRealEvidence) {
       const r = await pool.query(
         `UPDATE recommendations SET status = 'EXPIRED'
          WHERE source_gap_id = $1 AND target_user_id = $2 AND status = 'ACTIVE'`,

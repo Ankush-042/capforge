@@ -220,6 +220,35 @@ const RULES = [
     },
   },
 
+  {
+    name: 'Every active recommendation has real role-level evidence',
+    async check() {
+      // Directly catches two scoring paths disagreeing. Both the full
+      // re-rank and the targeted per-contributor refresh must require the
+      // same thing: real skill overlap, or semantic similarity >= 0.5.
+      // A row satisfying neither means one path wrote it under a weaker
+      // rule than the other.
+      const r = await pool.query(
+        `SELECT p.display_name, p.headline, g.role, s.name AS startup, rec.score
+         FROM recommendations rec
+         JOIN gaps g ON g.id = rec.source_gap_id
+         JOIN startups s ON s.id = g.startup_id
+         JOIN profiles p ON p.user_id = rec.target_user_id
+         WHERE rec.status = 'ACTIVE'
+           AND rec.recommendation_type = 'CONTRIBUTOR'
+           AND (rec.score_breakdown->>'skillFit')::float = 0
+           AND COALESCE((rec.score_breakdown->>'semanticSimilarity')::float, 0) < 0.5
+         LIMIT 5`
+      );
+      return {
+        pass: r.rows.length === 0,
+        detail: r.rows.length === 0
+          ? 'no recommendation exists without real evidence'
+          : r.rows.map(x => `${x.display_name} ("${x.headline}") -> ${x.startup}/${x.role} at ${Math.round(x.score*100)}%`).join('; '),
+      };
+    },
+  },
+
   // --- INVESTOR SIDE ---
   {
     name: 'Investor deal flow respects the stated thesis domain',
