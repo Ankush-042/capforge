@@ -60,7 +60,7 @@ export default function MyProfile() {
     const skills = base.skillsInput.split(',').map(s => s.trim()).filter(Boolean);
     const { ok, data } = await withTimeout(updateBaseProfile({ displayName: base.displayName, headline: base.headline, bio: base.bio, location: base.location, skills }));
     setSavingBase(false);
-    if (ok && data.success) showToast('Profile updated.');
+    if (ok && data.success) showToast('Saved. Your matches are updating, give it a few seconds.');
     else showToast(data.error || 'Could not save.', 'error');
   }
 
@@ -73,7 +73,7 @@ export default function MyProfile() {
       experienceYears: parseInt(contrib.experienceYears) || 0
     }));
     setSavingContrib(false);
-    if (ok && data.success) showToast('Contributor details updated — real recommendations will refresh.');
+    if (ok && data.success) showToast('Saved. Your matches are updating, give it a few seconds.');
     else showToast(data.error || 'Could not save.', 'error');
   }
 

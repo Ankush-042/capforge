@@ -642,4 +642,102 @@ async function getMyRecommendationsAsContributor(userId) {
   return { success: true, recommendations: withNarrative };
 }
 
-module.exports = { domainsMatch, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
+
+/**
+ * Re-rank ONE contributor across every open gap.
+ *
+ * CONFIRMED PROBLEM: refreshOpenGapRankings loops all 62 gaps and re-ranks
+ * EVERY candidate for each one. On a profile save that is minutes of work
+ * when exactly one person changed, which in practice meant the automatic
+ * path never finished before the user looked, and the results only ever
+ * became correct after running a script by hand. A product cannot require
+ * that.
+ *
+ * This does the same scoring, for one person, against all gaps: one query
+ * for the gaps, one for the contributor, then pure computation. Seconds
+ * rather than minutes.
+ *
+ * Everyone else's rows are untouched, which is correct: nobody else changed.
+ */
+async function refreshRankingsForContributor(userId) {
+  const me = await pool.query(
+    `SELECT u.id as user_id, p.headline, p.skills, p.embedding, cp.availability,
+            cp.preferred_domains, cp.preferred_stage, cp.experience_years, cp.equity_preference
+     FROM users u
+     JOIN profiles p ON p.user_id = u.id
+     JOIN contributor_profiles cp ON cp.profile_id = p.id
+     WHERE u.id = $1 AND u.primary_role = 'CONTRIBUTOR' AND p.visibility = 'DISCOVERABLE'`,
+    [userId]
+  );
+  if (me.rows.length === 0) return { success: false, error: 'NOT_AN_ELIGIBLE_CONTRIBUTOR' };
+  const candidate = me.rows[0];
+
+  const gaps = await pool.query(
+    `SELECT g.*, s.id AS s_id, s.name AS s_name, s.domain AS s_domain, s.stage AS s_stage,
+            s.founder_id AS s_founder_id,
+            CASE WHEN g.embedding IS NOT NULL AND $1::vector IS NOT NULL
+                 THEN 1 - (g.embedding <=> $1::vector) ELSE NULL END AS semantic_similarity
+     FROM gaps g
+     JOIN startups s ON s.id = g.startup_id
+     JOIN users u ON u.id = s.founder_id
+     WHERE g.status NOT IN ('FILLED','DISMISSED')
+       AND u.email != 'system.import@capforge.internal'
+       AND s.verification_status != 'UNVERIFIED'
+       AND NOT EXISTS (
+         SELECT 1 FROM startup_team_members tm
+         WHERE tm.startup_id = s.id AND tm.user_id = $2
+       )`,
+    [candidate.embedding || null, userId]
+  );
+
+  // One alignment lookup for every venture at once, rather than per gap.
+  let alignment = {};
+  try {
+    const rows = await pool.query(
+      `SELECT startup_id, score, reason FROM alignment_scores WHERE user_id = $1`,
+      [userId]
+    );
+    for (const r of rows.rows) alignment[r.startup_id] = { score: parseFloat(r.score), reason: r.reason };
+  } catch (err) {
+    console.error('Alignment lookup failed in targeted refresh (non-fatal):', err.message);
+  }
+
+  let written = 0, expired = 0;
+  for (const g of gaps.rows) {
+    const startup = { id: g.s_id, name: g.s_name, domain: g.s_domain, stage: g.s_stage, founder_id: g.s_founder_id };
+    const c = { ...candidate, semantic_similarity: g.semantic_similarity };
+    const a = alignment[g.s_id];
+    if (a) { c.vision_alignment = a.score; c.alignment_reason = a.reason; }
+
+    const { score, breakdown, overlap, domainOverlap } = scoreCandidate(g, startup, c, 0);
+
+    // Same threshold the ranking path uses, so a person appears and
+    // disappears from lists on exactly the same rule either way.
+    if (score < 0.20) {
+      const r = await pool.query(
+        `UPDATE recommendations SET status = 'EXPIRED'
+         WHERE source_gap_id = $1 AND target_user_id = $2 AND status = 'ACTIVE'`,
+        [g.id, userId]
+      );
+      expired += r.rowCount;
+      continue;
+    }
+
+    const explanation = explainScore(g, breakdown, overlap, domainOverlap);
+    await pool.query(
+      `INSERT INTO recommendations (startup_id, target_user_id, source_gap_id, recommendation_type, score, rank, score_breakdown, explanation)
+       VALUES ($1, $2, $3, 'CONTRIBUTOR', $4, 999, $5, $6)
+       ON CONFLICT (source_gap_id, target_user_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         score_breakdown = EXCLUDED.score_breakdown,
+         explanation = EXCLUDED.explanation,
+         status = 'ACTIVE'`,
+      [startup.id, userId, g.id, score, JSON.stringify(breakdown), JSON.stringify(explanation)]
+    );
+    written++;
+  }
+
+  return { success: true, gapsScanned: gaps.rows.length, written, expired };
+}
+
+module.exports = { domainsMatch, refreshRankingsForContributor, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
