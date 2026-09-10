@@ -17,7 +17,11 @@ require('dotenv').config();
 const pool = require('../backend/shared/db');
 const { scoreContributorAgainstVentures } = require('../backend/matching/alignmentService');
 
-const DELAY_MS = 1500;
+// The binding limit is tokens per minute, not requests per minute. Each
+// call now carries 14 ventures of text, so the prompt is large and 1.5s
+// between calls exhausted all three keys on 8 of 38 contributors. 5s keeps
+// the token rate under the cap.
+const DELAY_MS = 5000;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 (async () => {
