@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
+import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import Shell from '../components/Shell.jsx';
 import RoleCoverageGrid from '../components/charts/RoleCoverageGrid.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
@@ -142,77 +143,33 @@ export default function FounderDashboard() {
           dashboard reads top-down, so the numbers come first, all the same
           size, then the things you act on. */}
       <div ref={gridRef} className="grid grid-cols-4 gap-4 mb-8">
-        <Link to="/app/readiness" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#EED8FF' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Readiness</span>
-            <Gauge size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{score !== null ? score : '—'}</span>
-            <span className="text-[13px] text-ink-700/60">/ {INVESTOR_BAR}+</span>
-          </div>
-          {/* The bar makes the threshold visible instead of asking someone to
-              do the arithmetic. It turns green the moment they cross it. */}
-          <div className="mt-3 relative h-1.5 rounded-full bg-black/10 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${score !== null && score >= INVESTOR_BAR ? 'bg-mint-500' : 'bg-violet-500'}`}
-              style={{ width: `${Math.min(100, ((score || 0) / INVESTOR_BAR) * 100)}%` }}
-            />
-          </div>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
-            {score === null ? 'Not assessed yet'
-              : score < INVESTOR_BAR ? `${INVESTOR_BAR - score} from investor visibility`
-              : 'Visible to investors'}
-          </p>
-        </Link>
-
-        <Link to="/app/team" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#D1EAFE' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Team</span>
-            <Users size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{filledCount}</span>
-            <span className="text-[13px] text-ink-700/60">/ {gaps.length} roles</span>
-          </div>
-          {/* A thin bar reads faster than a radial gauge at this size. */}
-          <div className="mt-3 h-1.5 rounded-full bg-black/10 overflow-hidden">
-            <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${coveragePct}%` }} />
-          </div>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
-            {filledCount === 0 ? 'You are the only one here' : `${coveragePct}% covered`}
-          </p>
-        </Link>
-
-        <Link to="/app/gaps" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFE8DA' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Open roles</span>
-            <Target size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{openCount}</span>
-            {criticalCount > 0 && <span className="text-[11px] font-semibold text-signal-critical bg-signal-critical/10 px-2 py-0.5 rounded-md">{criticalCount} critical</span>}
-          </div>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
-            {openCount === 0 ? 'Nothing open' : 'Ranked candidates waiting'}
-          </p>
-        </Link>
-
-        <Link to="/app/milestones" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFF3D1' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Momentum</span>
-            <ListChecks size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className={`text-[34px] font-semibold leading-none tabular-nums tracking-tight ${scoreDelta === null ? 'text-ink-950' : scoreDelta >= 0 ? 'text-mint-500' : 'text-signal-critical'}`}>
-              {scoreDelta !== null ? (scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta) : '—'}
-            </span>
-            <span className="text-[13px] text-ink-700/60">since last check</span>
-          </div>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
-            {weakestDim ? `Weakest: ${dimLabel(weakestDim[0])}` : 'Run an assessment'}
-          </p>
-        </Link>
+        <MetricTile
+          label="Readiness" value={score !== null ? score : '\u2014'} unit={`/ ${INVESTOR_BAR}+`}
+          icon={Gauge} to="/app/readiness" {...TILE_PALETTE.lavender}
+          progress={score !== null ? (score / INVESTOR_BAR) * 100 : 0}
+          caption={score === null ? 'Not assessed yet'
+            : score < INVESTOR_BAR ? `${INVESTOR_BAR - score} from investor visibility`
+            : 'Visible to investors'}
+        />
+        <MetricTile
+          label="Team" value={filledCount} unit={`/ ${gaps.length} roles`}
+          icon={Users} to="/app/team" {...TILE_PALETTE.blue}
+          progress={coveragePct}
+          caption={filledCount === 0 ? 'You are the only one here' : `${coveragePct}% covered`}
+        />
+        <MetricTile
+          label="Open roles" value={openCount}
+          icon={Target} to="/app/gaps" {...TILE_PALETTE.peach}
+          badge={criticalCount > 0 ? `${criticalCount} critical` : null}
+          caption={openCount === 0 ? 'Nothing open' : 'Ranked candidates waiting'}
+        />
+        <MetricTile
+          label="Momentum"
+          value={scoreDelta !== null ? (scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta) : '\u2014'}
+          unit="since last check"
+          icon={ListChecks} to="/app/milestones" {...TILE_PALETTE.cream}
+          caption={weakestDim ? `Weakest: ${dimLabel(weakestDim[0])}` : 'Run an assessment'}
+        />
       </div>
 
       {/* THE ONE THING TO DO — given its own section header and full width,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
+import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import { getMyProfile, getMyRecommendationsAsContributor, getMyConnections } from '../services/startups.js';
 
 /** Real fix applied consistently now, everywhere this data is shown: group by startup, don't count/list raw gap-matches as if each were a separate opportunity. */
@@ -73,54 +74,28 @@ export default function ContributorDashboard() {
       {/* METRIC STRIP — same rhythm as the founder home: four equal tiles,
           label, number, meaning. */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <Link to="/app/contributor/opportunities" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#EED8FF' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Ventures</span>
-            <Target size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{grouped.length}</span>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{grouped.length === 0 ? 'None yet' : 'Currently need you'}</p>
-        </Link>
-
-        <Link to="/app/contributor/opportunities" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#D1EAFE' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Best fit</span>
-            <Sparkles size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">
-              {best ? Math.round(best.roles[0].score * 100) : '—'}
-            </span>
-            {best && <span className="text-[13px] text-ink-700/60">%</span>}
-          </div>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug truncate">{best ? best.startup_name : 'No matches yet'}</p>
-        </Link>
-
-        <Link to="/app/my-profile" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFE8DA' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Profile</span>
-            <UserCheck size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{profile?.completion_score || 0}</span>
-            <span className="text-[13px] text-ink-700/60">%</span>
-          </div>
-          <div className="mt-3 h-1.5 rounded-full bg-black/10 overflow-hidden">
-            <div className="h-full rounded-full bg-violet-500 transition-all duration-700" style={{ width: `${profile?.completion_score || 0}%` }} />
-          </div>
-        </Link>
-
-        <Link to="/app/inbox" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFF3D1' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Conversations</span>
-            <MessageSquare size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{connections.length}</span>
-            {pending > 0 && <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">{pending} waiting</span>}
-          </div>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{connections.length === 0 ? 'None started' : 'Founders you are talking to'}</p>
-        </Link>
+        <MetricTile
+          label="Ventures" value={grouped.length}
+          icon={Target} to="/app/contributor/opportunities" {...TILE_PALETTE.lavender}
+          caption={grouped.length === 0 ? 'None yet' : 'Currently need you'}
+        />
+        <MetricTile
+          label="Best fit" value={best ? Math.round(best.roles[0].score * 100) : '\u2014'} unit={best ? '%' : null}
+          icon={Sparkles} to="/app/contributor/opportunities" {...TILE_PALETTE.blue}
+          caption={best ? best.startup_name : 'No matches yet'}
+        />
+        <MetricTile
+          label="Profile" value={profile?.completion_score || 0} unit="%"
+          icon={UserCheck} to="/app/my-profile" {...TILE_PALETTE.peach}
+          progress={profile?.completion_score || 0}
+          caption={(profile?.completion_score || 0) < 80 ? 'Add more to be found' : 'Looking good'}
+        />
+        <MetricTile
+          label="Conversations" value={connections.length}
+          icon={MessageSquare} to="/app/inbox" {...TILE_PALETTE.cream}
+          badge={pending > 0 ? `${pending} waiting` : null}
+          caption={connections.length === 0 ? 'None started' : 'Founders you are talking to'}
+        />
       </div>
 
       {/* THE BEST OPTION — full width, dark, the way the founder home treats

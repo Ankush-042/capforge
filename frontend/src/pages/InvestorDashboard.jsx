@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 import { Search, Sparkles, BarChart3, MessageSquare, ArrowUpRight } from 'lucide-react';
+import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
 import Badge from '../components/charts/Badge.jsx';
 import { getMyProfile, getInvestorRecommendations, getMyConnections } from '../services/startups.js';
@@ -67,49 +68,27 @@ export default function InvestorDashboard() {
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <Link to="/app/investor/deal-flow" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#EED8FF' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Deal flow</span>
-            <Search size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{deals.length}</span>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{deals.length === 0 ? 'Nothing yet' : 'Fit your thesis'}</p>
-        </Link>
-
-        <Link to="/app/investor/deal-flow" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#D1EAFE' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Best fit</span>
-            <Sparkles size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{top ? Math.round(parseFloat(top.score) * 100) : '—'}</span>
-            {top && <span className="text-[13px] text-ink-700/60">%</span>}
-          </div>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug truncate">{top ? top.startup_name : 'No matches'}</p>
-        </Link>
-
-        <Link to="/app/investor/deal-flow" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFE8DA' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Average fit</span>
-            <BarChart3 size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{deals.length > 0 ? avgFit : '—'}</span>
-            {deals.length > 0 && <span className="text-[13px] text-ink-700/60">%</span>}
-          </div>
-          <div className="mt-3 h-1.5 rounded-full bg-black/10 overflow-hidden">
-            <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${avgFit}%` }} />
-          </div>
-        </Link>
-
-        <Link to="/app/inbox" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFF3D1' }}>
-          <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Conversations</span>
-            <MessageSquare size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
-          </div>
-          <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{connections.length}</span>
-          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{connections.length === 0 ? 'None started' : 'Founders you are talking to'}</p>
-        </Link>
+        <MetricTile
+          label="Deal flow" value={deals.length}
+          icon={Search} to="/app/investor/deal-flow" {...TILE_PALETTE.lavender}
+          caption={deals.length === 0 ? 'Nothing yet' : 'Fit your thesis'}
+        />
+        <MetricTile
+          label="Best fit" value={top ? Math.round(parseFloat(top.score) * 100) : '\u2014'} unit={top ? '%' : null}
+          icon={Sparkles} to="/app/investor/deal-flow" {...TILE_PALETTE.blue}
+          caption={top ? top.startup_name : 'No matches'}
+        />
+        <MetricTile
+          label="Average fit" value={deals.length > 0 ? avgFit : '\u2014'} unit={deals.length > 0 ? '%' : null}
+          icon={BarChart3} to="/app/investor/deal-flow" {...TILE_PALETTE.peach}
+          progress={avgFit}
+          caption={deals.length > 0 ? 'Across your deal flow' : 'Nothing to average'}
+        />
+        <MetricTile
+          label="Conversations" value={connections.length}
+          icon={MessageSquare} to="/app/inbox" {...TILE_PALETTE.cream}
+          caption={connections.length === 0 ? 'None started' : 'Founders you are talking to'}
+        />
       </div>
 
       {/* Market context sits above the deals: what is moving should frame
