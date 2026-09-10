@@ -81,17 +81,58 @@ export default function FounderDashboard() {
   // Real story: score delta if history exists.
   const scoreDelta = history.length >= 2 ? Math.round(history[history.length - 1].overall_score - history[history.length - 2].overall_score) : null;
 
+  // The real stage this venture is at, from real data. Investors only see
+  // ventures at 35+, so that number is a threshold worth naming rather than
+  // a score to interpret.
+  const INVESTOR_BAR = 35;
+  const score = readiness ? Math.round(readiness.overall_score) : null;
+  const teamSize = startup.current_team_size || 1;
+  const openCount = gaps.filter(g => g.status !== 'FILLED' && g.status !== 'DISMISSED').length;
+
+  let stage;
+  if (teamSize <= 1) {
+    stage = {
+      label: 'Building the team',
+      next: criticalGap
+        ? `You are still the only one here. Finding a ${criticalGap.role} is the thing that moves everything else.`
+        : 'You are still the only one here. Finding your first teammate is what moves everything else.',
+    };
+  } else if (score === null) {
+    stage = { label: 'Building the team', next: 'Run a readiness assessment to see how close you are to investors finding you.' };
+  } else if (score < INVESTOR_BAR) {
+    const away = INVESTOR_BAR - score;
+    stage = {
+      label: 'Not yet visible to investors',
+      next: `You are ${away} point${away === 1 ? '' : 's'} away from investors being able to find you. ${openCount > 0 ? `Filling ${openCount === 1 ? 'the open role' : `one of your ${openCount} open roles`} is the fastest way there.` : 'Closing your open risks is the fastest way there.'}`,
+    };
+  } else {
+    stage = {
+      label: 'Investors can find you',
+      next: `At ${score}, you are above the bar where investors see ventures. ${openCount > 0 ? `${openCount} role${openCount === 1 ? '' : 's'} still open, and every one you fill raises the number.` : 'Keep the momentum: every milestone you close raises the number.'}`,
+    };
+  }
+
   return (
     <Shell title={startup.name} subtitle={startup.problem?.slice(0, 60) + '…'}>
+      {/* WHERE YOU ARE, and what happens next.
+          This said "Good evening, Founder" over a wall of cards. A founder
+          opening this should know, without reading anything else, what stage
+          their company is at and the one thing that moves it forward. The
+          readiness number is framed as a DISTANCE to something they want
+          (investors seeing them) rather than as a grade out of 100. */}
       <div className="mb-7">
-        <p className="text-xs text-ink-500 mb-1">Good evening, Founder</p>
-        <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight">
+        <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+          {stage.label}
+        </p>
+        <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
           {criticalGap
             ? (criticalGap.seeking_type === 'CO_FOUNDER'
                 ? `You're looking for a co-founder: someone to own ${criticalGap.role}.`
                 : `Right now, you need a ${criticalGap.role} on your team.`)
             : 'Your venture is in good shape.'}
         </h1>
+        <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">{stage.next}</p>
       </div>
 
       <div ref={gridRef} className="grid grid-cols-4 gap-5 mb-6 items-start">
@@ -122,11 +163,29 @@ export default function FounderDashboard() {
         <Link to="/app/readiness" className="col-span-2 bg-white border border-surface-border rounded-xl p-6 hover:shadow-elevated transition-shadow cursor-pointer">
           <div className="flex items-center justify-between mb-3">
             <div className="w-9 h-9 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center"><Gauge size={16} /></div>
-            <span className="text-3xl font-bold text-ink-900">{readiness ? Math.round(readiness.overall_score) : '—'}</span>
+            <div className="text-right">
+              <span className="text-3xl font-bold text-ink-900 leading-none">{score !== null ? score : '—'}</span>
+              {score !== null && (
+                <span className="block text-[11px] text-ink-300 mt-1">
+                  investors look at {INVESTOR_BAR}+
+                </span>
+              )}
+            </div>
           </div>
-          <p className="text-[13px] text-ink-500">
-            {scoreDelta !== null ? `${scoreDelta >= 0 ? '↑' : '↓'} ${Math.abs(scoreDelta)} points since last assessment. ` : ''}
-            {weakestDim ? `Weakest: ${dimLabel(weakestDim[0])} — ${readiness.dimension_justifications?.[weakestDim[0]] || ''}` : 'Run an assessment to see your real readiness.'}
+          {/* The number alone told a founder nothing. What matters is what it
+              means: are investors seeing you yet, and what moves it. */}
+          <p className="text-[14px] text-ink-900 font-medium mb-1">
+            {score === null
+              ? 'No assessment yet'
+              : score < INVESTOR_BAR
+                ? `${INVESTOR_BAR - score} point${INVESTOR_BAR - score === 1 ? '' : 's'} from investors finding you`
+                : 'Investors can find you'}
+          </p>
+          <p className="text-[13px] text-ink-500 leading-relaxed">
+            {scoreDelta !== null ? `${scoreDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(scoreDelta)} since your last assessment. ` : ''}
+            {weakestDim
+              ? `Weakest right now: ${dimLabel(weakestDim[0])}.`
+              : 'Run an assessment to see where you actually stand.'}
           </p>
         </Link>
 
