@@ -53,6 +53,11 @@ const GENERIC_SKILL_TOKENS = new Set([
   'platform', 'platforms', 'service', 'services', 'solution', 'solutions',
   'experience', 'senior', 'junior', 'lead', 'strategy', 'planning', 'process',
   'operations', 'support', 'integration', 'implementation', 'consulting',
+  // Added after a real false positive: 'accessibility research' matched
+  // 'market research' on the shared word 'research', so a UX researcher was
+  // told they had a strong skill match for a Product Manager role.
+  'research', 'testing', 'writing', 'content', 'modeling', 'automation',
+  'optimization', 'monitoring', 'reporting', 'documentation', 'training',
 ]);
 
 /**
@@ -130,6 +135,32 @@ function computeRoleFit(headline, gapRole) {
   return 0.0;
 }
 
+/**
+ * Skills written differently that mean the same thing. Needed because
+ * treating generic words as non-matching correctly killed 'accessibility
+ * research' vs 'market research', but also killed 'user research' vs 'ux
+ * research', which genuinely ARE the same skill.
+ */
+const SKILL_EQUIVALENTS = [
+  ['user research', 'ux research', 'user experience research', 'design research'],
+  ['usability testing', 'user testing', 'usability research'],
+  ['ui design', 'ux design', 'user interface design', 'user experience design', 'interaction design'],
+  ['product strategy', 'product management', 'product roadmapping'],
+  ['ci/cd', 'continuous integration', 'continuous delivery', 'build pipelines'],
+  ['rest api', 'api development', 'api design', 'restful api'],
+  ['data pipelines', 'etl', 'data engineering', 'elt'],
+  ['technical writing', 'documentation writing', 'developer documentation'],
+  ['content strategy', 'content design', 'content planning'],
+  ['regulatory compliance', 'compliance', 'kyc', 'aml'],
+];
+
+function skillEquivalent(a, b) {
+  for (const group of SKILL_EQUIVALENTS) {
+    if (group.includes(a) && group.includes(b)) return true;
+  }
+  return false;
+}
+
 function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   const requiredSkills = (gap.required_skills || []).map(s => s.toLowerCase().trim());
   const candidateSkills = new Set((candidate.skills || []).map(s => s.toLowerCase().trim()));
@@ -166,6 +197,7 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   // matches by substring, "postgresql" vs "sql" matches by substring.
   function skillsMatch(required, candidateSkill) {
     if (required === candidateSkill) return true;
+    if (skillEquivalent(required, candidateSkill)) return true;
     if (required.includes(candidateSkill) || candidateSkill.includes(required)) return true;
 
     const requiredTokens = new Set(required.split(/[\s/,-]+/).filter(t => t.length > 2));

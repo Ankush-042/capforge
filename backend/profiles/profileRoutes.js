@@ -78,17 +78,91 @@ router.patch('/me', requireAuth, async (req, res) => {
   // a background enhancement and must never block the response the user
   // is actually waiting on — exact same class of fix as the earlier
   // embedding-generation timeout, just a different cause this time.
-  if ('skills' in req.body) {
-    refreshOpenGapRankings().catch(err => console.error('Background matching refresh failed (non-fatal):', err.message));
+  // Was 'skills' only, so changing a headline alone silently left every
+  // explanation claiming the old role matched.
+  if ('skills' in req.body || 'headline' in req.body || 'bio' in req.body) {
+    refreshEverythingForUser(req.user.userId);
   }
   res.json(result);
 });
+
+
+/**
+ * Everything that must happen after a contributor edits their profile, in
+ * the right ORDER. Confirmed broken before this: a contributor changed their
+ * headline, skills, mission and domains from a backend engineer to a UX
+ * researcher, and afterwards still saw "profile headline directly matches
+ * the Backend Engineer role" and an alignment reason quoting their OLD
+ * mission.
+ *
+ * Three separate faults, all fixed here:
+ *   1. Alignment was NEVER invalidated. invalidateForUser existed and was
+ *      called from nowhere, so alignment scores silently described a person
+ *      who no longer exists.
+ *   2. Order mattered and was wrong. Re-ranking before re-scoring alignment
+ *      bakes the stale alignment into the new rankings.
+ *   3. Saving basics and saving contributor details fired two OVERLAPPING
+ *      refreshes, producing the half-updated mixture that was visible in the
+ *      output. They are now serialised per user.
+ *
+ * Still fire-and-forget overall: a profile save must never wait on an LLM
+ * call or a platform-wide re-rank.
+ */
+const refreshInFlight = new Map();
+
+async function refreshEverythingForUser(userId) {
+  // Serialise per user. A second save while the first is still running waits
+  // for it rather than racing it.
+  const existing = refreshInFlight.get(userId);
+  if (existing) { try { await existing; } catch { /* previous failure is its own problem */ } }
+
+  const run = (async () => {
+    const { invalidateForUser, scoreContributorAgainstVentures } = require('../matching/alignmentService');
+    const pool = require('../shared/db');
+
+    await invalidateForUser(userId);
+
+    const me = await pool.query(
+      `SELECT p.headline, cp.looking_for, cp.preferred_domains
+       FROM profiles p LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
+       WHERE p.user_id = $1`,
+      [userId]
+    );
+    const row = me.rows[0];
+
+    if (row?.looking_for && row.looking_for.trim().length >= 20) {
+      const ventures = (await pool.query(
+        `SELECT s.id, s.name, s.domain, s.problem, s.founder_vision
+         FROM startups s JOIN users u ON u.id = s.founder_id
+         WHERE s.founder_vision IS NOT NULL AND length(trim(s.founder_vision)) >= 20
+           AND u.email != 'system.import@capforge.internal'
+           AND s.verification_status != 'UNVERIFIED'`
+      )).rows;
+
+      if (ventures.length > 0) {
+        const r = await scoreContributorAgainstVentures({
+          userId, mission: row.looking_for, headline: row.headline,
+          domains: row.preferred_domains, ventures,
+        });
+        if (r?.failed) console.error(`Alignment rescore failed for ${userId}: ${r.reason}`);
+      }
+    }
+
+    // Only now, with fresh alignment in place, re-rank.
+    await refreshOpenGapRankings();
+  })();
+
+  refreshInFlight.set(userId, run);
+  run.catch(err => console.error('Post-save refresh failed (non-fatal):', err.message))
+     .finally(() => { if (refreshInFlight.get(userId) === run) refreshInFlight.delete(userId); });
+  return run;
+}
 
 router.post('/contributor', requireAuth, requireRole('CONTRIBUTOR'), async (req, res) => {
   const result = await upsertContributorProfile(req.user.userId, req.body);
   if (!result.success) return res.status(400).json(result);
   // Same real fix as PATCH /me — this must never block the response.
-  refreshOpenGapRankings().catch(err => console.error('Background matching refresh failed (non-fatal):', err.message));
+  refreshEverythingForUser(req.user.userId);
   res.json(result);
 });
 
