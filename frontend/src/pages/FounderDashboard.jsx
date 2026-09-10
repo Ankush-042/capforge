@@ -148,8 +148,16 @@ export default function FounderDashboard() {
             <Gauge size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">{score !== null ? score : '—'}</span>
+            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{score !== null ? score : '—'}</span>
             <span className="text-[13px] text-ink-300">/ {INVESTOR_BAR}+</span>
+          </div>
+          {/* The bar makes the threshold visible instead of asking someone to
+              do the arithmetic. It turns green the moment they cross it. */}
+          <div className="mt-3 relative h-1.5 rounded-full bg-surface-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${score !== null && score >= INVESTOR_BAR ? 'bg-mint-500' : 'bg-violet-500'}`}
+              style={{ width: `${Math.min(100, ((score || 0) / INVESTOR_BAR) * 100)}%` }}
+            />
           </div>
           <p className="text-[12px] text-ink-500 mt-2 leading-snug">
             {score === null ? 'Not assessed yet'
@@ -164,13 +172,16 @@ export default function FounderDashboard() {
             <Users size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">{filledCount}</span>
+            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{filledCount}</span>
             <span className="text-[13px] text-ink-300">/ {gaps.length} roles</span>
           </div>
           {/* A thin bar reads faster than a radial gauge at this size. */}
-          <div className="mt-3 h-1 rounded-full bg-surface-muted overflow-hidden">
-            <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${coveragePct}%` }} />
+          <div className="mt-3 h-1.5 rounded-full bg-surface-muted overflow-hidden">
+            <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${coveragePct}%` }} />
           </div>
+          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+            {filledCount === 0 ? 'You are the only one here' : `${coveragePct}% covered`}
+          </p>
         </Link>
 
         <Link to="/app/gaps" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
@@ -179,8 +190,8 @@ export default function FounderDashboard() {
             <Target size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">{openCount}</span>
-            {criticalCount > 0 && <span className="text-[13px] text-signal-critical font-medium">{criticalCount} critical</span>}
+            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{openCount}</span>
+            {criticalCount > 0 && <span className="text-[11px] font-semibold text-signal-critical bg-signal-critical/10 px-2 py-0.5 rounded-md">{criticalCount} critical</span>}
           </div>
           <p className="text-[12px] text-ink-500 mt-2 leading-snug">
             {openCount === 0 ? 'Nothing open' : 'Ranked candidates waiting'}
@@ -193,7 +204,7 @@ export default function FounderDashboard() {
             <ListChecks size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">
+            <span className={`text-[34px] font-semibold leading-none tabular-nums tracking-tight ${scoreDelta === null ? 'text-ink-950' : scoreDelta >= 0 ? 'text-mint-500' : 'text-signal-critical'}`}>
               {scoreDelta !== null ? (scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta) : '—'}
             </span>
             <span className="text-[13px] text-ink-300">since last check</span>
@@ -212,7 +223,11 @@ export default function FounderDashboard() {
           <Link to="/app/gaps" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">All roles</Link>
         </div>
         <Link
-          to={criticalGap ? `/app/gaps/${criticalGap.id}` : '/app/gaps'}
+          // CONFIRMED BUG: GapDetail reads the startup from ?startup= and this
+          // link omitted it, so 'See candidates' always landed on "Gap not
+          // found". The same link works from the Roles page because that page
+          // includes the param.
+          to={criticalGap ? `/app/gaps/${criticalGap.id}?startup=${startup.id}` : '/app/gaps'}
           className="group block relative overflow-hidden rounded-xl bg-ink-950 p-7 hover:shadow-elevated transition-shadow"
         >
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 85% 80%, #1F5D52 0%, transparent 55%)' }} />

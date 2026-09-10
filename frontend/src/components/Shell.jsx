@@ -138,7 +138,7 @@ function NavItem({ label, icon, path, active, nested }) {
       className={`group relative w-full flex items-center justify-between pl-3 pr-2 py-[7px] rounded-lg text-[14px] transition-all duration-150
         ${active
           ? 'bg-violet-50 text-violet-700 font-medium'
-          : 'text-ink-500 hover:bg-surface-muted hover:text-ink-900'}`}
+          : 'text-ink-700 hover:bg-surface-muted hover:text-ink-950'}`}
     >
       {/* A real active marker rather than a grey wash: you should be able to
           see where you are at a glance, from the edge of your vision. */}
@@ -201,11 +201,16 @@ export default function Shell({ children, title, subtitle, persona: externalPers
       <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 via-violet-600 to-blue-600 flex items-center justify-center shadow-sm">
-              <span className="text-white text-[13px] font-bold font-display leading-none">C</span>
+            {/* A drawn mark rather than a letter in a box: two strokes forming
+                a rising junction, which is what the product is about. */}
+            <div className="w-8 h-8 rounded-[10px] bg-ink-950 flex items-center justify-center shrink-0">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 12.5L7 6L9.5 9.5L13 3.5" stroke="#7C5CFC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="13" cy="3.5" r="1.6" fill="#3FB081" />
+              </svg>
             </div>
-            <span className="text-[16px] font-bold font-display text-ink-900 tracking-[-0.02em]">CapForge</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-500 font-medium">{identity.name.split(' ')[0]}</span>
+            <span className="text-[16px] font-bold font-display text-ink-950 tracking-[-0.02em]">CapForge</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-700 font-medium">{identity.name.split(' ')[0]}</span>
           </span>
           <span className="text-ink-300 text-xs">⌄</span>
         </button>
@@ -267,10 +272,20 @@ export default function Shell({ children, title, subtitle, persona: externalPers
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-[72px] shrink-0 border-b border-surface-border flex items-center justify-between px-10 bg-surface">
-          <div>
-            <p className="text-base font-semibold text-ink-900">{title}</p>
-            {subtitle && <p className="text-sm text-ink-500">{subtitle}</p>}
+        {/* The venture's identity, not two lines of plain text. A monogram
+            gives the page an anchor and makes the venture feel like a real
+            company rather than a row in a table. */}
+        <header className="h-[76px] shrink-0 border-b border-surface-border flex items-center justify-between px-10 bg-surface">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-forest-600 flex items-center justify-center shrink-0 shadow-sm">
+              <span className="text-white font-display font-bold text-[15px] leading-none">
+                {(title || 'C').trim().charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-[17px] font-semibold text-ink-950 tracking-[-0.01em] truncate">{title}</p>
+              {subtitle && <p className="text-[13px] text-ink-500 truncate max-w-xl">{subtitle}</p>}
+            </div>
           </div>
         </header>
         <main className="flex-1 px-10 py-9 max-w-[1440px] w-full mx-auto">{children}</main>
