@@ -249,6 +249,38 @@ const RULES = [
     },
   },
 
+  {
+    name: 'No contributor with a mission is missing alignment scores',
+    async check() {
+      // Catches the failure that hid here: alignment was deleted and the
+      // regeneration failed, leaving someone with no alignment at all. Their
+      // scores then looked normal, because the weights renormalise around a
+      // missing dimension, so nothing visibly broke.
+      const r = await pool.query(
+        `WITH venture_count AS (
+           SELECT COUNT(*) n FROM startups s JOIN users u ON u.id = s.founder_id
+           WHERE s.founder_vision IS NOT NULL AND length(trim(s.founder_vision)) >= 20
+             AND u.email != 'system.import@capforge.internal'
+             AND s.verification_status != 'UNVERIFIED'
+         )
+         SELECT p.display_name, COUNT(a.id) AS scored, (SELECT n FROM venture_count) AS expected
+         FROM contributor_profiles cp
+         JOIN profiles p ON p.id = cp.profile_id
+         LEFT JOIN alignment_scores a ON a.user_id = p.user_id
+         WHERE cp.looking_for IS NOT NULL AND length(trim(cp.looking_for)) >= 20
+         GROUP BY p.display_name, p.user_id
+         HAVING COUNT(a.id) < (SELECT n FROM venture_count)
+         LIMIT 5`
+      );
+      return {
+        pass: r.rows.length === 0,
+        detail: r.rows.length === 0
+          ? 'every contributor with a mission is fully scored'
+          : r.rows.map(x => `${x.display_name}: ${x.scored} of ${x.expected}`).join('; ') + ' — run score-alignment.js',
+      };
+    },
+  },
+
   // --- INVESTOR SIDE ---
   {
     name: 'Investor deal flow respects the stated thesis domain',
