@@ -18,8 +18,14 @@ require('dotenv').config();
 const pool = require('../backend/shared/db');
 const { scorePair } = require('../backend/matching/alignmentService');
 
-const DELAY_MS = 350;           // stay comfortably under per-minute limits
-const MAX_CONSECUTIVE_FAILS = 8; // stop rather than hammer a dead endpoint
+// Groq free tier is roughly 30 requests/minute per model. 350ms between
+// calls was about 170/min, which is why 18 of the first 22 failed. Two
+// seconds keeps us under the real limit.
+const DELAY_MS = 2000;
+// A rate limit is TEMPORARY. Waiting it out is correct; treating it as a
+// permanent failure and giving up is what the first version did wrong.
+const BACKOFF_MS = [5000, 15000, 45000];
+const MAX_CONSECUTIVE_FAILS = 10;
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -52,7 +58,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const total = pairs.rows.length;
   console.log(`${force ? 'FORCE: rescoring' : 'Scoring'} ${total} pair(s).`);
   if (total === 0) { console.log('Nothing to do. All pairs already scored.'); await pool.end(); process.exit(0); }
-  console.log(`Estimated time: about ${Math.ceil(total * (DELAY_MS + 700) / 60000)} minute(s).\n`);
+  console.log(`Estimated time: about ${Math.ceil(total * (DELAY_MS + 700) / 60000)} minute(s). Safe to leave running.\n`);
 
   let done = 0, failed = 0, consecutiveFails = 0;
 
@@ -68,7 +74,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       headline: row.headline,
     });
 
-    if (result) {
+    if (result && !result.failed) {
       done++;
       consecutiveFails = 0;
       const pct = Math.round(result.score * 100);
@@ -76,13 +82,38 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
         console.log(`  [${done + failed}/${total}] ${pct}%  ${row.headline || 'contributor'} -> ${row.startup_name}`);
         if (pct >= 70 || pct <= 15) console.log(`             "${result.reason}"`);
       }
+      await sleep(DELAY_MS);
+      continue;
+    }
+
+    // Retry with real backoff before calling it failed. A rate limit is
+    // temporary and waiting is the correct response to it.
+    let recovered = null;
+    const why = result ? `${result.reason}${result.detail ? `: ${result.detail}` : ''}` : 'null result';
+    for (const wait of BACKOFF_MS) {
+      console.log(`  [${done + failed + 1}/${total}] retrying in ${wait / 1000}s  (${why.slice(0, 90)})`);
+      await sleep(wait);
+      const retry = await scorePair({
+        userId: row.user_id, startupId: row.startup_id, mission: row.mission,
+        vision: row.vision, problem: row.problem, ventureDomains: row.venture_domains,
+        domains: row.preferred_domains, headline: row.headline,
+      });
+      if (retry && !retry.failed) { recovered = retry; break; }
+    }
+
+    if (recovered) {
+      done++;
+      consecutiveFails = 0;
+      const pct = Math.round(recovered.score * 100);
+      console.log(`  [${done + failed}/${total}] ${pct}%  recovered -> ${row.startup_name}`);
     } else {
       failed++;
       consecutiveFails++;
-      console.log(`  [${done + failed}/${total}] FAILED  -> ${row.startup_name}`);
+      console.log(`  [${done + failed}/${total}] FAILED after retries -> ${row.startup_name}`);
+      console.log(`             ${why.slice(0, 200)}`);
       if (consecutiveFails >= MAX_CONSECUTIVE_FAILS) {
-        console.log(`\nStopped after ${MAX_CONSECUTIVE_FAILS} consecutive failures (likely a rate limit or bad key).`);
-        console.log(`${done} scores are saved. Re-run this script later and it resumes from here.`);
+        console.log(`\nStopped after ${MAX_CONSECUTIVE_FAILS} consecutive failures even with backoff.`);
+        console.log(`${done} scores are saved. Re-run later and it resumes from here.`);
         break;
       }
     }
