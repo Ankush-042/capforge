@@ -89,6 +89,47 @@ function domainsMatch(a, b) {
   return bTokens.some(t => aTokens.has(t) && !GENERIC_SKILL_TOKENS.has(t));
 }
 
+/**
+ * Roles that genuinely overlap in practice. Each group is roles where a
+ * person holding one could credibly do meaningful work in another. Kept
+ * deliberately tight: this is real overlap, not "both are technical".
+ */
+const ROLE_ADJACENCY = [
+  ['full stack engineer', 'backend engineer', 'frontend engineer', 'software engineer', 'web developer'],
+  ['backend engineer', 'devops engineer', 'site reliability engineer', 'cloud infrastructure architect', 'platform engineer'],
+  ['machine learning engineer', 'ai/ml engineer', 'data scientist', 'nlp/ml engineer', 'ml engineer'],
+  ['data engineer', 'data scientist', 'analytics engineer', 'backend engineer'],
+  ['ui/ux designer', 'ux/ui designer', 'product designer', 'design researcher', 'ux researcher', 'ux writer'],
+  ['product manager', 'product owner', 'program manager'],
+  ['mobile app developer', 'mobile engineer', 'frontend engineer', 'android engineer', 'ios engineer'],
+  ['security engineer', 'security analyst', 'cloud security engineer', 'devops engineer'],
+  ['compliance specialist', 'data privacy officer', 'legal advisor', 'compliance/finance specialist'],
+  ['growth marketer', 'growth engineer', 'content strategist', 'community manager'],
+  ['business development manager', 'sales engineer', 'business development'],
+  ['bioinformatics engineer', 'biomedical engineer', 'machine learning engineer'],
+  ['hardware engineer', 'embedded systems engineer', 'electrical engineer'],
+  ['instructional designer', 'clinical content specialist', 'content strategist', 'ux writer'],
+];
+
+function computeRoleFit(headline, gapRole) {
+  if (!headline || !gapRole) return 0.0;
+  const a = normalizeRole(headline);
+  const b = normalizeRole(gapRole);
+  if (a === b) return 1.0;
+
+  // Adjacent roles earn partial credit, never full. Someone who actually
+  // holds the role must always outrank someone merely adjacent to it.
+  //
+  // NOTE: normalizeRole strips ALL non-alphanumerics, so 'full stack
+  // engineer' becomes 'fullstackengineer'. The groups below are written
+  // readably and normalized here, rather than stored pre-mangled.
+  for (const group of ROLE_ADJACENCY) {
+    const normalized = group.map(normalizeRole);
+    if (normalized.includes(a) && normalized.includes(b)) return 0.6;
+  }
+  return 0.0;
+}
+
 function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   const requiredSkills = (gap.required_skills || []).map(s => s.toLowerCase().trim());
   const candidateSkills = new Set((candidate.skills || []).map(s => s.toLowerCase().trim()));
@@ -149,7 +190,15 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
     : deterministicSkillFit;
 
   // --- Role fit: does the candidate's stated headline match the gap's role? ---
-  const roleFit = (candidate.headline && normalizeRole(candidate.headline) === normalizeRole(gap.role)) ? 1.0 : 0.0;
+  // CONFIRMED GAP from the quality tests: roleFit was binary, exact match or
+  // zero. So a Backend Engineer scored 0% against a Full Stack Engineer gap
+  // and a Design Researcher scored 0% against a UI/UX Designer gap, despite
+  // both being genuinely partial fits. That made the top candidate for those
+  // gaps look unjustified even when it was reasonable.
+  //
+  // Adjacent roles now earn real partial credit. Never full credit: someone
+  // who actually holds the role should always outrank someone adjacent to it.
+  const roleFit = computeRoleFit(candidate.headline, gap.role);
 
   // --- Domain fit: overlap of candidate's preferred domains with the startup's domain ---
   const startupDomains = new Set((startup.domain || []).map(d => d.toLowerCase().trim()));

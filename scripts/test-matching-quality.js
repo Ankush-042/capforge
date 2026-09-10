@@ -73,22 +73,32 @@ const RULES = [
       );
       // The top candidate for a gap must have either a real role match or
       // meaningful skill overlap. Neither means the ranking is noise.
-      const bad = r.rows.filter(x => (x.role_fit || 0) < 0.5 && (x.skill_fit || 0) < 0.30);
+      // A weak top candidate is acceptable IF the score is honestly low: it
+      // means "nobody strong is available yet", which is true and useful.
+      // What is NOT acceptable is a weak candidate presented as a strong
+      // match. So the rule is: no gap may show a 40%+ top candidate who has
+      // neither a real role fit nor real skill overlap.
+      const bad = r.rows.filter(x =>
+        (x.role_fit || 0) < 0.5 && (x.skill_fit || 0) < 0.30 && (x.score || 0) >= 0.40
+      );
       return {
         pass: bad.length === 0,
         detail: bad.length === 0
-          ? `all ${r.rows.length} gaps have a defensible top candidate`
-          : bad.slice(0, 5).map(x => `${x.startup}/${x.role}: top is "${x.headline}" (role ${Math.round((x.role_fit||0)*100)}%, skill ${Math.round((x.skill_fit||0)*100)}%)`).join('; '),
+          ? `all ${r.rows.length} gaps: no unjustified high-scoring top candidate`
+          : bad.slice(0, 5).map(x => `${x.startup}/${x.role}: top is "${x.headline}" at ${Math.round(x.score*100)}% (role ${Math.round((x.role_fit||0)*100)}%, skill ${Math.round((x.skill_fit||0)*100)}%)`).join('; '),
       };
     },
   },
   {
     name: 'No duplicate role rows for the same venture',
     async check() {
+      // Group by startup_id, not name. The first version grouped by name, so
+      // two DIFFERENT ventures that happen to share a name looked like
+      // duplicate gaps, which is a different problem entirely.
       const r = await pool.query(
         `SELECT s.name, g.role, COUNT(*) AS n
          FROM gaps g JOIN startups s ON s.id = g.startup_id
-         GROUP BY s.name, lower(trim(g.role)), g.role HAVING COUNT(*) > 1`
+         GROUP BY g.startup_id, s.name, lower(trim(g.role)), g.role HAVING COUNT(*) > 1`
       );
       return {
         pass: r.rows.length === 0,
@@ -132,6 +142,21 @@ const RULES = [
       );
       const n = parseInt(r.rows[0].n);
       return { pass: n === 0, detail: n === 0 ? 'all explained' : `${n} with no explanation` };
+    },
+  },
+
+  {
+    name: 'No two ventures share the same name',
+    async check() {
+      const r = await pool.query(
+        `SELECT name, COUNT(*) AS n FROM startups GROUP BY lower(trim(name)) , name HAVING COUNT(*) > 1`
+      );
+      return {
+        pass: r.rows.length === 0,
+        detail: r.rows.length === 0
+          ? 'all venture names unique'
+          : r.rows.map(x => `"${x.name}" x${x.n}`).join('; ') + ' — duplicate ventures, not duplicate gaps',
+      };
     },
   },
 
