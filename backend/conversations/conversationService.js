@@ -92,7 +92,23 @@ async function getMyConversations(userId) {
 }
 
 async function getMessages(conversationId, userId) {
-  const convo = await pool.query('SELECT * FROM conversations WHERE id = $1', [conversationId]);
+  // CONFIRMED GAP: this returned the raw conversations row only, so the
+  // thread page had no idea WHO it was talking to. The other person's name
+  // and headline, and the venture the conversation concerns, existed only in
+  // the LIST query's joins. A thread showing "them" instead of a name is not
+  // a conversation, it is a database record.
+  const convo = await pool.query(
+    `SELECT c.*,
+            CASE WHEN c.participant_a_id = $2 THEN c.participant_b_id ELSE c.participant_a_id END AS other_user_id,
+            p.display_name AS other_display_name,
+            p.headline AS other_headline,
+            s.name AS startup_name
+     FROM conversations c
+     JOIN profiles p ON p.user_id = (CASE WHEN c.participant_a_id = $2 THEN c.participant_b_id ELSE c.participant_a_id END)
+     LEFT JOIN startups s ON s.id = c.startup_id
+     WHERE c.id = $1`,
+    [conversationId, userId]
+  );
   if (convo.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
   const c = convo.rows[0];
   if (c.participant_a_id !== userId && c.participant_b_id !== userId) return { success: false, error: 'NOT_AUTHORIZED' };
