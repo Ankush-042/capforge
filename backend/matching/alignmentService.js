@@ -76,15 +76,17 @@ The founder's stated reason for building it:
     },
   ], { temperature: 0.1, max_tokens: 200 });
 
-  if (!ai.success) return null;
+  if (!ai.success) return { failed: true, reason: ai.error || 'AI_CALL_FAILED', detail: ai.detail, status: ai.status };
 
   let parsed;
   try {
     parsed = JSON.parse(ai.content.replace(/```json|```/g, '').trim());
   } catch {
-    return null;
+    return { failed: true, reason: 'UNPARSEABLE', detail: (ai.content || '').slice(0, 160) };
   }
-  if (typeof parsed.score !== 'number' || !parsed.reason) return null;
+  if (typeof parsed.score !== 'number' || !parsed.reason) {
+    return { failed: true, reason: 'INCOMPLETE_JSON', detail: JSON.stringify(parsed).slice(0, 160) };
+  }
 
   const normalized = Math.max(0, Math.min(1, parsed.score / 10));
 
