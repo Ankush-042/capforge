@@ -224,7 +224,7 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
     }
   }
 
-  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null, visionAlignment: typeof candidate.vision_alignment === 'number' ? candidate.vision_alignment : null };
+  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null, visionAlignment: typeof candidate.vision_alignment === 'number' ? candidate.vision_alignment : null, alignmentReason: candidate.alignment_reason || null };
 
   const weights = getWeights(seekingType);
   const baseScore = Object.keys(weights).reduce(
@@ -263,11 +263,12 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
   // Phase 3: real vision alignment, only ever present for co-founder
   // searches where both sides actually wrote something. Never invented:
   // this only appears when a real number was computed.
-  if (typeof breakdown.visionAlignment === 'number') {
-    const { explainVisionAlignment } = require('./visionAlignmentService');
-    const line = explainVisionAlignment(breakdown.visionAlignment);
-    if (breakdown.visionAlignment >= 0.55) strengths.push(line);
-    else if (breakdown.visionAlignment < 0.35) limitations.push(line);
+  // The LLM's own sentence, referring to something the person actually
+  // wrote, rather than a generic band label. This is the whole point of
+  // never showing a bare score.
+  if (typeof breakdown.visionAlignment === 'number' && breakdown.alignmentReason) {
+    if (breakdown.visionAlignment >= 0.6) strengths.push(breakdown.alignmentReason);
+    else if (breakdown.visionAlignment <= 0.3) limitations.push(breakdown.alignmentReason);
   }
 
 
@@ -392,17 +393,33 @@ async function rankCandidatesForGap(gapId) {
   // more heavily for co-founders (a years-long commitment) than for a hire,
   // but it is never zero, because why someone wants to build something
   // matters for any role.
+  // Alignment is now judged by an LLM and read from cache. Embeddings were
+  // proven unable to carry this signal: they cannot represent negation, so a
+  // contributor who wrote "I am done with dashboards" scored HIGHEST against
+  // a marketing-dashboard venture. See migration 027 for the full evidence.
+  //
+  // Cache-only read: never calls the LLM during ranking, so a rate limit can
+  // never slow or break a match. A missing score means no alignment signal,
+  // and the deterministic signals carrying 81% of the weight still decide.
   let visionMap = {};
+  let alignmentReasons = {};
   try {
-    const { getVisionAlignment } = require('./visionAlignmentService');
-    visionMap = await getVisionAlignment(startup.id, candidatesResult.rows.map(c => c.user_id));
+    const { getAlignmentScores } = require('./alignmentService');
+    const scores = await getAlignmentScores(startup.id, candidatesResult.rows.map(c => c.user_id));
+    for (const [uid, v] of Object.entries(scores)) {
+      visionMap[uid] = v.score;
+      alignmentReasons[uid] = v.reason;
+    }
   } catch (err) {
-    console.error('Vision alignment lookup failed (non-fatal, falling back to skill-only):', err.message);
+    console.error('Alignment lookup failed (non-fatal, deterministic signals still apply):', err.message);
   }
 
   const ranked = candidatesResult.rows
     .map(candidate => {
-      if (visionMap[candidate.user_id] !== undefined) candidate.vision_alignment = visionMap[candidate.user_id];
+      if (visionMap[candidate.user_id] !== undefined) {
+        candidate.vision_alignment = visionMap[candidate.user_id];
+        candidate.alignment_reason = alignmentReasons[candidate.user_id];
+      }
       const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate, feedbackAdjustment);
       const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
       const causalNarrative = buildCausalNarrative(gap, candidate.headline || 'This candidate', explanation);
@@ -518,4 +535,4 @@ async function getMyRecommendationsAsContributor(userId) {
   return { success: true, recommendations: withNarrative };
 }
 
-module.exports = { scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
+module.exports = { domainsMatch, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
