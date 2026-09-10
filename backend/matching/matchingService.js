@@ -327,9 +327,21 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
     ? Object.keys(activeWeights).reduce((sum, key) => sum + breakdown[key] * (activeWeights[key] / weightTotal), 0)
     : 0;
 
-  // AI spec §50-52: feedback nudges the score, bounded, never overrides
-  // the underlying requirement fit entirely.
-  const finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
+  // CAPABILITY CEILING. Raising alignment to a real weight introduced the
+  // failure mode it was always going to: a Data Engineer reached 43 percent
+  // on a Frontend Engineer role with zero role fit and 25 percent skill
+  // overlap, carried there by domain, stage and mission. Wanting to do
+  // something is not the same as being able to do it, and recommending
+  // people into work they cannot do is a worse failure than missing a match.
+  //
+  // So without either a real role fit or meaningful skill overlap, a match
+  // is capped below the level where it reads as a genuine fit. It can still
+  // appear, honestly, as a weak option. It cannot masquerade as a strong one.
+  const hasCapability = roleFit >= 0.5 || skillFit >= 0.30;
+  const CAPABILITY_CEILING = 0.39;
+
+  let finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
+  if (!hasCapability) finalScore = Math.min(finalScore, CAPABILITY_CEILING);
   breakdown.feedbackAdjustment = feedbackAdjustment;
 
   return { score: Math.round(finalScore * 100) / 100, breakdown, overlap, domainOverlap, seekingType };
