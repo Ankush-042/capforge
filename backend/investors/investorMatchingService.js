@@ -33,13 +33,16 @@ function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAd
   // unrelated) exists here too — 'cybersecurity' vs 'cyber security',
   // 'legal tech' vs 'legaltech', etc. Fixed the same way: real
   // substring/token overlap, not just character-for-character equality.
-  function domainsMatch(a, b) {
-    if (a === b) return true;
-    if (a.includes(b) || b.includes(a)) return true;
-    const aTokens = new Set(a.split(/[\s/,-]+/).filter(t => t.length > 2));
-    const bTokens = b.split(/[\s/,-]+/).filter(t => t.length > 2);
-    return bTokens.some(t => aTokens.has(t));
-  }
+  // CONFIRMED: this had the same unguarded token matching that produced
+  // cross-domain false positives on the contributor side, and no
+  // equivalence groups, so an investor whose thesis says 'fintech' scored
+  // zero against a venture whose domain is 'financial services'.
+  //
+  // Now uses the SINGLE shared implementation from matchingService rather
+  // than a second divergent copy. Two copies of matching logic is how the
+  // investor side silently fell behind the contributor side in the first
+  // place.
+  const { domainsMatch } = require('../matching/matchingService');
   const domainOverlap = investorDomains.filter(d => startupDomains.some(sd => domainsMatch(d, sd)));
   const domainFit = investorDomains.length > 0
     ? Math.min(domainOverlap.length / investorDomains.length, 1)
