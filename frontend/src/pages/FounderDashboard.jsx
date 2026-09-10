@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import gsap from 'gsap';
-import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import RoleCoverageGrid from '../components/charts/RoleCoverageGrid.jsx';
@@ -88,6 +87,7 @@ export default function FounderDashboard() {
   const score = readiness ? Math.round(readiness.overall_score) : null;
   const teamSize = startup.current_team_size || 1;
   const openCount = gaps.filter(g => g.status !== 'FILLED' && g.status !== 'DISMISSED').length;
+  const criticalCount = gaps.filter(g => g.status !== 'FILLED' && g.status !== 'DISMISSED' && g.priority_level === 'CRITICAL').length;
 
   let stage;
   if (teamSize <= 1) {
@@ -135,98 +135,129 @@ export default function FounderDashboard() {
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">{stage.next}</p>
       </div>
 
-      <div ref={gridRef} className="grid grid-cols-4 gap-5 mb-6 items-start">
-        {/* Hero insight card — the single sharpest thing to act on, real and clickable */}
-        <Link to={criticalGap ? `/app/gaps/${criticalGap.id}` : '/app/gaps'}
-          className="col-span-2 bg-trust-bg border border-trust-border rounded-xl p-7 hover:shadow-trust-lg transition-shadow cursor-pointer">
-          <div className="flex items-center justify-between mb-5">
-            <div className="w-10 h-10 rounded-xl bg-trust text-white flex items-center justify-center"><Target size={18} /></div>
-            <ArrowUpRight size={18} className="text-trust" />
+      {/* METRIC STRIP — four equal tiles, one rhythm.
+          This was a 4-column grid holding a 2-col card, another 2-col card,
+          then two 1-col cards of different heights: no alignment, no
+          hierarchy, cards ending at different points down the page. A
+          dashboard reads top-down, so the numbers come first, all the same
+          size, then the things you act on. */}
+      <div ref={gridRef} className="grid grid-cols-4 gap-4 mb-8">
+        <Link to="/app/readiness" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Readiness</span>
+            <Gauge size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
           </div>
-          {criticalGap ? (
-            <>
-              <p className="text-[13px] font-medium text-trust mb-1">{criticalGap.seeking_type === 'CO_FOUNDER' ? 'CO-FOUNDER SEARCH' : 'CRITICAL HIRE'}</p>
-              <p className="text-xl font-semibold text-trust-fg mb-2">{criticalGap.role}</p>
-              <p className="text-[13px] text-ink-700 leading-relaxed mb-4">{criticalGap.reason}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(criticalGap.required_skills || []).slice(0, 4).map(s => (
-                  <span key={s} className="text-[11px] px-2 py-1 rounded-md bg-white/60 text-trust-fg">{s}</span>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="text-[15px] text-trust-fg">No critical gaps open right now — see the full picture.</p>
-          )}
-        </Link>
-
-        {/* Readiness — real score + real explanation of WHY, not a bare number */}
-        <Link to="/app/readiness" className="col-span-2 bg-white border border-surface-border rounded-xl p-6 hover:shadow-elevated transition-shadow cursor-pointer">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center"><Gauge size={16} /></div>
-            <div className="text-right">
-              <span className="text-3xl font-bold text-ink-900 leading-none">{score !== null ? score : '—'}</span>
-              {score !== null && (
-                <span className="block text-[11px] text-ink-300 mt-1">
-                  investors look at {INVESTOR_BAR}+
-                </span>
-              )}
-            </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">{score !== null ? score : '—'}</span>
+            <span className="text-[13px] text-ink-300">/ {INVESTOR_BAR}+</span>
           </div>
-          {/* The number alone told a founder nothing. What matters is what it
-              means: are investors seeing you yet, and what moves it. */}
-          <p className="text-[14px] text-ink-900 font-medium mb-1">
-            {score === null
-              ? 'No assessment yet'
-              : score < INVESTOR_BAR
-                ? `${INVESTOR_BAR - score} point${INVESTOR_BAR - score === 1 ? '' : 's'} from investors finding you`
-                : 'Investors can find you'}
-          </p>
-          <p className="text-[13px] text-ink-500 leading-relaxed">
-            {scoreDelta !== null ? `${scoreDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(scoreDelta)} since your last assessment. ` : ''}
-            {weakestDim
-              ? `Weakest right now: ${dimLabel(weakestDim[0])}.`
-              : 'Run an assessment to see where you actually stand.'}
+          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+            {score === null ? 'Not assessed yet'
+              : score < INVESTOR_BAR ? `${INVESTOR_BAR - score} from investor visibility`
+              : 'Visible to investors'}
           </p>
         </Link>
 
-        {/* Team coverage — real mini radial gauge, not a bare number */}
-        <Link to="/app/team" className="bg-white border border-surface-border rounded-xl p-6 hover:shadow-elevated transition-shadow cursor-pointer flex items-center gap-4">
-          <div className="relative w-14 h-14 shrink-0">
-            <RadialBarChart width={56} height={56} innerRadius="70%" outerRadius="100%" barSize={6} data={[{ value: coveragePct, fill: '#4C86F9' }]} startAngle={90} endAngle={-270}>
-              <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-              <RadialBar background={{ fill: '#EAF1FE' }} dataKey="value" cornerRadius={4} />
-            </RadialBarChart>
-            <div className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-blue-600">{coveragePct}%</div>
+        <Link to="/app/team" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Team</span>
+            <Users size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
           </div>
-          <div>
-            <p className="text-[15px] font-semibold text-ink-900">Team coverage</p>
-            <p className="text-[13px] text-ink-500">{filledCount} of {gaps.length} roles filled</p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">{filledCount}</span>
+            <span className="text-[13px] text-ink-300">/ {gaps.length} roles</span>
+          </div>
+          {/* A thin bar reads faster than a radial gauge at this size. */}
+          <div className="mt-3 h-1 rounded-full bg-surface-muted overflow-hidden">
+            <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${coveragePct}%` }} />
           </div>
         </Link>
 
-        {/* Milestones — real segmented progress bar, not plain text */}
-        <Link to="/app/milestones" className="bg-white border border-surface-border rounded-xl p-6 hover:shadow-elevated transition-shadow cursor-pointer">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[15px] font-semibold text-ink-900">Milestones</p>
-            <ListChecks size={16} className="text-mint-500" />
+        <Link to="/app/gaps" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Open roles</span>
+            <Target size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
           </div>
-          <div className="flex gap-1 mb-2">
-            {[0, 1, 2, 3, 4].map(i => <div key={i} className={`h-2 flex-1 rounded-full ${i === 0 ? 'bg-mint-500' : 'bg-surface-muted'}`} />)}
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">{openCount}</span>
+            {criticalCount > 0 && <span className="text-[13px] text-signal-critical font-medium">{criticalCount} critical</span>}
           </div>
-          <p className="text-[13px] text-ink-500">Real, AI-suggested steps →</p>
+          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+            {openCount === 0 ? 'Nothing open' : 'Ranked candidates waiting'}
+          </p>
+        </Link>
+
+        <Link to="/app/milestones" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Momentum</span>
+            <ListChecks size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[32px] font-semibold text-ink-900 leading-none tabular-nums">
+              {scoreDelta !== null ? (scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta) : '—'}
+            </span>
+            <span className="text-[13px] text-ink-300">since last check</span>
+          </div>
+          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+            {weakestDim ? `Weakest: ${dimLabel(weakestDim[0])}` : 'Run an assessment'}
+          </p>
         </Link>
       </div>
 
-      <Link to="/app/gaps" className="block bg-white rounded-xl border border-surface-border shadow-card p-7 hover:shadow-elevated transition-shadow cursor-pointer">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="text-[15px] font-semibold text-ink-900">Team coverage by role</p>
-            <p className="text-[13px] text-ink-500">Click through to find real people for every open role</p>
-          </div>
-          <ArrowUpRight size={18} className="text-ink-300" />
+      {/* THE ONE THING TO DO — given its own section header and full width,
+          because it is the point of the page rather than one card among four. */}
+      <div className="mb-8">
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-[15px] font-semibold text-ink-900">Your next move</h2>
+          <Link to="/app/gaps" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">All roles</Link>
         </div>
-        {gaps.length > 0 ? <RoleCoverageGrid gaps={gaps} /> : <p className="text-[13px] text-ink-500 py-10 text-center">No gaps diagnosed yet — run analysis from the Gaps page.</p>}
-      </Link>
+        <Link
+          to={criticalGap ? `/app/gaps/${criticalGap.id}` : '/app/gaps'}
+          className="group block relative overflow-hidden rounded-xl bg-ink-950 p-7 hover:shadow-elevated transition-shadow"
+        >
+          <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 85% 80%, #1F5D52 0%, transparent 55%)' }} />
+          <div className="relative flex items-start justify-between gap-8">
+            <div className="min-w-0">
+              {criticalGap ? (
+                <>
+                  <p className="text-[11px] font-medium tracking-[0.12em] uppercase text-mint-500 mb-2">
+                    {criticalGap.seeking_type === 'CO_FOUNDER' ? 'Co-founder search' : 'Critical role'}
+                  </p>
+                  <p className="font-display text-[26px] font-semibold text-white leading-tight mb-2">{criticalGap.role}</p>
+                  <p className="text-[14px] text-white/60 leading-relaxed max-w-xl mb-5">{criticalGap.reason}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(criticalGap.required_skills || []).slice(0, 5).map(sk => (
+                      <span key={sk} className="text-[11px] px-2.5 py-1 rounded-md bg-white/10 text-white/70 border border-white/10">{sk}</span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-[11px] font-medium tracking-[0.12em] uppercase text-mint-500 mb-2">All clear</p>
+                  <p className="font-display text-[26px] font-semibold text-white leading-tight">No critical roles open right now.</p>
+                </>
+              )}
+            </div>
+            <div className="shrink-0 flex items-center gap-2 text-[13px] font-medium text-white/70 group-hover:text-white transition-colors">
+              See candidates <ArrowUpRight size={15} />
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* COVERAGE — its own section, header outside the card so the page has
+          a readable rhythm instead of nested boxes inside boxes. */}
+      <div>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-[15px] font-semibold text-ink-900">Where the team stands</h2>
+          <Link to="/app/gaps" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">Fill a role</Link>
+        </div>
+        <div className="bg-surface rounded-xl border border-surface-border p-6">
+          {gaps.length > 0
+            ? <RoleCoverageGrid gaps={gaps} />
+            : <p className="text-[13px] text-ink-500 py-10 text-center">No roles diagnosed yet. Run analysis from Roles.</p>}
+        </div>
+      </div>
     </Shell>
   );
 }
