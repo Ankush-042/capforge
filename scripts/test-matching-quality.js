@@ -196,6 +196,30 @@ const RULES = [
     },
   },
 
+  {
+    name: 'No explanation claims a skill overlap it cannot name',
+    async check() {
+      const r = await pool.query(
+        `SELECT s.name AS startup, g.role, p.display_name
+         FROM recommendations rec
+         JOIN gaps g ON g.id = rec.source_gap_id
+         JOIN startups s ON s.id = g.startup_id
+         JOIN profiles p ON p.user_id = rec.target_user_id
+         WHERE rec.status = 'ACTIVE'
+           AND (rec.explanation::text LIKE '%skill overlap: .%'
+             OR rec.explanation::text LIKE '%skill overlap: ,%'
+             OR rec.explanation::text LIKE '%covers .%')
+         LIMIT 5`
+      );
+      return {
+        pass: r.rows.length === 0,
+        detail: r.rows.length === 0
+          ? 'no empty skill claims'
+          : r.rows.map(x => `${x.display_name} -> ${x.startup}/${x.role}`).join('; '),
+      };
+    },
+  },
+
   // --- INVESTOR SIDE ---
   {
     name: 'Investor deal flow respects the stated thesis domain',
