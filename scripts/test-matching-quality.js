@@ -169,6 +169,33 @@ const RULES = [
     },
   },
 
+  {
+    name: 'No explanation claims a role match the profile no longer supports',
+    async check() {
+      // Catches the stale-row bug directly: a recommendation asserting
+      // roleFit 1.0 must correspond to a headline that STILL equals the gap
+      // role. Anything else is an explanation describing a person who has
+      // since changed.
+      const r = await pool.query(
+        `SELECT p.display_name, p.headline, g.role, rec.score
+         FROM recommendations rec
+         JOIN gaps g ON g.id = rec.source_gap_id
+         JOIN profiles p ON p.user_id = rec.target_user_id
+         WHERE rec.status = 'ACTIVE'
+           AND (rec.score_breakdown->>'roleFit')::float = 1.0
+           AND lower(regexp_replace(coalesce(p.headline,''), '[^a-zA-Z0-9]', '', 'g'))
+             != lower(regexp_replace(g.role, '[^a-zA-Z0-9]', '', 'g'))
+         LIMIT 5`
+      );
+      return {
+        pass: r.rows.length === 0,
+        detail: r.rows.length === 0
+          ? 'no stale role claims'
+          : r.rows.map(x => `${x.display_name} is "${x.headline}" but a ${Math.round(x.score*100)}% row claims exact match for "${x.role}"`).join('; '),
+      };
+    },
+  },
+
   // --- INVESTOR SIDE ---
   {
     name: 'Investor deal flow respects the stated thesis domain',
