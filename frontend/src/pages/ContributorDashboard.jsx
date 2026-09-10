@@ -73,53 +73,53 @@ export default function ContributorDashboard() {
       {/* METRIC STRIP — same rhythm as the founder home: four equal tiles,
           label, number, meaning. */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <Link to="/app/contributor/opportunities" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/contributor/opportunities" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#EED8FF' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Ventures</span>
-            <Target size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Ventures</span>
+            <Target size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{grouped.length}</span>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">{grouped.length === 0 ? 'None yet' : 'Currently need you'}</p>
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{grouped.length === 0 ? 'None yet' : 'Currently need you'}</p>
         </Link>
 
-        <Link to="/app/contributor/opportunities" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/contributor/opportunities" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#D1EAFE' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Best fit</span>
-            <Sparkles size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Best fit</span>
+            <Sparkles size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">
               {best ? Math.round(best.roles[0].score * 100) : '—'}
             </span>
-            {best && <span className="text-[13px] text-ink-300">%</span>}
+            {best && <span className="text-[13px] text-ink-700/60">%</span>}
           </div>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug truncate">{best ? best.startup_name : 'No matches yet'}</p>
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug truncate">{best ? best.startup_name : 'No matches yet'}</p>
         </Link>
 
-        <Link to="/app/my-profile" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/my-profile" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFE8DA' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Profile</span>
-            <UserCheck size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Profile</span>
+            <UserCheck size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{profile?.completion_score || 0}</span>
-            <span className="text-[13px] text-ink-300">%</span>
+            <span className="text-[13px] text-ink-700/60">%</span>
           </div>
-          <div className="mt-3 h-1.5 rounded-full bg-surface-muted overflow-hidden">
+          <div className="mt-3 h-1.5 rounded-full bg-black/10 overflow-hidden">
             <div className="h-full rounded-full bg-violet-500 transition-all duration-700" style={{ width: `${profile?.completion_score || 0}%` }} />
           </div>
         </Link>
 
-        <Link to="/app/inbox" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/inbox" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFF3D1' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Conversations</span>
-            <MessageSquare size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Conversations</span>
+            <MessageSquare size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{connections.length}</span>
             {pending > 0 && <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">{pending} waiting</span>}
           </div>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">{connections.length === 0 ? 'None started' : 'Founders you are talking to'}</p>
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{connections.length === 0 ? 'None started' : 'Founders you are talking to'}</p>
         </Link>
       </div>
 

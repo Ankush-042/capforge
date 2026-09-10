@@ -67,48 +67,48 @@ export default function InvestorDashboard() {
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <Link to="/app/investor/deal-flow" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/investor/deal-flow" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#EED8FF' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Deal flow</span>
-            <Search size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Deal flow</span>
+            <Search size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{deals.length}</span>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">{deals.length === 0 ? 'Nothing yet' : 'Fit your thesis'}</p>
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{deals.length === 0 ? 'Nothing yet' : 'Fit your thesis'}</p>
         </Link>
 
-        <Link to="/app/investor/deal-flow" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/investor/deal-flow" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#D1EAFE' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Best fit</span>
-            <Sparkles size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Best fit</span>
+            <Sparkles size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{top ? Math.round(parseFloat(top.score) * 100) : '—'}</span>
-            {top && <span className="text-[13px] text-ink-300">%</span>}
+            {top && <span className="text-[13px] text-ink-700/60">%</span>}
           </div>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug truncate">{top ? top.startup_name : 'No matches'}</p>
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug truncate">{top ? top.startup_name : 'No matches'}</p>
         </Link>
 
-        <Link to="/app/investor/deal-flow" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/investor/deal-flow" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFE8DA' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Average fit</span>
-            <BarChart3 size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Average fit</span>
+            <BarChart3 size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{deals.length > 0 ? avgFit : '—'}</span>
-            {deals.length > 0 && <span className="text-[13px] text-ink-300">%</span>}
+            {deals.length > 0 && <span className="text-[13px] text-ink-700/60">%</span>}
           </div>
-          <div className="mt-3 h-1.5 rounded-full bg-surface-muted overflow-hidden">
+          <div className="mt-3 h-1.5 rounded-full bg-black/10 overflow-hidden">
             <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${avgFit}%` }} />
           </div>
         </Link>
 
-        <Link to="/app/inbox" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/inbox" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFF3D1' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Conversations</span>
-            <MessageSquare size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Conversations</span>
+            <MessageSquare size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{connections.length}</span>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">{connections.length === 0 ? 'None started' : 'Founders you are talking to'}</p>
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">{connections.length === 0 ? 'None started' : 'Founders you are talking to'}</p>
         </Link>
       </div>
 

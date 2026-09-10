@@ -142,74 +142,74 @@ export default function FounderDashboard() {
           dashboard reads top-down, so the numbers come first, all the same
           size, then the things you act on. */}
       <div ref={gridRef} className="grid grid-cols-4 gap-4 mb-8">
-        <Link to="/app/readiness" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/readiness" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#EED8FF' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Readiness</span>
-            <Gauge size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Readiness</span>
+            <Gauge size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{score !== null ? score : '—'}</span>
-            <span className="text-[13px] text-ink-300">/ {INVESTOR_BAR}+</span>
+            <span className="text-[13px] text-ink-700/60">/ {INVESTOR_BAR}+</span>
           </div>
           {/* The bar makes the threshold visible instead of asking someone to
               do the arithmetic. It turns green the moment they cross it. */}
-          <div className="mt-3 relative h-1.5 rounded-full bg-surface-muted overflow-hidden">
+          <div className="mt-3 relative h-1.5 rounded-full bg-black/10 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-700 ${score !== null && score >= INVESTOR_BAR ? 'bg-mint-500' : 'bg-violet-500'}`}
               style={{ width: `${Math.min(100, ((score || 0) / INVESTOR_BAR) * 100)}%` }}
             />
           </div>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
             {score === null ? 'Not assessed yet'
               : score < INVESTOR_BAR ? `${INVESTOR_BAR - score} from investor visibility`
               : 'Visible to investors'}
           </p>
         </Link>
 
-        <Link to="/app/team" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/team" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#D1EAFE' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Team</span>
-            <Users size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Team</span>
+            <Users size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{filledCount}</span>
-            <span className="text-[13px] text-ink-300">/ {gaps.length} roles</span>
+            <span className="text-[13px] text-ink-700/60">/ {gaps.length} roles</span>
           </div>
           {/* A thin bar reads faster than a radial gauge at this size. */}
-          <div className="mt-3 h-1.5 rounded-full bg-surface-muted overflow-hidden">
+          <div className="mt-3 h-1.5 rounded-full bg-black/10 overflow-hidden">
             <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${coveragePct}%` }} />
           </div>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
             {filledCount === 0 ? 'You are the only one here' : `${coveragePct}% covered`}
           </p>
         </Link>
 
-        <Link to="/app/gaps" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/gaps" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFE8DA' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Open roles</span>
-            <Target size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Open roles</span>
+            <Target size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{openCount}</span>
             {criticalCount > 0 && <span className="text-[11px] font-semibold text-signal-critical bg-signal-critical/10 px-2 py-0.5 rounded-md">{criticalCount} critical</span>}
           </div>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
             {openCount === 0 ? 'Nothing open' : 'Ranked candidates waiting'}
           </p>
         </Link>
 
-        <Link to="/app/milestones" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+        <Link to="/app/milestones" className="group rounded-xl border border-black/5 shadow-card p-5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200" style={{ backgroundColor: '#FFF3D1' }}>
           <div className="flex items-start justify-between mb-4">
-            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Momentum</span>
-            <ListChecks size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-ink-700/70">Momentum</span>
+            <ListChecks size={14} className="text-ink-700/50 group-hover:text-ink-900 transition-colors" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className={`text-[34px] font-semibold leading-none tabular-nums tracking-tight ${scoreDelta === null ? 'text-ink-950' : scoreDelta >= 0 ? 'text-mint-500' : 'text-signal-critical'}`}>
               {scoreDelta !== null ? (scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta) : '—'}
             </span>
-            <span className="text-[13px] text-ink-300">since last check</span>
+            <span className="text-[13px] text-ink-700/60">since last check</span>
           </div>
-          <p className="text-[12px] text-ink-500 mt-2 leading-snug">
+          <p className="text-[12px] text-ink-700/80 mt-2 leading-snug">
             {weakestDim ? `Weakest: ${dimLabel(weakestDim[0])}` : 'Run an assessment'}
           </p>
         </Link>
