@@ -149,7 +149,20 @@ async function refreshEverythingForUser(userId) {
     }
 
     // Only now, with fresh alignment in place, re-rank.
-    await refreshOpenGapRankings();
+    //
+    // TARGETED, not platform-wide. refreshOpenGapRankings re-ranks every
+    // candidate for all 62 gaps, which is minutes of work when exactly one
+    // person changed. In practice that meant the automatic path never
+    // finished before the user looked at their results, and the list only
+    // became correct after running a script by hand. Nobody should have to
+    // do that.
+    //
+    // Nobody else's data changed, so nobody else's rows need recomputing.
+    const { refreshRankingsForContributor } = require('../matching/matchingService');
+    const r = await refreshRankingsForContributor(userId);
+    if (!r.success && r.error !== 'NOT_AN_ELIGIBLE_CONTRIBUTOR') {
+      console.error(`Targeted refresh failed for ${userId}:`, r.error);
+    }
   })();
 
   refreshInFlight.set(userId, run);
