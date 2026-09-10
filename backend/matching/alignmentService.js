@@ -26,81 +26,97 @@ function hash(text) {
 }
 
 /**
- * Score one pair. Returns null on any failure rather than throwing, because
- * this signal must never be able to break a match.
+ * Score ONE contributor against ALL ventures in a single call.
+ *
+ * The first version made one call per pair: 528 calls, and with a reasoning
+ * model at 2s throttle that is genuinely unreasonable. It also used
+ * max_tokens 200, which truncated the JSON mid-sentence on nearly every
+ * response, so most "failures" were my token limit rather than any rate
+ * limit. Retrying a deterministic truncation just burned 65 seconds
+ * reproducing it.
+ *
+ * One call per contributor is 38 calls instead of 528, and gives the model
+ * the full set to compare against, which produces better relative scoring
+ * than judging each venture in isolation.
  */
-async function scorePair({ userId, startupId, mission, vision, problem, ventureDomains, domains, headline }) {
+async function scoreContributorAgainstVentures({ userId, mission, headline, domains, ventures }) {
   const mHash = hash(mission);
-  const vHash = hash(vision);
 
-  const existing = await pool.query(
-    `SELECT score, reason FROM alignment_scores
-     WHERE user_id = $1 AND startup_id = $2 AND mission_hash = $3 AND vision_hash = $4`,
-    [userId, startupId, mHash, vHash]
-  );
-  if (existing.rows.length > 0) {
-    return { score: parseFloat(existing.rows[0].score), reason: existing.rows[0].reason, cached: true };
-  }
+  const ventureList = ventures.map((v, i) =>
+    `[${i}] ${v.name}
+    Field: ${(v.domain || []).join(', ') || 'not stated'}
+    Building: ${(v.problem || 'not stated').slice(0, 300)}
+    Founder's reason: ${(v.founder_vision || '').slice(0, 500)}`
+  ).join('\n\n');
 
   const ai = await callGroq(GROQ_MODEL, [
     {
       role: 'system',
-      content: `You judge whether a person's stated motivation genuinely aligns with what a specific venture is building.
+      content: `You judge how well one person's stated motivation aligns with each of several ventures.
 
-Read carefully. Pay attention to what the person says they DO NOT want, which matters as much as what they do want. Someone who says they are done with a kind of work should score LOW against a venture doing that work, however similar the words look.
+Read carefully. What the person says they do NOT want matters as much as what they do want. Someone who says they are done with a kind of work must score LOW against ventures doing that work, however similar the vocabulary looks.
 
-Return ONLY valid JSON: {"score": <0-10 integer>, "reason": "<one sentence>"}
+Return ONLY a valid JSON array, one object per venture, in the same order, no other text:
+[{"i": 0, "score": 7, "reason": "one sentence"}, ...]
 
-Scoring guide:
-  9-10  Their stated motivation is almost exactly this venture's purpose.
-  7-8   Strong genuine overlap in what they care about.
-  5-6   Some real common ground, not central.
-  3-4   Weak connection, mostly unrelated.
-  0-2   No real alignment, or they explicitly said they do not want this.
+score is 0-10:
+  9-10  their stated motivation is almost exactly this venture's purpose
+  7-8   strong genuine overlap
+  5-6   some real common ground, not central
+  3-4   weak, mostly unrelated
+  0-2   no alignment, or they explicitly said they do not want this
 
-The reason must be one plain sentence a person would find fair, referring to something they actually wrote. Never flatter. If the alignment is weak, say why plainly.`,
+reason: one plain sentence referring to something they actually wrote. Never flatter. If alignment is weak, say why plainly. Keep each reason under 25 words.`,
     },
     {
       role: 'user',
       content: `THE PERSON
 Role: ${headline || 'not stated'}
-Fields they are interested in: ${(domains || []).join(', ') || 'not stated'}
-What they say they are looking for:
+Interested in: ${(domains || []).join(', ') || 'not stated'}
+What they are looking for:
 "${mission}"
 
-THE VENTURE
-Field: ${(ventureDomains || []).join(', ') || 'not stated'}
-What they are building: ${problem || 'not stated'}
-The founder's stated reason for building it:
-"${vision}"`,
-    },
-  ], { temperature: 0.1, max_tokens: 200 });
+THE VENTURES (${ventures.length})
+${ventureList}
 
-  if (!ai.success) return { failed: true, reason: ai.error || 'AI_CALL_FAILED', detail: ai.detail, status: ai.status };
+Return the JSON array now, ${ventures.length} objects.`,
+    },
+  ], { temperature: 0.1, max_tokens: 4000 });
+
+  if (!ai.success) return { failed: true, reason: ai.error || 'AI_CALL_FAILED', detail: ai.detail };
 
   let parsed;
   try {
-    parsed = JSON.parse(ai.content.replace(/```json|```/g, '').trim());
-  } catch {
-    return { failed: true, reason: 'UNPARSEABLE', detail: (ai.content || '').slice(0, 160) };
+    const cleaned = ai.content.replace(/```json|```/g, '').trim();
+    const firstBracket = cleaned.indexOf('[');
+    const lastBracket = cleaned.lastIndexOf(']');
+    if (firstBracket === -1 || lastBracket === -1) throw new Error('no array found');
+    parsed = JSON.parse(cleaned.slice(firstBracket, lastBracket + 1));
+  } catch (err) {
+    return { failed: true, reason: 'UNPARSEABLE', detail: (ai.content || '').slice(0, 200) };
   }
-  if (typeof parsed.score !== 'number' || !parsed.reason) {
-    return { failed: true, reason: 'INCOMPLETE_JSON', detail: JSON.stringify(parsed).slice(0, 160) };
+  if (!Array.isArray(parsed)) return { failed: true, reason: 'NOT_AN_ARRAY' };
+
+  const saved = [];
+  for (const item of parsed) {
+    const idx = typeof item.i === 'number' ? item.i : -1;
+    const venture = ventures[idx];
+    if (!venture || typeof item.score !== 'number' || !item.reason) continue;
+
+    const normalized = Math.max(0, Math.min(1, item.score / 10));
+    await pool.query(
+      `INSERT INTO alignment_scores (user_id, startup_id, score, reason, mission_hash, vision_hash)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id, startup_id) DO UPDATE
+         SET score = EXCLUDED.score, reason = EXCLUDED.reason,
+             mission_hash = EXCLUDED.mission_hash, vision_hash = EXCLUDED.vision_hash,
+             scored_at = now()`,
+      [userId, venture.id, normalized, item.reason, mHash, hash(venture.founder_vision)]
+    );
+    saved.push({ startup: venture.name, score: normalized, reason: item.reason });
   }
 
-  const normalized = Math.max(0, Math.min(1, parsed.score / 10));
-
-  await pool.query(
-    `INSERT INTO alignment_scores (user_id, startup_id, score, reason, mission_hash, vision_hash)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     ON CONFLICT (user_id, startup_id) DO UPDATE
-       SET score = EXCLUDED.score, reason = EXCLUDED.reason,
-           mission_hash = EXCLUDED.mission_hash, vision_hash = EXCLUDED.vision_hash,
-           scored_at = now()`,
-    [userId, startupId, normalized, parsed.reason, mHash, vHash]
-  );
-
-  return { score: normalized, reason: parsed.reason, cached: false };
+  return { saved, expected: ventures.length };
 }
 
 /**
@@ -131,4 +147,4 @@ async function invalidateForStartup(startupId) {
   await pool.query(`DELETE FROM alignment_scores WHERE startup_id = $1`, [startupId]);
 }
 
-module.exports = { scorePair, getAlignmentScores, invalidateForUser, invalidateForStartup };
+module.exports = { scoreContributorAgainstVentures, getAlignmentScores, invalidateForUser, invalidateForStartup };
