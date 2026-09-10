@@ -24,13 +24,34 @@ const pool = require('../shared/db');
  * alignment signal" rather than to a zero score.
  */
 async function refreshVisionEmbedding(startupId) {
-  const result = await pool.query(`SELECT founder_vision FROM startups WHERE id = $1`, [startupId]);
-  const vision = result.rows[0]?.founder_vision;
+  const result = await pool.query(
+    `SELECT founder_vision, problem, domain FROM startups WHERE id = $1`,
+    [startupId]
+  );
+  const row = result.rows[0];
+  const vision = row?.founder_vision;
   if (!vision || vision.trim().length < 20) return { success: false, reason: 'NO_VISION_TEXT' };
+
+  // CONFIRMED PROBLEM from real scoring: embedding the vision statement
+  // ALONE produced noisy, untrustworthy ordering. A contributor whose
+  // mission was explicitly about health scored 32% against a logistics
+  // venture and only 14% against a healthcare one, because both visions
+  // are short and abstract and the similarity was dominated by incidental
+  // phrasing ("a driver away from home for nothing" reads a lot like "a
+  // real person has a worse day") rather than by subject matter.
+  //
+  // Grounding the vision in what the venture is actually about gives the
+  // embedding real subject signal to work with, so semantic proximity
+  // tracks the thing that matters instead of writing style.
+  const embeddingText = [
+    vision.trim(),
+    row.problem ? `The problem: ${row.problem}` : '',
+    (row.domain || []).length ? `Field: ${(row.domain || []).join(', ')}` : '',
+  ].filter(Boolean).join('\n');
 
   try {
     const { generateEmbedding } = require('../shared/embeddings');
-    const embedding = await generateEmbedding(vision.trim());
+    const embedding = await generateEmbedding(embeddingText);
     if (!embedding) return { success: false, reason: 'EMBEDDING_UNAVAILABLE' };
     await pool.query(`UPDATE startups SET vision_embedding = $1 WHERE id = $2`, [JSON.stringify(embedding), startupId]);
     return { success: true };
@@ -45,16 +66,26 @@ async function refreshVisionEmbedding(startupId) {
  */
 async function refreshMotivationEmbedding(userId) {
   const result = await pool.query(
-    `SELECT cp.id, cp.looking_for FROM contributor_profiles cp
+    `SELECT cp.id, cp.looking_for, cp.preferred_domains, p.headline
+     FROM contributor_profiles cp
      JOIN profiles p ON p.id = cp.profile_id WHERE p.user_id = $1`,
     [userId]
   );
   const row = result.rows[0];
   if (!row?.looking_for || row.looking_for.trim().length < 20) return { success: false, reason: 'NO_MOTIVATION_TEXT' };
 
+  // Grounded the same way as the venture side, so both embeddings describe
+  // subject matter and not just tone. Without this the two sides are being
+  // compared on writing style.
+  const embeddingText = [
+    row.looking_for.trim(),
+    row.headline ? `Role: ${row.headline}` : '',
+    (row.preferred_domains || []).length ? `Field: ${(row.preferred_domains || []).join(', ')}` : '',
+  ].filter(Boolean).join('\n');
+
   try {
     const { generateEmbedding } = require('../shared/embeddings');
-    const embedding = await generateEmbedding(row.looking_for.trim());
+    const embedding = await generateEmbedding(embeddingText);
     if (!embedding) return { success: false, reason: 'EMBEDDING_UNAVAILABLE' };
     await pool.query(`UPDATE contributor_profiles SET motivation_embedding = $1 WHERE id = $2`, [JSON.stringify(embedding), row.id]);
     return { success: true };

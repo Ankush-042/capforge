@@ -11,9 +11,16 @@ const pool = require('../backend/shared/db');
 const { refreshVisionEmbedding, refreshMotivationEmbedding } = require('../backend/matching/visionAlignmentService');
 
 (async () => {
+  // --force regenerates embeddings that already exist. Needed whenever the
+  // embedding TEXT formula changes: without it, every existing embedding
+  // silently keeps the old formula and the fix does nothing.
+  const force = process.argv.includes('--force');
+  if (force) console.log('FORCE: regenerating ALL embeddings with the current formula\n');
+
   const startups = await pool.query(
     `SELECT id, name FROM startups
-     WHERE founder_vision IS NOT NULL AND length(trim(founder_vision)) >= 20 AND vision_embedding IS NULL`
+     WHERE founder_vision IS NOT NULL AND length(trim(founder_vision)) >= 20
+       ${force ? '' : 'AND vision_embedding IS NULL'}`
   );
   console.log(`Ventures needing a vision embedding: ${startups.rows.length}`);
   let sOk = 0;
@@ -26,7 +33,8 @@ const { refreshVisionEmbedding, refreshMotivationEmbedding } = require('../backe
   const contributors = await pool.query(
     `SELECT p.user_id, p.display_name FROM contributor_profiles cp
      JOIN profiles p ON p.id = cp.profile_id
-     WHERE cp.looking_for IS NOT NULL AND length(trim(cp.looking_for)) >= 20 AND cp.motivation_embedding IS NULL`
+     WHERE cp.looking_for IS NOT NULL AND length(trim(cp.looking_for)) >= 20
+       ${force ? '' : 'AND cp.motivation_embedding IS NULL'}`
   );
   console.log(`\nContributors needing a motivation embedding: ${contributors.rows.length}`);
   let cOk = 0;
