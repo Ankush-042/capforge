@@ -54,10 +54,22 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   let ok = 0, failed = 0;
   for (const c of contributors) {
-    const r = await scoreContributorAgainstVentures({
+    let r = await scoreContributorAgainstVentures({
       userId: c.user_id, mission: c.mission, headline: c.headline,
       domains: c.preferred_domains, ventures,
     });
+
+    // A rejected batch (shifted/incomplete indices) is worth one retry: the
+    // model usually gets the indexing right on a second attempt, and the
+    // alternative is leaving that contributor with no alignment at all.
+    if (r.failed && ['BAD_INDEX', 'DUPLICATE_INDEX', 'INCOMPLETE_BATCH', 'MALFORMED_ENTRY', 'UNPARSEABLE'].includes(r.reason)) {
+      console.log(`  retry ${c.display_name} (${r.reason})`);
+      await sleep(DELAY_MS);
+      r = await scoreContributorAgainstVentures({
+        userId: c.user_id, mission: c.mission, headline: c.headline,
+        domains: c.preferred_domains, ventures,
+      });
+    }
 
     if (r.failed) {
       failed++;

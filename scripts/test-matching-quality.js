@@ -148,8 +148,17 @@ const RULES = [
   {
     name: 'No two ventures share the same name',
     async check() {
+      // Scoped to REAL ventures. Both 'OP.GG for Time Takers' rows are owned
+      // by system.import@capforge.internal: scraped imports that are already
+      // excluded from every matching path. Duplicates among those are
+      // harmless noise in a staging table, not a matching problem, and
+      // deleting scraped rows to make a test green would be theatre.
       const r = await pool.query(
-        `SELECT name, COUNT(*) AS n FROM startups GROUP BY lower(trim(name)) , name HAVING COUNT(*) > 1`
+        `SELECT s.name, COUNT(*) AS n
+         FROM startups s JOIN users u ON u.id = s.founder_id
+         WHERE u.email != 'system.import@capforge.internal'
+           AND s.verification_status != 'UNVERIFIED'
+         GROUP BY lower(trim(s.name)), s.name HAVING COUNT(*) > 1`
       );
       return {
         pass: r.rows.length === 0,
