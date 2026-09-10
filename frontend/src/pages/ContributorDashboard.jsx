@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
-import StatCard, { STAT_PALETTE } from '../components/charts/StatCard.jsx';
+import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
 import { getMyProfile, getMyRecommendationsAsContributor, getMyConnections } from '../services/startups.js';
 
 /** Real fix applied consistently now, everywhere this data is shown: group by startup, don't count/list raw gap-matches as if each were a separate opportunity. */
@@ -37,6 +37,8 @@ export default function ContributorDashboard() {
   const pending = connections.filter((c) => c.status === 'PENDING').length;
   const grouped = groupByStartup(recs);
 
+  const best = grouped.length > 0 ? grouped[0] : null;
+
   return (
     <Shell persona="CONTRIBUTOR" title={profile?.display_name || 'Dashboard'} subtitle={profile?.headline}>
       {!hasRoleProfile && (
@@ -48,34 +50,137 @@ export default function ContributorDashboard() {
           <Link to="/app/contributor/onboarding" className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Finish now</Link>
         </div>
       )}
-      <div className="mb-6">
-        <p className="text-xs text-ink-500 mb-1">Good evening, {profile?.display_name?.split(' ')[0]}</p>
-        <h1 className="text-[26px] font-semibold text-ink-900 tracking-tight">Where your skills create the most value</h1>
+      {/* WHERE YOU ARE. A contributor opening this should know whether
+          anyone actually wants them yet, and what the single best option
+          is, before reading anything else. */}
+      <div className="mb-7">
+        <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+          {best ? 'Ventures are looking for you' : 'Getting you found'}
+        </p>
+        <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
+          {best
+            ? `${best.startup_name} needs a ${best.roles[0].gap_role}, and you fit.`
+            : 'Nobody has matched with you yet.'}
+        </h1>
+        <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
+          {best
+            ? `${grouped.length === 1 ? 'One venture' : `${grouped.length} ventures`} currently need what you do. This is the closest fit.`
+            : 'Fill in what you are looking for and the domains you care about. That is what founders are matched against.'}
+        </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-5 mb-7">
-        <StatCard label="Recommended" value={grouped.length} sub="Startups match you" icon="◈" {...STAT_PALETTE.lavender} />
-        <StatCard label="Profile strength" value={`${profile?.completion_score || 0}%`} sub="Add more to improve" icon="◎" {...STAT_PALETTE.blue} />
-        <StatCard label="Pending" value={pending} sub="Awaiting response" icon="◐" {...STAT_PALETTE.peach} />
-        <StatCard label="Connections" value={connections.length} sub="Total" icon="◍" {...STAT_PALETTE.cream} />
+      {/* METRIC STRIP — same rhythm as the founder home: four equal tiles,
+          label, number, meaning. */}
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <Link to="/app/contributor/opportunities" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Ventures</span>
+            <Target size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+          </div>
+          <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{grouped.length}</span>
+          <p className="text-[12px] text-ink-500 mt-2 leading-snug">{grouped.length === 0 ? 'None yet' : 'Currently need you'}</p>
+        </Link>
+
+        <Link to="/app/contributor/opportunities" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Best fit</span>
+            <Sparkles size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">
+              {best ? Math.round(best.roles[0].score * 100) : '—'}
+            </span>
+            {best && <span className="text-[13px] text-ink-300">%</span>}
+          </div>
+          <p className="text-[12px] text-ink-500 mt-2 leading-snug truncate">{best ? best.startup_name : 'No matches yet'}</p>
+        </Link>
+
+        <Link to="/app/my-profile" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Profile</span>
+            <UserCheck size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{profile?.completion_score || 0}</span>
+            <span className="text-[13px] text-ink-300">%</span>
+          </div>
+          <div className="mt-3 h-1.5 rounded-full bg-surface-muted overflow-hidden">
+            <div className="h-full rounded-full bg-violet-500 transition-all duration-700" style={{ width: `${profile?.completion_score || 0}%` }} />
+          </div>
+        </Link>
+
+        <Link to="/app/inbox" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Conversations</span>
+            <MessageSquare size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[34px] font-semibold text-ink-950 leading-none tabular-nums tracking-tight">{connections.length}</span>
+            {pending > 0 && <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">{pending} waiting</span>}
+          </div>
+          <p className="text-[12px] text-ink-500 mt-2 leading-snug">{connections.length === 0 ? 'None started' : 'Founders you are talking to'}</p>
+        </Link>
       </div>
 
-      <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
-        <p className="text-[15px] font-semibold text-ink-900 mb-4">Recommended for you</p>
-        {grouped.length === 0 ? (
-          <p className="text-[13px] text-ink-500 py-6 text-center">No recommendations yet — a founder needs to rank candidates for a gap that matches you.</p>
-        ) : grouped.slice(0, 5).map((g) => {
-          const top = g.roles[0];
-          return (
-            <Link to={`/app/startups/${g.startup_id}`} key={g.startup_id} className="hover-lift flex items-center justify-between py-4 border-b border-surface-border last:border-0 hover:bg-surface-muted/50 transition-colors -mx-1 px-1 rounded-lg">
-              <div>
-                <p className="text-[15px] font-medium text-ink-900">{g.startup_name}</p>
-                <p className="text-[13px] text-ink-500">{(g.domain || []).join(', ')} · needs {top.gap_role}{g.roles.length > 1 && ` (+${g.roles.length - 1} more)`}</p>
+      {/* THE BEST OPTION — full width, dark, the way the founder home treats
+          its critical role. This is the decision the page exists for. */}
+      {best && (
+        <div className="mb-8">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-[15px] font-semibold text-ink-900">Worth a closer look</h2>
+            <Link to="/app/contributor/opportunities" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">All ventures</Link>
+          </div>
+          <Link to={`/app/startups/${best.startup_id}`} className="group block relative overflow-hidden rounded-xl bg-ink-950 p-7 hover:shadow-elevated transition-shadow">
+            <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 85% 80%, #1F5D52 0%, transparent 55%)' }} />
+            <div className="relative flex items-start justify-between gap-8">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium tracking-[0.12em] uppercase text-mint-500 mb-2">
+                  {Math.round(best.roles[0].score * 100)}% fit · {best.roles[0].gap_role}
+                </p>
+                <p className="font-display text-[26px] font-semibold text-white leading-tight mb-2">{best.startup_name}</p>
+                <p className="text-[14px] text-white/60 leading-relaxed max-w-xl">{(best.domain || []).join(' · ')}</p>
               </div>
-              <span className="text-sm font-medium text-violet-600">{Math.round(top.score * 100)}%</span>
-            </Link>
-          );
-        })}
+              <div className="shrink-0 flex items-center gap-2 text-[13px] font-medium text-white/70 group-hover:text-white transition-colors">
+                See the venture <ArrowUpRight size={15} />
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
+
+      {/* EVERYTHING ELSE — real cards on the canvas, not rows inside a box. */}
+      <div>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-[15px] font-semibold text-ink-900">Others that need you</h2>
+          <Link to="/app/contributor/offers" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">Compare them</Link>
+        </div>
+        {grouped.length <= 1 ? (
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card">
+            <p className="text-[13px] text-ink-500 py-12 text-center">
+              {grouped.length === 0 ? 'No ventures need you yet. Keep your profile current so founders can find you.' : 'Just the one so far.'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {grouped.slice(1, 5).map((g) => {
+              const top = g.roles[0];
+              return (
+                <Link key={g.startup_id} to={`/app/startups/${g.startup_id}`}
+                  className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <p className="text-[15px] font-semibold text-ink-950 truncate">{g.startup_name}</p>
+                    <span className="text-[13px] font-semibold text-violet-600 tabular-nums shrink-0">{Math.round(top.score * 100)}%</span>
+                  </div>
+                  <p className="text-[13px] text-ink-500 leading-snug">
+                    Needs a {top.gap_role}{g.roles.length > 1 && ` and ${g.roles.length - 1} more`}
+                  </p>
+                  <p className="text-[12px] text-ink-300 mt-2 truncate">{(g.domain || []).join(' · ')}</p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Shell>
   );
