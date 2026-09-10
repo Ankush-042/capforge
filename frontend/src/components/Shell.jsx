@@ -24,9 +24,20 @@ import { useMyIdentity } from '../context/MyIdentityContext.jsx';
  * are the stages of building a company, and the stage you are actually in
  * is the one that opens.
  */
+/**
+ * Grouped by stage of building a company, with SHORT labels.
+ *
+ * A previous version put full phrases here ("Who you're missing", "What
+ * could go wrong") plus a caption under every group. A sidebar is for
+ * scanning, not reading: long labels wrap, captions add noise, and the eye
+ * cannot find anything quickly. The voice belongs on the pages themselves.
+ *
+ * Grouping stays because it is genuinely useful. Fourteen flat items gave a
+ * founder no sense of where they were.
+ */
 const NAV_BY_PERSONA = {
   ADMIN: [
-    { group: null, items: [{ label: 'Admin panel', icon: '◆', path: '/app/admin' }] },
+    { group: null, items: [{ label: 'Admin', icon: '◆', path: '/app/admin' }] },
   ],
   FOUNDER: [
     {
@@ -38,32 +49,29 @@ const NAV_BY_PERSONA = {
     },
     {
       group: 'Build',
-      caption: 'Find the people',
       items: [
-        { label: 'Ideas being shared', icon: '✦', path: '/app/sparks' },
-        { label: "Who you're missing", icon: '◈', path: '/app/gaps' },
-        { label: 'Your team', icon: '◎', path: '/app/team' },
-        { label: 'Splitting equity', icon: '◍', path: '/app/equity' },
+        { label: 'Sparks', icon: '✦', path: '/app/sparks' },
+        { label: 'Roles', icon: '◈', path: '/app/gaps' },
+        { label: 'Team', icon: '◎', path: '/app/team' },
+        { label: 'Equity', icon: '◍', path: '/app/equity' },
       ],
     },
     {
       group: 'Grow',
-      caption: 'Make it real',
       items: [
-        { label: 'What to do next', icon: '◇', path: '/app/milestones' },
-        { label: "What could go wrong", icon: '◑', path: '/app/risk' },
-        { label: 'Who else is doing this', icon: '◌', path: '/app/competitors' },
-        { label: 'How it is going', icon: '◆', path: '/app/analytics' },
+        { label: 'Milestones', icon: '◇', path: '/app/milestones' },
+        { label: 'Risks', icon: '◑', path: '/app/risk' },
+        { label: 'Competitors', icon: '◌', path: '/app/competitors' },
+        { label: 'Analytics', icon: '◆', path: '/app/analytics' },
         { label: 'Workspace', icon: '◫', path: '/app/workspace' },
       ],
     },
     {
       group: 'Raise',
-      caption: 'Find the money',
       items: [
-        { label: 'Investor readiness', icon: '◒', path: '/app/readiness' },
-        { label: 'What investors see', icon: '◉', path: '/app/investability' },
-        { label: 'Your pitch', icon: '▶', path: '/app/pitch' },
+        { label: 'Readiness', icon: '◒', path: '/app/readiness' },
+        { label: 'Investor view', icon: '◉', path: '/app/investability' },
+        { label: 'Pitch', icon: '▶', path: '/app/pitch' },
       ],
     },
   ],
@@ -76,21 +84,19 @@ const NAV_BY_PERSONA = {
       ],
     },
     {
-      group: 'Find something',
-      caption: 'Worth your years',
+      group: 'Discover',
       items: [
-        { label: 'Ideas being shared', icon: '✦', path: '/app/sparks' },
-        { label: 'Ventures that need you', icon: '◈', path: '/app/contributor/opportunities' },
-        { label: 'Weighing them up', icon: '◎', path: '/app/contributor/offers' },
+        { label: 'Sparks', icon: '✦', path: '/app/sparks' },
+        { label: 'Opportunities', icon: '◈', path: '/app/contributor/opportunities' },
+        { label: 'Compare', icon: '◎', path: '/app/contributor/offers' },
       ],
     },
     {
       group: 'Your worth',
-      caption: 'Know what you bring',
       items: [
-        { label: "What's in demand", icon: '◒', path: '/app/contributor/skill-demand' },
-        { label: 'What to learn next', icon: '◇', path: '/app/contributor/learning' },
-        { label: 'What to ask for', icon: '◍', path: '/app/contributor/equity-ask' },
+        { label: 'Skill demand', icon: '◒', path: '/app/contributor/skill-demand' },
+        { label: 'Learning', icon: '◇', path: '/app/contributor/learning' },
+        { label: 'Equity ask', icon: '◍', path: '/app/contributor/equity-ask' },
       ],
     },
   ],
@@ -103,18 +109,16 @@ const NAV_BY_PERSONA = {
       ],
     },
     {
-      group: 'Find',
-      caption: 'Ventures worth backing',
+      group: 'Discover',
       items: [
-        { label: 'Matching your thesis', icon: '◈', path: '/app/investor/deal-flow' },
-        { label: 'Searches you saved', icon: '◍', path: '/app/investor/saved-searches' },
+        { label: 'Deal flow', icon: '◈', path: '/app/investor/deal-flow' },
+        { label: 'Saved searches', icon: '◍', path: '/app/investor/saved-searches' },
       ],
     },
     {
       group: 'Track',
-      caption: 'What you have backed',
       items: [
-        { label: 'Your portfolio', icon: '◫', path: '/app/investor/portfolio' },
+        { label: 'Portfolio', icon: '◫', path: '/app/investor/portfolio' },
       ],
     },
   ],
@@ -213,13 +217,12 @@ export default function Shell({ children, title, subtitle, persona: externalPers
               location.pathname === i.path || (i.path !== homePath && location.pathname.startsWith(i.path))
             );
             return (
-              <div key={section.group || `top-${si}`} className={section.group ? 'pt-5' : ''}>
+              <div key={section.group || `top-${si}`} className={section.group ? 'pt-4' : ''}>
                 {section.group && (
-                  <div className="px-3 pb-2">
-                    <p className={`text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors ${isActiveSection ? 'text-violet-600' : 'text-ink-300'}`}>
+                  <div className="px-3 pb-1.5">
+                    <p className={`text-[10px] font-semibold tracking-[0.12em] uppercase transition-colors ${isActiveSection ? 'text-violet-600' : 'text-ink-300'}`}>
                       {section.group}
                     </p>
-                    <p className="text-[11px] text-ink-300 mt-0.5">{section.caption}</p>
                   </div>
                 )}
                 <div className="space-y-0.5">
