@@ -97,11 +97,35 @@ Return the JSON array now, ${ventures.length} objects.`,
   }
   if (!Array.isArray(parsed)) return { failed: true, reason: 'NOT_AN_ARRAY' };
 
-  const saved = [];
+  // REAL BUG CAUGHT IN OUTPUT: one contributor came back "14/15 scored" and
+  // the top result showed 90% NeuraHealth with a reason that talked about
+  // SecureLayer. The model returned shifted indices and this code trusted
+  // them, silently attaching every reason to the wrong venture.
+  //
+  // A partial or misindexed batch is not partially usable, it is wrong. If
+  // the response does not contain exactly one valid entry per venture, the
+  // whole batch is rejected and retried rather than saving mismatched data.
+  const seen = new Set();
   for (const item of parsed) {
     const idx = typeof item.i === 'number' ? item.i : -1;
-    const venture = ventures[idx];
-    if (!venture || typeof item.score !== 'number' || !item.reason) continue;
+    if (idx < 0 || idx >= ventures.length) {
+      return { failed: true, reason: 'BAD_INDEX', detail: `index ${idx} outside 0..${ventures.length - 1}` };
+    }
+    if (seen.has(idx)) {
+      return { failed: true, reason: 'DUPLICATE_INDEX', detail: `index ${idx} returned twice` };
+    }
+    seen.add(idx);
+  }
+  if (seen.size !== ventures.length) {
+    return { failed: true, reason: 'INCOMPLETE_BATCH', detail: `got ${seen.size} of ${ventures.length} ventures` };
+  }
+
+  const saved = [];
+  for (const item of parsed) {
+    const venture = ventures[item.i];
+    if (!venture || typeof item.score !== 'number' || !item.reason) {
+      return { failed: true, reason: 'MALFORMED_ENTRY', detail: JSON.stringify(item).slice(0, 120) };
+    }
 
     const normalized = Math.max(0, Math.min(1, item.score / 10));
     await pool.query(
