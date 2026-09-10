@@ -117,11 +117,19 @@ async function refreshEverythingForUser(userId) {
   if (existing) { try { await existing; } catch { /* previous failure is its own problem */ } }
 
   const run = (async () => {
-    const { invalidateForUser, scoreContributorAgainstVentures } = require('../matching/alignmentService');
+    const { scoreContributorAgainstVentures } = require('../matching/alignmentService');
     const pool = require('../shared/db');
 
-    await invalidateForUser(userId);
-
+    // DESTRUCTIVE ORDER, now fixed. This used to DELETE every alignment score
+    // for the user and then try to regenerate them. When the regeneration hit
+    // a rate limit, which happens routinely, the person was left with NO
+    // alignment at all: worse than the stale scores we were replacing, and
+    // permanent until someone ran a script by hand.
+    //
+    // No invalidation is needed. scoreContributorAgainstVentures upserts on
+    // (user_id, startup_id), so a successful run replaces every row anyway.
+    // A failed run now leaves the previous scores intact, which are slightly
+    // stale rather than absent.
     const me = await pool.query(
       `SELECT p.headline, cp.looking_for, cp.preferred_domains
        FROM profiles p LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
