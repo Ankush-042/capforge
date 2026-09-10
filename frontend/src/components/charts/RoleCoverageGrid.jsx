@@ -34,11 +34,22 @@ export default function RoleCoverageGrid({ gaps }) {
         const color = PRIORITY_COLOR[g.priority_level] || PRIORITY_COLOR.LOW;
         const bg = PRIORITY_BG[g.priority_level] || PRIORITY_BG.LOW;
         return (
-          <div key={g.id} className="flex items-center gap-3 rounded-xl p-4" style={{ backgroundColor: g.coverage === 0 ? bg : '#FAFAFB' }}>
+          // These were tinted rectangles sitting inside a white card sitting on
+          // a tinted page: three stacked surfaces, which is why the whole
+          // section read as flat. They are real cards now, on the canvas
+          // directly, with the priority carried by a left edge rather than by
+          // washing the entire tile in colour.
+          <div
+            key={g.id}
+            className="group relative flex items-center gap-3.5 rounded-xl bg-surface border border-surface-border shadow-card p-4 pl-5 overflow-hidden hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200"
+          >
+            <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: g.coverage === 0 ? color : '#3FB081' }} />
             <RoleRing coverage={g.coverage} color={color} />
             <div className="min-w-0">
-              <p className="text-[14px] font-semibold text-ink-900 truncate">{g.role}</p>
-              <p className="text-[12px] font-medium" style={{ color }}>{g.coverage === 0 ? 'Seeking' : `${g.priority_level.charAt(0)}${g.priority_level.slice(1).toLowerCase()}`}</p>
+              <p className="text-[14px] font-semibold text-ink-950 truncate">{g.role}</p>
+              <p className="text-[12px] font-medium mt-0.5" style={{ color: g.coverage === 0 ? color : '#3FB081' }}>
+                {g.coverage === 0 ? 'Seeking' : 'Covered'}
+              </p>
             </div>
           </div>
         );

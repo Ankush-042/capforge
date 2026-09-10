@@ -142,7 +142,7 @@ export default function FounderDashboard() {
           dashboard reads top-down, so the numbers come first, all the same
           size, then the things you act on. */}
       <div ref={gridRef} className="grid grid-cols-4 gap-4 mb-8">
-        <Link to="/app/readiness" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+        <Link to="/app/readiness" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-start justify-between mb-4">
             <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Readiness</span>
             <Gauge size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
@@ -166,7 +166,7 @@ export default function FounderDashboard() {
           </p>
         </Link>
 
-        <Link to="/app/team" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+        <Link to="/app/team" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-start justify-between mb-4">
             <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Team</span>
             <Users size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
@@ -184,7 +184,7 @@ export default function FounderDashboard() {
           </p>
         </Link>
 
-        <Link to="/app/gaps" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+        <Link to="/app/gaps" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-start justify-between mb-4">
             <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Open roles</span>
             <Target size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
@@ -198,7 +198,7 @@ export default function FounderDashboard() {
           </p>
         </Link>
 
-        <Link to="/app/milestones" className="group bg-surface rounded-xl border border-surface-border p-5 hover:border-violet-500/40 hover:shadow-card transition-all">
+        <Link to="/app/milestones" className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-start justify-between mb-4">
             <span className="text-[11px] font-medium tracking-wide uppercase text-ink-300">Momentum</span>
             <ListChecks size={14} className="text-ink-300 group-hover:text-violet-500 transition-colors" />
@@ -267,11 +267,13 @@ export default function FounderDashboard() {
           <h2 className="text-[15px] font-semibold text-ink-900">Where the team stands</h2>
           <Link to="/app/gaps" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">Fill a role</Link>
         </div>
-        <div className="bg-surface rounded-xl border border-surface-border p-6">
-          {gaps.length > 0
-            ? <RoleCoverageGrid gaps={gaps} />
-            : <p className="text-[13px] text-ink-500 py-10 text-center">No roles diagnosed yet. Run analysis from Roles.</p>}
-        </div>
+        {gaps.length > 0
+          ? <RoleCoverageGrid gaps={gaps} />
+          : (
+            <div className="bg-surface rounded-xl border border-surface-border shadow-card">
+              <p className="text-[13px] text-ink-500 py-12 text-center">No roles diagnosed yet. Run analysis from Roles.</p>
+            </div>
+          )}
       </div>
     </Shell>
   );
