@@ -31,6 +31,7 @@ export default function RoleCoverageGrid({ gaps }) {
   return (
     <div className="grid grid-cols-3 gap-4">
       {gaps.map((g) => {
+        const covered = parseFloat(g.coverage) > 0;
         const color = PRIORITY_COLOR[g.priority_level] || PRIORITY_COLOR.LOW;
         const bg = PRIORITY_BG[g.priority_level] || PRIORITY_BG.LOW;
         return (
@@ -43,12 +44,12 @@ export default function RoleCoverageGrid({ gaps }) {
             key={g.id}
             className="group relative flex items-center gap-3.5 rounded-xl bg-surface border border-surface-border shadow-card p-4 pl-5 overflow-hidden hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200"
           >
-            <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: g.coverage === 0 ? color : '#3FB081' }} />
-            <RoleRing coverage={g.coverage} color={color} />
+            <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: covered ? '#E4E3EC' : '#7C5CFC' }} />
+            <RoleRing coverage={g.coverage} color={covered ? '#7C5CFC' : '#A7A9B1'} />
             <div className="min-w-0">
               <p className="text-[14px] font-semibold text-ink-950 truncate">{g.role}</p>
-              <p className="text-[12px] font-medium mt-0.5" style={{ color: g.coverage === 0 ? color : '#3FB081' }}>
-                {g.coverage === 0 ? 'Seeking' : 'Covered'}
+              <p className="text-[12px] font-medium mt-0.5" style={{ color: covered ? '#6E7079' : '#6845F0' }}>
+                {covered ? 'Covered' : 'Seeking'}
               </p>
             </div>
           </div>
