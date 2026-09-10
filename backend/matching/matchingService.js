@@ -55,6 +55,40 @@ const GENERIC_SKILL_TOKENS = new Set([
   'operations', 'support', 'integration', 'implementation', 'consulting',
 ]);
 
+/**
+ * Domains that mean the same thing in practice. Deliberately small and
+ * curated rather than clever: each group is terms a real person would
+ * consider the same space. Anything not here still matches by substring or
+ * shared distinctive token.
+ */
+const DOMAIN_EQUIVALENTS = [
+  ['health', 'healthtech', 'healthcare', 'health tech', 'medtech', 'medical', 'telemedicine', 'digital health', 'rural health', 'patient education', 'clinical'],
+  ['fintech', 'finance', 'financial services', 'payments', 'banking', 'cross-border payments'],
+  ['edtech', 'education', 'e-learning', 'adaptive learning', 'k-12', 'learning'],
+  ['climate', 'cleantech', 'sustainability', 'carbon', 'environment', 'renewable energy'],
+  ['ai', 'artificial intelligence', 'machine learning', 'ai/ml', 'deep learning'],
+  ['cybersecurity', 'security', 'infosec', 'cloud security', 'endpoint security'],
+  ['logistics', 'supply chain', 'transportation', 'freight'],
+  ['proptech', 'real estate', 'property management'],
+  ['hr tech', 'hrtech', 'people analytics', 'employee engagement', 'human resources'],
+  ['legal tech', 'legaltech', 'contract analysis', 'compliance'],
+  ['biotech', 'synthetic biology', 'bioinformatics', 'life sciences'],
+  ['saas', 'b2b saas', 'software as a service'],
+];
+
+function domainsMatch(a, b) {
+  if (a === b) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+  for (const group of DOMAIN_EQUIVALENTS) {
+    if (group.includes(a) && group.includes(b)) return true;
+  }
+  // Shared distinctive word, reusing the same generic-token guard as skills
+  // so "artificial intelligence" does not match everything via "artificial".
+  const aTokens = new Set(a.split(/[\s/,-]+/).filter(t => t.length > 3));
+  const bTokens = b.split(/[\s/,-]+/).filter(t => t.length > 3);
+  return bTokens.some(t => aTokens.has(t) && !GENERIC_SKILL_TOKENS.has(t));
+}
+
 function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   const requiredSkills = (gap.required_skills || []).map(s => s.toLowerCase().trim());
   const candidateSkills = new Set((candidate.skills || []).map(s => s.toLowerCase().trim()));
@@ -120,7 +154,13 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   // --- Domain fit: overlap of candidate's preferred domains with the startup's domain ---
   const startupDomains = new Set((startup.domain || []).map(d => d.toLowerCase().trim()));
   const candidateDomains = (candidate.preferred_domains || []).map(d => d.toLowerCase().trim());
-  const domainOverlap = candidateDomains.filter(d => startupDomains.has(d));
+  // CONFIRMED BUG: domain matching used exact string equality, so a
+  // contributor who chose "healthtech" scored ZERO against a venture whose
+  // domain is "healthcare". Same brittleness that made "aml" not match
+  // "aml kyc" in skills. Now uses real equivalence.
+  const domainOverlap = candidateDomains.filter(d =>
+    [...startupDomains].some(sd => domainsMatch(d, sd))
+  );
   const domainFit = startupDomains.size > 0
     ? Math.min(domainOverlap.length / startupDomains.size, 1)
     : 0.5; // neutral if startup has no domain info to compare against
