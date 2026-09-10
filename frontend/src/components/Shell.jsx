@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  Home, MessageSquare, Sparkles, Target, Users, PieChart, Flag, ShieldAlert,
+  Crosshair, BarChart3, LayoutGrid, Gauge, Eye, Presentation, Search,
+  Bookmark, Briefcase, Scale, GraduationCap, HandCoins, ShieldCheck,
+} from 'lucide-react';
 import StartupSwitcher from './StartupSwitcher.jsx';
 import { useMyIdentity } from '../context/MyIdentityContext.jsx';
 
@@ -37,41 +42,41 @@ import { useMyIdentity } from '../context/MyIdentityContext.jsx';
  */
 const NAV_BY_PERSONA = {
   ADMIN: [
-    { group: null, items: [{ label: 'Admin', icon: '◆', path: '/app/admin' }] },
+    { group: null, items: [{ label: 'Admin', icon: ShieldCheck, path: '/app/admin' }] },
   ],
   FOUNDER: [
     {
       group: null,
       items: [
-        { label: 'Home', icon: '◇', path: '/app' },
-        { label: 'Messages', icon: '✉', path: '/app/inbox' },
+        { label: 'Home', icon: Home, path: '/app' },
+        { label: 'Messages', icon: MessageSquare, path: '/app/inbox' },
       ],
     },
     {
       group: 'Build',
       items: [
-        { label: 'Sparks', icon: '✦', path: '/app/sparks' },
-        { label: 'Roles', icon: '◈', path: '/app/gaps' },
-        { label: 'Team', icon: '◎', path: '/app/team' },
-        { label: 'Equity', icon: '◍', path: '/app/equity' },
+        { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
+        { label: 'Roles', icon: Target, path: '/app/gaps' },
+        { label: 'Team', icon: Users, path: '/app/team' },
+        { label: 'Equity', icon: PieChart, path: '/app/equity' },
       ],
     },
     {
       group: 'Grow',
       items: [
-        { label: 'Milestones', icon: '◇', path: '/app/milestones' },
-        { label: 'Risks', icon: '◑', path: '/app/risk' },
-        { label: 'Competitors', icon: '◌', path: '/app/competitors' },
-        { label: 'Analytics', icon: '◆', path: '/app/analytics' },
-        { label: 'Workspace', icon: '◫', path: '/app/workspace' },
+        { label: 'Milestones', icon: Flag, path: '/app/milestones' },
+        { label: 'Risks', icon: ShieldAlert, path: '/app/risk' },
+        { label: 'Competitors', icon: Crosshair, path: '/app/competitors' },
+        { label: 'Analytics', icon: BarChart3, path: '/app/analytics' },
+        { label: 'Workspace', icon: LayoutGrid, path: '/app/workspace' },
       ],
     },
     {
       group: 'Raise',
       items: [
-        { label: 'Readiness', icon: '◒', path: '/app/readiness' },
-        { label: 'Investor view', icon: '◉', path: '/app/investability' },
-        { label: 'Pitch', icon: '▶', path: '/app/pitch' },
+        { label: 'Readiness', icon: Gauge, path: '/app/readiness' },
+        { label: 'Investor view', icon: Eye, path: '/app/investability' },
+        { label: 'Pitch', icon: Presentation, path: '/app/pitch' },
       ],
     },
   ],
@@ -79,24 +84,24 @@ const NAV_BY_PERSONA = {
     {
       group: null,
       items: [
-        { label: 'Home', icon: '◇', path: '/app/contributor' },
-        { label: 'Messages', icon: '✉', path: '/app/inbox' },
+        { label: 'Home', icon: Home, path: '/app/contributor' },
+        { label: 'Messages', icon: MessageSquare, path: '/app/inbox' },
       ],
     },
     {
       group: 'Discover',
       items: [
-        { label: 'Sparks', icon: '✦', path: '/app/sparks' },
-        { label: 'Opportunities', icon: '◈', path: '/app/contributor/opportunities' },
-        { label: 'Compare', icon: '◎', path: '/app/contributor/offers' },
+        { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
+        { label: 'Opportunities', icon: Target, path: '/app/contributor/opportunities' },
+        { label: 'Compare', icon: Scale, path: '/app/contributor/offers' },
       ],
     },
     {
       group: 'Your worth',
       items: [
-        { label: 'Skill demand', icon: '◒', path: '/app/contributor/skill-demand' },
-        { label: 'Learning', icon: '◇', path: '/app/contributor/learning' },
-        { label: 'Equity ask', icon: '◍', path: '/app/contributor/equity-ask' },
+        { label: 'Skill demand', icon: BarChart3, path: '/app/contributor/skill-demand' },
+        { label: 'Learning', icon: GraduationCap, path: '/app/contributor/learning' },
+        { label: 'Equity ask', icon: HandCoins, path: '/app/contributor/equity-ask' },
       ],
     },
   ],
@@ -104,21 +109,21 @@ const NAV_BY_PERSONA = {
     {
       group: null,
       items: [
-        { label: 'Home', icon: '◇', path: '/app/investor' },
-        { label: 'Messages', icon: '✉', path: '/app/inbox' },
+        { label: 'Home', icon: Home, path: '/app/investor' },
+        { label: 'Messages', icon: MessageSquare, path: '/app/inbox' },
       ],
     },
     {
       group: 'Discover',
       items: [
-        { label: 'Deal flow', icon: '◈', path: '/app/investor/deal-flow' },
-        { label: 'Saved searches', icon: '◍', path: '/app/investor/saved-searches' },
+        { label: 'Deal flow', icon: Search, path: '/app/investor/deal-flow' },
+        { label: 'Saved searches', icon: Bookmark, path: '/app/investor/saved-searches' },
       ],
     },
     {
       group: 'Track',
       items: [
-        { label: 'Portfolio', icon: '◫', path: '/app/investor/portfolio' },
+        { label: 'Portfolio', icon: Briefcase, path: '/app/investor/portfolio' },
       ],
     },
   ],
@@ -131,20 +136,20 @@ const IDENTITY_BY_PERSONA = {
   INVESTOR: { name: 'Raj Capital', gradient: 'from-mint-500 to-blue-500', initial: 'R' },
 };
 
-function NavItem({ label, icon, path, active, nested }) {
+function NavItem({ label, icon: Icon, path, active }) {
   return (
     <Link
       to={path}
-      className={`group relative w-full flex items-center justify-between pl-3 pr-2 py-[7px] rounded-lg text-[14px] transition-all duration-150
+      className={`group relative w-full flex items-center gap-2.5 pl-2.5 pr-2 py-[6px] rounded-md text-[13.5px] transition-all duration-150
         ${active
           ? 'bg-violet-50 text-violet-700 font-medium'
           : 'text-ink-700 hover:bg-surface-muted hover:text-ink-950'}`}
     >
       {/* A real active marker rather than a grey wash: you should be able to
           see where you are at a glance, from the edge of your vision. */}
-      {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-r-full bg-violet-600" />}
+      {active && <span className="absolute -left-3 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-violet-600" />}
       <span className="flex items-center gap-2.5 min-w-0">
-        <span className={`text-[13px] w-4 text-center shrink-0 transition-opacity ${active ? 'opacity-100' : 'opacity-50 group-hover:opacity-80'}`}>{icon}</span>
+        <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className={`shrink-0 transition-colors ${active ? 'text-violet-600' : 'text-ink-300 group-hover:text-ink-700'}`} />
         <span className="truncate">{label}</span>
       </span>
     </Link>
@@ -198,7 +203,7 @@ export default function Shell({ children, title, subtitle, persona: externalPers
 
   return (
     <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
-      <aside className="w-[260px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
+      <aside className="w-[248px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">
             {/* A drawn mark rather than a letter in a box: two strokes forming
