@@ -78,6 +78,16 @@ export default function ContributorOpportunities() {
                   ) : (
                     (top.explanation?.strengths || []).map((s) => <p key={s} className="text-[13px] text-ink-700 flex gap-1.5"><span className="text-mint-500">✓</span>{s}</p>)
                   )}
+
+                  {/* The engine already writes the reasons something might NOT
+                      suit you, and this page was rendering only the positives.
+                      Someone deciding where to spend years of their life
+                      deserves the caution as much as the pitch. */}
+                  {(top.explanation?.limitations || []).slice(0, 2).map((l) => (
+                    <p key={l} className="text-[13px] text-ink-500 flex gap-1.5 leading-relaxed">
+                      <span className="text-amber-500 shrink-0">△</span>{l}
+                    </p>
+                  ))}
                 </div>
 
                 {g.roles.length > 1 && (

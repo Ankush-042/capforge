@@ -22,13 +22,17 @@ const { normalizeRole } = require('../gaps/gapDiagnosisService');
 function getWeights(seekingType) {
   switch (seekingType) {
     case 'CO_FOUNDER':
-      return { skillFit: 0.25, roleFit: 0.15, domainFit: 0.10, stageFit: 0.10, experienceFit: 0.10, availabilityFit: 0.05, compatibilityFit: 0.25 };
+      // Choosing a co-founder is mostly about conviction, so alignment
+      // carries more here than anywhere else.
+      return { skillFit: 0.20, roleFit: 0.12, domainFit: 0.08, stageFit: 0.08, experienceFit: 0.08, availabilityFit: 0.04, compatibilityFit: 0.15, alignmentFit: 0.25 };
     case 'CONTRACTOR':
-      return { skillFit: 0.50, roleFit: 0.20, domainFit: 0.10, stageFit: 0.05, experienceFit: 0.10, availabilityFit: 0.03, compatibilityFit: 0.02 };
+      // Defined scope, defined deliverable. Whether they love the mission
+      // barely matters, and pretending otherwise would be dishonest.
+      return { skillFit: 0.48, roleFit: 0.20, domainFit: 0.10, stageFit: 0.05, experienceFit: 0.10, availabilityFit: 0.02, compatibilityFit: 0.02, alignmentFit: 0.03 };
     case 'ADVISOR':
-      return { skillFit: 0.35, roleFit: 0.15, domainFit: 0.15, stageFit: 0.05, experienceFit: 0.20, availabilityFit: 0.02, compatibilityFit: 0.08 };
+      return { skillFit: 0.32, roleFit: 0.14, domainFit: 0.13, stageFit: 0.04, experienceFit: 0.18, availabilityFit: 0.02, compatibilityFit: 0.05, alignmentFit: 0.12 };
     default: // CORE_HIRE
-      return { skillFit: 0.38, roleFit: 0.20, domainFit: 0.14, stageFit: 0.09, experienceFit: 0.09, availabilityFit: 0.05, compatibilityFit: 0.05 };
+      return { skillFit: 0.32, roleFit: 0.17, domainFit: 0.12, stageFit: 0.08, experienceFit: 0.08, availabilityFit: 0.04, compatibilityFit: 0.04, alignmentFit: 0.15 };
   }
 }
 
@@ -273,9 +277,12 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   if (seekingType === 'CO_FOUNDER') {
     const commitmentScore = candidate.availability === 'full-time' ? 1.0 : candidate.availability === 'part-time' ? 0.4 : 0.1;
     const equityMindedness = candidate.equity_preference ? 1.0 : 0.3;
-    const logisticsFit = (commitmentScore * 0.6) + (equityMindedness * 0.4);
+    compatibilityFit = (commitmentScore * 0.6) + (equityMindedness * 0.4);
 
-    // Phase 3: REAL vision alignment. Everything above measures LOGISTICS
+    // Alignment is its own weighted dimension now, so it is no longer mixed
+    // into compatibility. Keeping both here double-counted it and capped it
+    // at a weight too small to matter.
+    // Previously: REAL vision alignment. Everything above measures LOGISTICS
     // (are you full-time, do you want equity). This is the first signal in
     // the engine that measures CONVICTION: cosine similarity between why
     // this founder is building this venture and why this person says they
@@ -284,11 +291,6 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
     // Deliberately null-safe rather than zero-safe: a candidate with no
     // stated motivation gets pure logistics scoring, exactly as before,
     // rather than being punished for a field they never filled in.
-    if (typeof candidate.vision_alignment === 'number') {
-      compatibilityFit = (logisticsFit * 0.45) + (candidate.vision_alignment * 0.55);
-    } else {
-      compatibilityFit = logisticsFit;
-    }
   } else if (seekingType === 'CONTRACTOR') {
     compatibilityFit = 0.7; // commitment depth barely matters for a defined-scope engagement
   } else {
@@ -297,20 +299,33 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
     // co-founder. This is what makes the onboarding promise true: someone
     // who writes about wanting health stakes should rank higher on a health
     // venture than an identical candidate who wrote nothing.
-    const availabilityBase = candidate.availability === 'full-time' ? 0.8 : candidate.availability === 'part-time' ? 0.6 : 0.4;
-    if (typeof candidate.vision_alignment === 'number') {
-      compatibilityFit = (availabilityBase * 0.6) + (candidate.vision_alignment * 0.4);
-    } else {
-      compatibilityFit = availabilityBase;
-    }
+    compatibilityFit = candidate.availability === 'full-time' ? 0.8 : candidate.availability === 'part-time' ? 0.6 : 0.4;
   }
 
-  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null, visionAlignment: typeof candidate.vision_alignment === 'number' ? candidate.vision_alignment : null, alignmentReason: candidate.alignment_reason || null };
+  const alignmentFit = typeof candidate.vision_alignment === 'number' ? candidate.vision_alignment : null;
+  const breakdown = { skillFit, roleFit, domainFit, stageFit, experienceFit, availabilityFit, compatibilityFit, alignmentFit, semanticSimilarity: hasSemanticSignal ? candidate.semantic_similarity : null, visionAlignment: typeof candidate.vision_alignment === 'number' ? candidate.vision_alignment : null, alignmentReason: candidate.alignment_reason || null };
 
   const weights = getWeights(seekingType);
-  const baseScore = Object.keys(weights).reduce(
-    (sum, key) => sum + breakdown[key] * weights[key], 0
-  );
+
+  // NULL-SAFE, not zero-safe. alignmentFit is null when nobody has written a
+  // mission or the venture has no vision yet. Multiplying null by its weight
+  // yields zero, which would silently cost that person 15 percent of the
+  // available score for a field they never filled in, and would make an
+  // unscored pair look worse than a genuinely misaligned one.
+  //
+  // Instead the missing dimension is dropped and the remaining weights are
+  // renormalised, so the score means the same thing either way: it is
+  // computed from the evidence that actually exists.
+  const activeWeights = {};
+  let weightTotal = 0;
+  for (const key of Object.keys(weights)) {
+    if (breakdown[key] === null || breakdown[key] === undefined) continue;
+    activeWeights[key] = weights[key];
+    weightTotal += weights[key];
+  }
+  const baseScore = weightTotal > 0
+    ? Object.keys(activeWeights).reduce((sum, key) => sum + breakdown[key] * (activeWeights[key] / weightTotal), 0)
+    : 0;
 
   // AI spec §50-52: feedback nudges the score, bounded, never overrides
   // the underlying requirement fit entirely.
