@@ -183,7 +183,7 @@ export default function Shell({ children, title, subtitle, persona: externalPers
 
   if (!persona) {
     return (
-      <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
+      <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#F3F1F8' }}>
         <aside className="w-64 border-r border-surface-border bg-white p-4 flex flex-col">
           <div className="h-8 bg-surface-muted rounded-lg animate-pulse mb-6" />
           <div className="space-y-2">
@@ -202,7 +202,7 @@ export default function Shell({ children, title, subtitle, persona: externalPers
   const homePath = NAV[0].items[0].path;
 
   return (
-    <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#FAF5FF' }}>
+    <div className="app-shell min-h-screen flex" style={{ backgroundColor: '#F3F1F8' }}>
       <aside className="w-[248px] shrink-0 border-r border-surface-border flex flex-col py-4 px-3 bg-surface">
         <button className="w-full flex items-center justify-between px-2 py-2 mb-4 rounded-lg hover:bg-surface-muted transition-colors">
           <span className="flex items-center gap-2.5">

@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply antialiased; background-color: #FAF5FF; }
+body { @apply antialiased; background-color: #F3F1F8; }
 .app-shell { @apply text-ink-900 font-sans; }
 
 /**

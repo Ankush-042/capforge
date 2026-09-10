@@ -4,7 +4,7 @@ export default {
     extend: {
       colors: {
         canvas: '#F7F7F9',
-        surface: { DEFAULT: '#FFFFFF', muted: '#FAFAFB', border: '#EDEDF1' },
+        surface: { DEFAULT: '#FFFFFF', muted: '#F4F4F7', border: '#E4E3EC', canvas: '#F3F1F8' },
         ink: { 950: '#12140F', 900: '#161719', 700: '#3E4047', 500: '#6E7079', 300: '#A7A9B1' },
         forest: { 50: '#EBF2EE', 100: '#D7E6DD', 500: '#1F5D52', 600: '#164A41', 700: '#0F3830' },
         violet: { 50: '#F1EEFE', 100: '#E4DEFD', 500: '#7C5CFC', 600: '#6845F0', 700: '#5636D6' },
@@ -26,7 +26,7 @@ export default {
       },
       borderRadius: { lg: '16px', xl: '20px' },
       boxShadow: {
-        card: '0 1px 2px rgba(20,20,30,0.04), 0 1px 1px rgba(20,20,30,0.03)',
+        card: '0 1px 2px rgba(24,22,40,0.05), 0 2px 6px rgba(24,22,40,0.04)',
         elevated: '0 16px 40px rgba(20,20,30,0.08), 0 2px 8px rgba(20,20,30,0.04)',
         // Real design-system shadow depths (Phase A)
         'trust-md': '0 4px 6px rgba(124,58,237,0.10)',
