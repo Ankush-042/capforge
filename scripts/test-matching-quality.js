@@ -329,6 +329,38 @@ const RULES = [
     },
   },
 
+  {
+    name: 'No investor with a thesis is missing alignment scores',
+    async check() {
+      // Same failure mode already caught on the contributor side: alignment
+      // silently absent looks like nothing is wrong, because the weights
+      // renormalise around the missing dimension and the score stays
+      // plausible.
+      const r = await pool.query(
+        `WITH venture_count AS (
+           SELECT COUNT(*) n FROM startups s JOIN users u ON u.id = s.founder_id
+           WHERE s.founder_vision IS NOT NULL AND length(trim(s.founder_vision)) >= 20
+             AND u.email != 'system.import@capforge.internal'
+             AND s.verification_status != 'UNVERIFIED'
+         )
+         SELECT p.display_name, COUNT(a.id) AS scored, (SELECT n FROM venture_count) AS expected
+         FROM investor_profiles ip
+         JOIN profiles p ON p.id = ip.profile_id
+         LEFT JOIN alignment_scores a ON a.user_id = p.user_id
+         WHERE ip.thesis IS NOT NULL AND length(trim(ip.thesis)) >= 20
+         GROUP BY p.display_name, p.user_id
+         HAVING COUNT(a.id) < (SELECT n FROM venture_count)
+         LIMIT 5`
+      );
+      return {
+        pass: r.rows.length === 0,
+        detail: r.rows.length === 0
+          ? 'every investor with a thesis is fully scored'
+          : r.rows.map(x => `${x.display_name}: ${x.scored} of ${x.expected}`).join('; ') + ' — run score-investor-alignment.js',
+      };
+    },
+  },
+
   // --- DATA COMPLETENESS ---
   {
     name: 'Every real venture has a founder vision',

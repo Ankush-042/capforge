@@ -190,9 +190,63 @@ router.post('/contributor', requireAuth, requireRole('CONTRIBUTOR'), async (req,
   res.json(result);
 });
 
+/**
+ * Rescore an investor's alignment after they change their thesis.
+ *
+ * Deliberately does NOT invalidate first. Deleting the old scores and then
+ * trying to regenerate them is what left a contributor with no alignment at
+ * all when the regeneration hit a rate limit: strictly worse than the stale
+ * scores being replaced, and permanent until someone ran a script by hand.
+ * scoreInvestorAgainstVentures upserts, so a success replaces every row and a
+ * failure leaves the previous ones intact.
+ *
+ * Fire-and-forget: saving a profile must never wait on an LLM call.
+ */
+const investorRefreshInFlight = new Map();
+
+async function refreshInvestorAlignment(userId) {
+  const existing = investorRefreshInFlight.get(userId);
+  if (existing) { try { await existing; } catch { /* previous failure is its own problem */ } }
+
+  const run = (async () => {
+    const pool = require('../shared/db');
+    const { scoreInvestorAgainstVentures } = require('../matching/alignmentService');
+
+    const me = await pool.query(
+      `SELECT ip.thesis, ip.preferred_domains, ip.preferred_stages
+       FROM investor_profiles ip JOIN profiles p ON p.id = ip.profile_id
+       WHERE p.user_id = $1`,
+      [userId]
+    );
+    const row = me.rows[0];
+    if (!row?.thesis || row.thesis.trim().length < 20) return;
+
+    const ventures = (await pool.query(
+      `SELECT s.id, s.name, s.domain, s.stage, s.problem, s.founder_vision
+       FROM startups s JOIN users u ON u.id = s.founder_id
+       WHERE s.founder_vision IS NOT NULL AND length(trim(s.founder_vision)) >= 20
+         AND u.email != 'system.import@capforge.internal'
+         AND s.verification_status != 'UNVERIFIED'`
+    )).rows;
+    if (ventures.length === 0) return;
+
+    const r = await scoreInvestorAgainstVentures({
+      userId, thesis: row.thesis,
+      domains: row.preferred_domains, stages: row.preferred_stages, ventures,
+    });
+    if (r?.failed) console.error(`Investor alignment rescore failed for ${userId}: ${r.reason}`);
+  })();
+
+  investorRefreshInFlight.set(userId, run);
+  run.catch(err => console.error('Investor alignment refresh failed (non-fatal):', err.message))
+     .finally(() => { if (investorRefreshInFlight.get(userId) === run) investorRefreshInFlight.delete(userId); });
+  return run;
+}
+
 router.post('/investor', requireAuth, requireRole('INVESTOR'), async (req, res) => {
   const result = await upsertInvestorProfile(req.user.userId, req.body);
   if (!result.success) return res.status(400).json(result);
+  refreshInvestorAlignment(req.user.userId);
   res.json(result);
 });
 

@@ -16,16 +16,51 @@
  */
 const pool = require('../shared/db');
 
+/**
+ * Cached alignment for ONE user across MANY ventures.
+ *
+ * getAlignmentScores in alignmentService answers the contributor-side
+ * question: for one gap's venture, how do these candidates align? Investors
+ * need the inverse. Using the wrong one here would have returned an empty
+ * map silently and made alignment look like it simply never fired.
+ */
+async function getAlignmentScoresForStartups(userId, startupIds) {
+  if (!startupIds || startupIds.length === 0) return {};
+  const result = await pool.query(
+    `SELECT startup_id, score, reason FROM alignment_scores
+     WHERE user_id = $1 AND startup_id = ANY($2::uuid[])`,
+    [userId, startupIds]
+  );
+  const map = {};
+  for (const r of result.rows) {
+    map[r.startup_id] = { score: parseFloat(r.score), reason: r.reason };
+  }
+  return map;
+}
+
 const WEIGHTS = {
-  domainFit: 0.30,
-  stageFit: 0.20,
-  readinessSignal: 0.20,
+  domainFit: 0.24,
+  stageFit: 0.16,
+  readinessSignal: 0.18,
   riskSignal: 0.10,
-  geographyFit: 0.10,
-  ticketFit: 0.10
+  geographyFit: 0.08,
+  ticketFit: 0.06,
+  // The investor's own thesis, judged by an LLM against what each venture is
+  // actually building. This was collected at onboarding, shown on their
+  // profile, and used for NOTHING: deal flow ranked purely on domain, stage,
+  // readiness and risk, so an investor who wrote that they back technical
+  // founders in regulated markets and pass on consumer social got no credit
+  // for any of it.
+  //
+  // 18 percent, taken proportionally from the mechanical signals. Slightly
+  // more than a core hire gets on the contributor side, because an investor's
+  // thesis is a more deliberate and more specific statement than most
+  // contributors write, and less than a co-founder gets, because an investor
+  // is not committing years of their life.
+  alignmentFit: 0.18
 };
 
-function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAdjustment = 0) {
+function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAdjustment = 0, alignment = null) {
   const investorDomains = (investor.preferred_domains || []).map(d => d.toLowerCase().trim());
   const startupDomains = (startup.domain || []).map(d => d.toLowerCase().trim());
   // Real fix: same brittleness already found and fixed for skill
@@ -65,8 +100,27 @@ function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAd
   const geographyFit = 0.5;
   const ticketFit = 0.5;
 
-  const breakdown = { domainFit, stageFit, readinessSignal, riskSignal, geographyFit, ticketFit };
-  const baseScore = Object.keys(WEIGHTS).reduce((sum, k) => sum + breakdown[k] * WEIGHTS[k], 0);
+  const alignmentFit = typeof alignment?.score === 'number' ? alignment.score : null;
+  const breakdown = { domainFit, stageFit, readinessSignal, riskSignal, geographyFit, ticketFit, alignmentFit };
+  if (alignment?.reason) breakdown.alignmentReason = alignment.reason;
+
+  // NULL-SAFE, not zero-safe. An investor who has not written a thesis, or a
+  // venture with no founder vision, produces no alignment score. Multiplying
+  // null by its weight yields zero, which would silently cost that pair 18
+  // percent and rank an UNSCORED venture below a genuinely misaligned one.
+  // The missing dimension is dropped and the rest renormalised, exactly as on
+  // the contributor side, so a score always means the same thing: computed
+  // from the evidence that exists.
+  const active = {};
+  let total = 0;
+  for (const k of Object.keys(WEIGHTS)) {
+    if (breakdown[k] === null || breakdown[k] === undefined) continue;
+    active[k] = WEIGHTS[k];
+    total += WEIGHTS[k];
+  }
+  const baseScore = total > 0
+    ? Object.keys(active).reduce((sum, k) => sum + breakdown[k] * (active[k] / total), 0)
+    : 0;
   const finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
   breakdown.feedbackAdjustment = feedbackAdjustment;
 
@@ -76,6 +130,15 @@ function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAd
 function explainInvestorScore(breakdown, domainOverlap, risks) {
   const strengths = [];
   const watch = [];
+
+  // The LLM's own sentence about this venture against THIS investor's thesis,
+  // referring to something they actually wrote. Leads, because it is the only
+  // part of the explanation that is specific to them rather than to the
+  // venture's surface facts.
+  if (typeof breakdown.alignmentFit === 'number' && breakdown.alignmentReason) {
+    if (breakdown.alignmentFit >= 0.6) strengths.push(breakdown.alignmentReason);
+    else if (breakdown.alignmentFit <= 0.3) watch.push(breakdown.alignmentReason);
+  }
 
   if (breakdown.domainFit >= 0.6) {
     strengths.push(`Matches stated domain interest: ${domainOverlap.join(', ')}.`);
@@ -128,6 +191,17 @@ async function rankStartupsForInvestor(investorUserId) {
   // actually work: not everyone gets shown, not just everyone ranked.
   const MIN_READINESS_FOR_INVESTOR_VISIBILITY = 35;
 
+  // One cached lookup for every venture at once, before the loop. Reading
+  // cache only: ranking never calls the LLM, so a rate limit can never slow
+  // or break deal flow. Same discipline as the contributor side.
+  let alignmentByStartup = {};
+  try {
+    const ids = startupsResult.rows.map(r => r.id);
+    alignmentByStartup = await getAlignmentScoresForStartups(investorUserId, ids);
+  } catch (err) {
+    console.error('Investor alignment lookup failed (non-fatal, deterministic signals still apply):', err.message);
+  }
+
   const ranked = [];
   for (const startup of startupsResult.rows) {
     const readinessResult = await pool.query(
@@ -146,7 +220,8 @@ async function rankStartupsForInvestor(investorUserId) {
     const feedbackAdjustment = await getPreferenceAdjustment(investorUserId, signalKeys);
 
     const { score, breakdown, domainOverlap } = scoreStartupForInvestor(
-      investor, startup, latestReadiness, risksResult.rows, feedbackAdjustment
+      investor, startup, latestReadiness, risksResult.rows, feedbackAdjustment,
+      alignmentByStartup[startup.id] || null
     );
     const explanation = explainInvestorScore(breakdown, domainOverlap, risksResult.rows);
     ranked.push({ startup, score, breakdown, explanation });
