@@ -23,6 +23,9 @@ export default function SparkCompose() {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const ideaLength = form.theIdea.trim().length;
   const canSubmit = form.title.trim().length > 0 && ideaLength >= 40;
+  // Shows exactly what gets stored, so a mistyped list is visible before it
+  // is saved rather than after.
+  const parsedTags = form.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
 
   async function handleSubmit() {
     if (!canSubmit || saving) return;
@@ -32,7 +35,7 @@ export default function SparkCompose() {
       theIdea: form.theIdea,
       whyMe: form.whyMe,
       lookingFor: form.lookingFor,
-      tags: form.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      tags: parsedTags,
     });
     setSaving(false);
     if (ok && data.success) navigate(`/app/sparks/${data.spark.id}`);
@@ -46,7 +49,7 @@ export default function SparkCompose() {
       </Link>
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="max-w-2xl">
-        <div className="relative overflow-hidden rounded-2xl bg-ink-950 p-8 mb-6">
+        <div className="relative overflow-hidden rounded-xl bg-ink-950 p-8 mb-6">
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 20% 40%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 80% 60%, #1F5D52 0%, transparent 55%)' }} />
           <div className="relative">
             <h2 className="font-display text-[26px] font-semibold text-white leading-tight mb-2">
@@ -58,7 +61,7 @@ export default function SparkCompose() {
           </div>
         </div>
 
-        <div className="bg-surface rounded-2xl border border-surface-border shadow-card p-7 space-y-6">
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7 space-y-6">
           <div>
             <label className="block text-[13px] font-semibold text-ink-900 mb-2">What is it, in one line?</label>
             <input
@@ -114,6 +117,13 @@ export default function SparkCompose() {
               placeholder="agriculture, machine learning, climate"
               className="w-full bg-surface-muted border border-surface-border rounded-lg px-4 py-3 text-[15px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors"
             />
+            {parsedTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {parsedTags.map((t, i) => (
+                  <span key={`${t}-${i}`} className="text-[11.5px] px-2 py-1 rounded-md bg-violet-50 text-violet-700">{t}</span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex items-center gap-4">
@@ -128,7 +138,7 @@ export default function SparkCompose() {
                 <ArrowUpRight size={15} className="absolute -translate-x-8 translate-y-8 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0" />
               </span>
             </button>
-            <p className="text-[13px] text-ink-500">You can edit or archive this at any time.</p>
+            <p className="text-[13px] text-ink-500">This goes out as written. Anyone can read it and say they want in.</p>
           </div>
         </div>
       </motion.div>
