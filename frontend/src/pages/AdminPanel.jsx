@@ -117,13 +117,13 @@ export default function AdminPanel() {
           <div className="grid grid-cols-4 gap-5 mb-6">
             <StatCard label="Total Users" value={stats.users_by_role.reduce((s, r) => s + parseInt(r.count), 0)} sub="Founders, contributors, investors" icon={<Users2 size={18} />} {...STAT_PALETTE.lavender} />
             <StatCard label="Total Startups" value={stats.startups_by_status.reduce((s, r) => s + parseInt(r.count), 0)} sub="Across every status" icon={<Building2 size={18} />} {...STAT_PALETTE.blue} />
-            <StatCard label="Connections" value={stats.connections_by_status.reduce((s, r) => s + parseInt(r.count), 0)} sub="Accepted requests" icon={<Link2 size={18} />} {...STAT_PALETTE.cream} />
+            <StatCard label="Conversations" value={(stats.conversations_by_status || []).reduce((s, r) => s + parseInt(r.count), 0)} sub={`${(stats.conversations_by_status || []).find(r => r.status === 'FORMED')?.count || 0} became teams`} icon={<Link2 size={18} />} {...STAT_PALETTE.cream} />
             <StatCard label="Critical Gaps" value={stats.gaps_by_priority.find(r => r.priority_level === 'CRITICAL')?.count || 0} sub="Need real candidates" icon={<Layers size={18} />} {...STAT_PALETTE.peach} />
           </div>
           <div className="grid grid-cols-2 gap-6">
             <BreakdownChart title="Users By Role" rows={stats.users_by_role} />
             <BreakdownChart title="Startups By Status" rows={stats.startups_by_status} />
-            <BreakdownChart title="Connections By Status" rows={stats.connections_by_status} />
+            <BreakdownChart title="Conversations" rows={stats.conversations_by_status || []} />
             <BreakdownChart title="Gaps By Priority" rows={stats.gaps_by_priority} />
           </div>
         </>
