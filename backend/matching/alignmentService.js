@@ -143,6 +143,123 @@ Return the JSON array now, ${ventures.length} objects.`,
   return { saved, expected: ventures.length };
 }
 
+
+/**
+ * Score ONE investor's thesis against ALL ventures in a single call.
+ *
+ * The investor side had no alignment layer at all. Their thesis, the
+ * paragraph explaining what they actually back and what they pass on, was
+ * collected at onboarding, shown on their profile, and used for nothing.
+ * Deal flow ranked purely on domain, stage, readiness and risk, so an
+ * investor who wrote "I back technical founders in regulated markets and
+ * pass on consumer social" got no credit for any of that nuance.
+ *
+ * Same machinery as the contributor side, which is deliberate: one batched
+ * call, cached per pair, capped, and explicitly told that what someone says
+ * they PASS ON matters as much as what they look for. Embeddings cannot
+ * represent that, which is why this is an LLM judgement.
+ *
+ * Reuses the same alignment_scores table. An investor is a user, so the
+ * (user_id, startup_id) key works unchanged.
+ */
+async function scoreInvestorAgainstVentures({ userId, thesis, domains, stages, ventures }) {
+  const tHash = hash(thesis);
+
+  const ventureList = ventures.map((v, i) =>
+    `[${i}] ${v.name}
+    Field: ${(v.domain || []).join(', ') || 'not stated'}
+    Stage: ${v.stage || 'not stated'}
+    Problem: ${(v.problem || 'not stated').slice(0, 300)}
+    Founder's reason for building it: ${(v.founder_vision || '').slice(0, 500)}`
+  ).join('\n\n');
+
+  const ai = await callGroq(GROQ_MODEL, [
+    {
+      role: 'system',
+      content: `You judge how well each venture fits an investor's stated thesis.
+
+Read the thesis carefully. What an investor says they PASS ON matters as much as what they look for. A venture matching something they explicitly rule out must score LOW, however strong it looks on paper.
+
+Judge the thesis itself, not the obvious surface facts. Domain and stage are already scored separately, so do not simply reward a domain match. Look for what the thesis actually says about the kind of founder, problem, or approach they back.
+
+Return ONLY a valid JSON array, one object per venture, in the same order, no other text:
+[{"i": 0, "score": 7, "reason": "one sentence"}, ...]
+
+score is 0-10:
+  9-10  squarely what this thesis describes
+  7-8   strong genuine fit with the thesis
+  5-6   plausible, not clearly what they are after
+  3-4   weak, mostly outside the thesis
+  0-2   outside it, or something they said they pass on
+
+reason: one plain sentence referring to something actually in the thesis. Never flatter. If the fit is weak, say why plainly. Under 25 words.`,
+    },
+    {
+      role: 'user',
+      content: `THE INVESTOR
+Fields they invest in: ${(domains || []).join(', ') || 'not stated'}
+Stages they come in at: ${(stages || []).join(', ') || 'not stated'}
+Their thesis, in their own words:
+"${thesis}"
+
+THE VENTURES (${ventures.length})
+${ventureList}
+
+Return the JSON array now, ${ventures.length} objects.`,
+    },
+  ], { temperature: 0.1, max_tokens: 4000 });
+
+  if (!ai.success) return { failed: true, reason: ai.error || 'AI_CALL_FAILED', detail: ai.detail };
+
+  let parsed;
+  try {
+    const cleaned = ai.content.replace(/```json|```/g, '').trim();
+    const a = cleaned.indexOf('[');
+    const b = cleaned.lastIndexOf(']');
+    if (a === -1 || b === -1) throw new Error('no array found');
+    parsed = JSON.parse(cleaned.slice(a, b + 1));
+  } catch {
+    return { failed: true, reason: 'UNPARSEABLE', detail: (ai.content || '').slice(0, 200) };
+  }
+  if (!Array.isArray(parsed)) return { failed: true, reason: 'NOT_AN_ARRAY' };
+
+  // Same index validation as the contributor path. A shifted index silently
+  // attached every reason to the wrong venture there, which read as success.
+  const seen = new Set();
+  for (const item of parsed) {
+    const idx = typeof item.i === 'number' ? item.i : -1;
+    if (idx < 0 || idx >= ventures.length) {
+      return { failed: true, reason: 'BAD_INDEX', detail: `index ${idx} outside 0..${ventures.length - 1}` };
+    }
+    if (seen.has(idx)) return { failed: true, reason: 'DUPLICATE_INDEX', detail: `index ${idx} twice` };
+    seen.add(idx);
+  }
+  if (seen.size !== ventures.length) {
+    return { failed: true, reason: 'INCOMPLETE_BATCH', detail: `got ${seen.size} of ${ventures.length}` };
+  }
+
+  const saved = [];
+  for (const item of parsed) {
+    const venture = ventures[item.i];
+    if (!venture || typeof item.score !== 'number' || !item.reason) {
+      return { failed: true, reason: 'MALFORMED_ENTRY', detail: JSON.stringify(item).slice(0, 120) };
+    }
+    const normalized = Math.max(0, Math.min(1, item.score / 10));
+    await pool.query(
+      `INSERT INTO alignment_scores (user_id, startup_id, score, reason, mission_hash, vision_hash)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id, startup_id) DO UPDATE
+         SET score = EXCLUDED.score, reason = EXCLUDED.reason,
+             mission_hash = EXCLUDED.mission_hash, vision_hash = EXCLUDED.vision_hash,
+             scored_at = now()`,
+      [userId, venture.id, normalized, item.reason, tHash, hash(venture.founder_vision)]
+    );
+    saved.push({ startup: venture.name, score: normalized, reason: item.reason });
+  }
+
+  return { saved, expected: ventures.length };
+}
+
 /**
  * Bulk lookup used by the matching engine. Reads cache only, never calls the
  * LLM, so ranking stays fast and cannot be rate limited.
@@ -171,4 +288,4 @@ async function invalidateForStartup(startupId) {
   await pool.query(`DELETE FROM alignment_scores WHERE startup_id = $1`, [startupId]);
 }
 
-module.exports = { scoreContributorAgainstVentures, getAlignmentScores, invalidateForUser, invalidateForStartup };
+module.exports = { scoreContributorAgainstVentures, scoreInvestorAgainstVentures, getAlignmentScores, invalidateForUser, invalidateForStartup };
