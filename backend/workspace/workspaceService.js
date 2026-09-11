@@ -23,7 +23,17 @@ async function getWorkspace(startupId, userId) {
   if (!(await isTeamMember(startupId, userId))) return { success: false, error: 'NOT_AUTHORIZED' };
   const workspace = await getOrCreateWorkspace(startupId);
   const tasks = await pool.query('SELECT * FROM tasks WHERE workspace_id = $1 ORDER BY created_at DESC', [workspace.id]);
-  const discussions = await pool.query('SELECT * FROM discussions WHERE workspace_id = $1 ORDER BY created_at DESC', [workspace.id]);
+  // CONFIRMED GAP: this was a bare SELECT *, so the UI had no author for any
+  // message and rendered every one as 'Team member'. A discussion where you
+  // cannot tell who said what is not a discussion.
+  const discussions = await pool.query(
+    `SELECT d.*, p.display_name AS author_name, p.headline AS author_headline
+     FROM discussions d
+     LEFT JOIN profiles p ON p.user_id = d.created_by
+     WHERE d.workspace_id = $1
+     ORDER BY d.created_at DESC`,
+    [workspace.id]
+  );
   return { success: true, workspace, tasks: tasks.rows, discussions: discussions.rows };
 }
 
