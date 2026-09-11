@@ -5,7 +5,7 @@ import { Search, Sparkles, BarChart3, MessageSquare, ArrowUpRight } from 'lucide
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
 import Badge from '../components/charts/Badge.jsx';
-import { getMyProfile, getInvestorRecommendations, getMyConnections } from '../services/startups.js';
+import { getMyProfile, getInvestorRecommendations, getMyConversations } from '../services/startups.js';
 
 export default function InvestorDashboard() {
   const [loading, setLoading] = useState(true);
@@ -16,10 +16,10 @@ export default function InvestorDashboard() {
 
   useEffect(() => {
     async function load() {
-      const [profileRes, dealsRes, connRes] = await Promise.all([getMyProfile(), getInvestorRecommendations(), getMyConnections()]);
+      const [profileRes, dealsRes, connRes] = await Promise.all([getMyProfile(), getInvestorRecommendations(), getMyConversations()]);
       if (profileRes.ok && profileRes.data.success) { setProfile(profileRes.data.profile); setHasRoleProfile(!!profileRes.data.roleProfile); }
       if (dealsRes.ok && dealsRes.data.success) setDeals(dealsRes.data.recommendations);
-      if (connRes.ok && connRes.data.success) setConnections(connRes.data.connections);
+      if (connRes.ok && connRes.data.success) setConnections(connRes.data.conversations);
       setLoading(false);
     }
     load();

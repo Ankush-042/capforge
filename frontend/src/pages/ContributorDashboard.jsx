@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
-import { getMyProfile, getMyRecommendationsAsContributor, getMyConnections } from '../services/startups.js';
+import { getMyProfile, getMyRecommendationsAsContributor, getMyConversations } from '../services/startups.js';
 
 /** Real fix applied consistently now, everywhere this data is shown: group by startup, don't count/list raw gap-matches as if each were a separate opportunity. */
 function groupByStartup(recs) {
@@ -24,10 +24,10 @@ export default function ContributorDashboard() {
 
   useEffect(() => {
     async function load() {
-      const [profileRes, recsRes, connRes] = await Promise.all([getMyProfile(), getMyRecommendationsAsContributor(), getMyConnections()]);
+      const [profileRes, recsRes, connRes] = await Promise.all([getMyProfile(), getMyRecommendationsAsContributor(), getMyConversations()]);
       if (profileRes.ok && profileRes.data.success) { setProfile(profileRes.data.profile); setHasRoleProfile(!!profileRes.data.roleProfile); }
       if (recsRes.ok && recsRes.data.success) setRecs(recsRes.data.recommendations);
-      if (connRes.ok && connRes.data.success) setConnections(connRes.data.connections);
+      if (connRes.ok && connRes.data.success) setConnections(connRes.data.conversations);
       setLoading(false);
     }
     load();
@@ -35,7 +35,10 @@ export default function ContributorDashboard() {
 
   if (loading) return <Shell persona="CONTRIBUTOR" title="Dashboard"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
 
-  const pending = connections.filter((c) => c.status === 'PENDING').length;
+  // Conversations have no PENDING status. That was a field on the dead
+  // connections table. The real 'waiting on you' signal is unread messages,
+  // and unread_count comes back from Postgres as a STRING.
+  const pending = connections.filter((c) => (parseInt(c.unread_count) || 0) > 0).length;
   const grouped = groupByStartup(recs);
 
   const best = grouped.length > 0 ? grouped[0] : null;
