@@ -53,7 +53,10 @@ router.get('/:userId', requireAuth, async (req, res) => {
 
 router.get('/me/views', requireAuth, async (req, res) => {
   const result = await pool.query(
-    `SELECT pv.viewed_at, p.display_name, p.headline, u.primary_role
+    // viewer_id added so the UI can link through to whoever looked. Without
+    // it the settings page could show a name it was unable to open, which is
+    // worse than not showing it at all.
+    `SELECT pv.viewed_at, pv.viewer_id AS user_id, p.display_name, p.headline, u.primary_role
      FROM profile_views pv
      JOIN users u ON u.id = pv.viewer_id
      JOIN profiles p ON p.user_id = pv.viewer_id
