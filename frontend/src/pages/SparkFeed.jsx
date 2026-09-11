@@ -5,6 +5,18 @@ import { Plus, Flame, ArrowUpRight } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import { listSparks } from '../services/startups.js';
 
+function timeAgo(iso) {
+  if (!iso) return null;
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return 'just now';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
 /**
  * The Spark Feed. Phase 2, The First Act.
  *
@@ -34,7 +46,7 @@ export default function SparkFeed() {
 
   return (
     <Shell title="Sparks" subtitle="Ideas before they are companies">
-      <div className="relative overflow-hidden rounded-2xl bg-ink-950 p-8 mb-8">
+      <div className="relative overflow-hidden rounded-xl bg-ink-950 p-8 mb-8">
         <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 15% 30%, #7C5CFC 0%, transparent 50%), radial-gradient(circle at 85% 70%, #1F5D52 0%, transparent 50%)' }} />
         <div className="relative flex items-start justify-between gap-6 flex-wrap">
           <div className="max-w-lg">
@@ -58,7 +70,7 @@ export default function SparkFeed() {
       </div>
 
       {sparks.length === 0 ? (
-        <div className="text-center py-20 bg-surface rounded-2xl border border-surface-border">
+        <div className="text-center py-20 bg-surface rounded-xl border border-surface-border shadow-card">
           <Flame size={32} className="mx-auto text-violet-500 mb-4" />
           <p className="text-lg font-semibold text-ink-900 mb-2">No sparks yet</p>
           <p className="text-[15px] text-ink-500 mb-6 max-w-sm mx-auto">Be the first. Share the thing you cannot stop thinking about, before it is polished.</p>
@@ -77,8 +89,8 @@ export default function SparkFeed() {
               whileHover={{ y: -5 }}
               className="group relative"
             >
-              <Link to={`/app/sparks/${s.id}`} className="block h-full bg-surface rounded-2xl border border-surface-border p-7 shadow-card hover:shadow-elevated hover:border-violet-500/40 transition-all duration-300">
-                <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-2xl bg-gradient-to-r from-violet-500 to-forest-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <Link to={`/app/sparks/${s.id}`} className="block h-full bg-surface rounded-xl border border-surface-border p-7 shadow-card hover:shadow-elevated hover:border-violet-500/40 transition-all duration-300">
+                <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-xl bg-gradient-to-r from-violet-500 to-forest-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[11px] font-medium tracking-wide uppercase text-violet-600 bg-violet-50 px-2.5 py-1 rounded-md">
                     {s.status === 'FORMING' ? 'Forming' : 'Open'}
@@ -103,6 +115,7 @@ export default function SparkFeed() {
                     {s.author_name?.[0]?.toUpperCase()}
                   </div>
                   <span className="text-[13px] text-ink-500">{s.author_name}</span>
+                  {timeAgo(s.created_at) && <span className="text-[12px] text-ink-300">· {timeAgo(s.created_at)}</span>}
                   {s.viewer_resonated && <span className="ml-auto text-[12px] font-medium text-forest-600">You are in on this</span>}
                 </div>
               </Link>

@@ -39,16 +39,28 @@ async function listSparks({ viewerId, tag, limit = 40 } = {}) {
   let where = `s.status IN ('OPEN', 'FORMING')`;
   if (tag) { params.push(tag); where += ` AND $${params.length} = ANY(s.tags)`; }
 
+  // SECURITY: viewerId was previously interpolated straight into the SQL
+  // string. It comes from a verified JWT so it is a UUID we issued, which
+  // makes this low risk in practice, but string-building SQL with a
+  // user-derived value is the pattern that causes injection and it does not
+  // belong in a codebase regardless of whether this particular instance is
+  // exploitable. It is a bound parameter now, like every other value here.
+  params.push(viewerId || null);
+  const viewerParam = `$${params.length}`;
   params.push(limit);
+  const limitParam = `$${params.length}`;
+
   const result = await pool.query(
     `SELECT s.*, p.display_name AS author_name, p.headline AS author_headline,
             (SELECT COUNT(*) FROM spark_resonances r WHERE r.spark_id = s.id) AS resonance_count,
-            ${viewerId ? `EXISTS(SELECT 1 FROM spark_resonances r2 WHERE r2.spark_id = s.id AND r2.user_id = '${viewerId}')` : 'false'} AS viewer_resonated
+            CASE WHEN ${viewerParam}::uuid IS NULL THEN false
+                 ELSE EXISTS(SELECT 1 FROM spark_resonances r2 WHERE r2.spark_id = s.id AND r2.user_id = ${viewerParam}::uuid)
+            END AS viewer_resonated
      FROM sparks s
      JOIN profiles p ON p.user_id = s.author_id
      WHERE ${where}
      ORDER BY s.created_at DESC
-     LIMIT $${params.length}`,
+     LIMIT ${limitParam}`,
     params
   );
   return { success: true, sparks: result.rows };
