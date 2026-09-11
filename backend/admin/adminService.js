@@ -150,7 +150,14 @@ async function getPlatformStats() {
   const [users, startups, connections, gaps] = await Promise.all([
     pool.query(`SELECT primary_role, COUNT(*) FROM users GROUP BY primary_role`),
     pool.query(`SELECT status, COUNT(*) FROM startups GROUP BY status`),
-    pool.query(`SELECT status, COUNT(*) FROM connections GROUP BY status`),
+    // The connections table is dead: no live route writes to it since the
+    // conversation flow replaced it, so this stat read 0 forever while real
+    // conversations were happening. Same bug that made both dashboards show
+    // 'Conversations: 0' permanently. Counts real conversations now, split
+    // by whether a team actually formed out of them, which is the number an
+    // admin genuinely wants.
+    pool.query(`SELECT CASE WHEN team_formed_at IS NOT NULL THEN 'FORMED' ELSE 'TALKING' END AS status,
+                       COUNT(*) FROM conversations GROUP BY 1`),
     pool.query(`SELECT priority_level, COUNT(*) FROM gaps GROUP BY priority_level`),
   ]);
   return {
@@ -158,7 +165,7 @@ async function getPlatformStats() {
     stats: {
       users_by_role: users.rows,
       startups_by_status: startups.rows,
-      connections_by_status: connections.rows,
+      conversations_by_status: connections.rows,
       gaps_by_priority: gaps.rows
     }
   };
