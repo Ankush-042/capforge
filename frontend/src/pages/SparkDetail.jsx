@@ -74,7 +74,17 @@ export default function SparkDetail() {
     return <Shell title="Spark"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
   }
   if (!data) {
-    return <Shell title="Spark"><p className="text-[15px] text-ink-500">This spark could not be found.</p></Shell>;
+    return (
+      <Shell title="Spark">
+        <Link to="/app/sparks" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 transition-colors mb-6">
+          <ArrowLeft size={15} /> Back to sparks
+        </Link>
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
+          <p className="text-[15px] text-ink-700 mb-1">This idea is no longer here.</p>
+          <p className="text-[13px] text-ink-500">It may have become a venture, or the person who shared it removed it.</p>
+        </div>
+      </Shell>
+    );
   }
 
   const { spark, resonances, isAuthor } = data;
@@ -87,7 +97,7 @@ export default function SparkDetail() {
       </Link>
 
       <div className="max-w-3xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="relative overflow-hidden rounded-2xl bg-ink-950 p-8 mb-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="relative overflow-hidden rounded-xl bg-ink-950 p-8 mb-6">
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 15% 30%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 85% 70%, #1F5D52 0%, transparent 55%)' }} />
           <div className="relative">
             <div className="flex items-center gap-3 mb-4">
@@ -114,7 +124,7 @@ export default function SparkDetail() {
           </div>
         </motion.div>
 
-        <div className="bg-surface rounded-2xl border border-surface-border shadow-card p-8 mb-6">
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card p-8 mb-6">
           <p className="text-[11px] font-medium tracking-wide uppercase text-ink-300 mb-3">The idea</p>
           <p className="text-[17px] text-ink-900 leading-relaxed whitespace-pre-wrap">{spark.the_idea}</p>
 
@@ -143,7 +153,7 @@ export default function SparkDetail() {
 
         {/* Author view: who wants in */}
         {isAuthor && (
-          <div className="bg-surface rounded-2xl border border-surface-border shadow-card p-8">
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card p-8">
             <div className="flex items-center gap-2 mb-5">
               <Flame size={17} className="text-violet-500" />
               <p className="text-[15px] font-semibold text-ink-900">
@@ -195,7 +205,7 @@ export default function SparkDetail() {
 
         {/* Viewer view: resonate, or the state after */}
         {!isAuthor && (
-          <div className="bg-surface rounded-2xl border border-surface-border shadow-card p-8">
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card p-8">
             {myResonance ? (
               <>
                 <p className="text-[15px] font-semibold text-ink-900 mb-3">You are in on this</p>
