@@ -68,6 +68,8 @@ const signalRoutes = require('./signal/signalRoutes');
 app.use('/api', signalRoutes);
 const pitchRoutes = require('./pitch/pitchRoutes');
 app.use('/api', pitchRoutes);
+const assistantRoutes = require('./assistant/assistantRoutes');
+app.use('/api', assistantRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

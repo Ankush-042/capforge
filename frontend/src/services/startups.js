@@ -107,3 +107,8 @@ export const recordRecommendationFeedback = (recommendationId, action) =>
 // the inference-only analysis.
 export const getCompetitorResearch = (startupId) => apiFetch(`/startups/${startupId}/competitor-research`);
 export const runCompetitorResearch = (startupId) => apiFetch(`/startups/${startupId}/competitor-research`, { method: 'POST' });
+
+// An assistant that answers only from this venture's real data, and degrades
+// to those raw figures when the AI is unavailable.
+export const askAboutVenture = (startupId, question) =>
+  apiFetch(`/startups/${startupId}/ask`, { method: 'POST', body: JSON.stringify({ question }) });

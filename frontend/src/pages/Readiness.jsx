@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { RefreshCw, AlertTriangle, ArrowUpRight, Eye } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import VentureAssistant from '../components/VentureAssistant.jsx';
 import { getReadiness, assessReadinessRisk } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
@@ -250,6 +251,7 @@ export default function Readiness() {
           )}
         </>
       )}
+      <VentureAssistant startupId={startup?.id} startupName={startup?.name} />
     </Shell>
   );
 }
