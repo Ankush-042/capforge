@@ -102,3 +102,8 @@ export const getInvestorsForStartup = (startupId) => apiFetch(`/investors/for-st
 // matching engines, but had no UI, so nothing could ever trigger it.
 export const recordRecommendationFeedback = (recommendationId, action) =>
   apiFetch(`/recommendations/${recommendationId}/feedback`, { method: 'POST', body: JSON.stringify({ action }) });
+
+// Real competitor research: named companies from the live web, distinct from
+// the inference-only analysis.
+export const getCompetitorResearch = (startupId) => apiFetch(`/startups/${startupId}/competitor-research`);
+export const runCompetitorResearch = (startupId) => apiFetch(`/startups/${startupId}/competitor-research`, { method: 'POST' });
