@@ -159,14 +159,21 @@ ABSOLUTE RULES:
 - Refer to real specifics: their actual score, their actual open roles, their actual risks, by name.
 - Be direct and honest. If their readiness is low, say so. If a risk is serious, say so. Do not reassure.
 - Plain prose. No markdown, no bullet points, no headings. 2 to 4 short paragraphs at most, usually fewer.
+- ANSWER THE QUESTION ASKED. The reference data is large and the question is short; do not default to summarising the venture. If they ask which role to fill first, answer that and nothing else. If they ask about a risk, answer about that risk.
+- Use only the parts of the data the question actually needs. Ignore the rest.
 - If they ask something this data cannot answer, such as legal or tax advice or a valuation, say that plainly and suggest who could.`,
     },
     {
       role: 'user',
-      content: `${renderContext(ctx)}
+      content: `THE QUESTION TO ANSWER: ${question.trim()}
 
----
-THE FOUNDER ASKS: ${question.trim()}`,
+Answer that specific question. Do not summarise the venture unless that is what was asked.
+
+--- REFERENCE DATA (use only what the question needs) ---
+${renderContext(ctx)}
+--- END REFERENCE DATA ---
+
+Now answer only this, in your own words: ${question.trim()}`,
     },
   ], { temperature: 0.3, max_tokens: 800 });
 

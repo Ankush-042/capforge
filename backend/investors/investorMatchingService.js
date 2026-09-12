@@ -44,8 +44,18 @@ async function getAlignmentScoresForStartups(userId, startupIds) {
 const MIN_READINESS_FOR_INVESTOR_VISIBILITY = 35;
 
 const WEIGHTS = {
-  domainFit: 0.24,
-  stageFit: 0.16,
+  // CONFIRMED WRONG ORDERING, from real data. Against a healthcare venture,
+  // Meridian Ventures (healthtech, correctly matched) scored 37% while Raj
+  // Capital (food service, no match at all) scored 42%, because Raj happened
+  // to match on stage and stage was outweighing domain after
+  // renormalisation. An investor in the wrong sector ranked ABOVE one in the
+  // right sector.
+  //
+  // Sector is near-disqualifying; stage is timing. A healthtech investor who
+  // usually comes in at seed is still worth knowing today. A food-service
+  // investor never is, whatever stage they prefer.
+  domainFit: 0.30,
+  stageFit: 0.10,
   readinessSignal: 0.18,
   riskSignal: 0.10,
   geographyFit: 0.08,
@@ -126,7 +136,22 @@ function scoreStartupForInvestor(investor, startup, readiness, risks, feedbackAd
   const baseScore = total > 0
     ? Object.keys(active).reduce((sum, k) => sum + breakdown[k] * (active[k] / total), 0)
     : 0;
-  const finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
+  // RELEVANCE CEILING, mirroring the capability ceiling on the contributor
+  // side. Six of seven investors scored an identical 42% against a healthcare
+  // venture, every one labelled 'Adjacent', because with no domain overlap the
+  // remaining signals are the same for everybody: same readiness, same risks,
+  // same geography. A food-service investor and a cybersecurity investor are
+  // not equally adjacent to a healthcare venture, and presenting them at the
+  // same score as a genuine match is misleading.
+  //
+  // Without either a domain match or real thesis alignment, the score is
+  // capped below the level that reads as a real fit. They still appear, and
+  // can still be approached, but they cannot masquerade as relevant.
+  const hasRelevance = domainFit > 0 || (typeof alignmentFit === 'number' && alignmentFit >= 0.5);
+  const RELEVANCE_CEILING = 0.34;
+
+  let finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
+  if (!hasRelevance) finalScore = Math.min(finalScore, RELEVANCE_CEILING);
   breakdown.feedbackAdjustment = feedbackAdjustment;
 
   return { score: Math.round(finalScore * 100) / 100, breakdown, domainOverlap };
