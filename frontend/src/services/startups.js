@@ -94,3 +94,6 @@ export const commitToSpark = (id) => apiFetch(`/sparks/${id}/commit`, { method: 
 // Phase 5: Pitch Mode — founder editing and sending their pitch.
 export const savePitchContent = (startupId, fields) => apiFetch(`/pitch/${startupId}/content`, { method: 'PATCH', body: JSON.stringify(fields) });
 export const sendPitch = (startupId, conversationId, note) => apiFetch(`/pitch/${startupId}/send`, { method: 'POST', body: JSON.stringify({ conversationId, note }) });
+
+// A founder finding investors — the inverse of deal flow.
+export const getInvestorsForStartup = (startupId) => apiFetch(`/investors/for-startup/${startupId}`);
