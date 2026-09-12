@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, Check, HelpCircle, Crosshair, Info } from 'lucide-react';
+import { Sparkles, Check, HelpCircle, Crosshair, Info, Globe, ExternalLink } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getCompetitorAnalysis, runCompetitorAnalysis } from '../services/startups.js';
+import { getCompetitorAnalysis, runCompetitorAnalysis, getCompetitorResearch, runCompetitorResearch } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
 
@@ -26,14 +26,20 @@ export default function CompetitorAnalysis() {
   const [running, setRunning] = useState(false);
   const [startup, setStartup] = useState(null);
   const [analysis, setAnalysis] = useState(null);
+  const [research, setResearch] = useState(null);
+  const [researching, setResearching] = useState(false);
 
   useEffect(() => {
     async function load() {
       if (startupLoading) return;
       if (activeStartup) {
         setStartup(activeStartup);
-        const res = await getCompetitorAnalysis(activeStartup.id);
+        const [res, resr] = await Promise.all([
+          getCompetitorAnalysis(activeStartup.id),
+          getCompetitorResearch(activeStartup.id),
+        ]);
         if (res.ok && res.data.success && res.data.analyses.length > 0) setAnalysis(res.data.analyses[0]);
+        if (resr.ok && resr.data.success && resr.data.research) setResearch(resr.data.research);
       }
       setLoading(false);
     }
@@ -50,6 +56,25 @@ export default function CompetitorAnalysis() {
     showToast('Done. Worth checking these against reality.');
   }
 
+  async function handleResearch() {
+    if (!startup) { showToast('No venture yet. Describe your idea first.', 'error'); return; }
+    setResearching(true);
+    const { ok, data } = await runCompetitorResearch(startup.id);
+    setResearching(false);
+    if (!ok || !data.success) {
+      showToast(
+        data?.error === 'NO_RESULTS' ? 'Nothing came back from the web for this venture yet.'
+        : data?.error === 'NOTHING_TO_RESEARCH' ? 'Add a problem and solution first so there is something to search on.'
+        : data?.detail || 'Could not research right now. Try again.',
+        'error'
+      );
+      return;
+    }
+    setResearch(data.research);
+    const found = (data.research.researched_competitors || []).length;
+    showToast(found > 0 ? `Found ${found} real ${found === 1 ? 'company' : 'companies'} doing something similar.` : 'Nothing genuinely comparable came back. That is worth knowing too.');
+  }
+
   if (loading) {
     return (
       <Shell title="Who else is doing this">
@@ -60,6 +85,7 @@ export default function CompetitorAnalysis() {
     );
   }
 
+  const realCount = (research?.researched_competitors || []).length;
   const opportunities = analysis?.differentiation_opportunities || [];
   const questions = analysis?.positioning_questions || [];
 
@@ -69,17 +95,26 @@ export default function CompetitorAnalysis() {
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-            {analysis ? analysis.comparable_category : 'Not looked at yet'}
+            {realCount > 0 ? 'From the live web' : analysis ? analysis.comparable_category : 'Not looked at yet'}
           </p>
+          {/* Leads with what is REAL. The inference used to be the whole page,
+              so the headline described it. Now that actual named companies sit
+              above it, the headline should describe those instead. */}
           <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
-            {analysis
-              ? `${questions.length} thing${questions.length === 1 ? '' : 's'} to go and find out.`
-              : 'Nobody has looked at where you sit yet.'}
+            {realCount > 0
+              ? `${realCount} ${realCount === 1 ? 'company is' : 'companies are'} already working on this.`
+              : research
+                ? 'Nobody comparable came back from the web.'
+                : analysis
+                  ? `${questions.length} thing${questions.length === 1 ? '' : 's'} to go and find out.`
+                  : 'Nobody has looked at where you sit yet.'}
           </h1>
           <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
-            {analysis
-              ? 'This is reasoning from what your venture says it does. It is a starting point for research, not research.'
-              : 'CapForge reads your problem and solution and works out which category you land in, where you could differentiate, and what you should go and verify.'}
+            {realCount > 0
+              ? 'Found on the live web, not recalled from memory. Every one links to where it was found, so you can check it yourself.'
+              : research
+                ? 'That can mean the space is genuinely open, or that the problem is described in words the web does not use.'
+                : 'CapForge searches the live web for who is already solving this, then works out where the gap actually is.'}
           </p>
         </div>
         <button
@@ -90,6 +125,82 @@ export default function CompetitorAnalysis() {
           <Sparkles size={14} className={running ? 'animate-pulse' : ''} />
           {running ? 'Working it out…' : analysis ? 'Run it again' : 'Work out my position'}
         </button>
+      </div>
+
+      {/* REAL COMPANIES, above the inference. Named, linked, and every one
+          verified against the search results that actually came back. */}
+      <div className="mb-6">
+        <div className="flex items-baseline justify-between mb-3">
+          <div>
+            <h2 className="text-[15px] font-semibold text-ink-900">Who is actually doing this</h2>
+            <p className="text-[13px] text-ink-500 mt-0.5">Real companies, found on the live web. Every one links to where it was found.</p>
+          </div>
+          <button
+            onClick={handleResearch}
+            disabled={researching || !startup}
+            className="shrink-0 flex items-center gap-2 text-[13px] font-medium text-violet-700 hover:text-violet-600 transition-colors disabled:opacity-50"
+          >
+            <Globe size={14} className={researching ? 'animate-pulse' : ''} />
+            {researching ? 'Searching the web…' : research ? 'Search again' : 'Find real competitors'}
+          </button>
+        </div>
+
+        {!research ? (
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card py-12 text-center">
+            <Globe size={20} className="text-ink-300 mx-auto mb-3" />
+            <p className="text-[14.5px] text-ink-700 mb-1">Nobody has looked yet.</p>
+            <p className="text-[13px] text-ink-500 max-w-md mx-auto">
+              This searches the live web for companies solving the same problem, then names them. Nothing is recalled from memory: if a company is not in the results, it does not appear.
+            </p>
+          </div>
+        ) : (research.researched_competitors || []).length === 0 ? (
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
+            <p className="text-[14.5px] font-semibold text-ink-950 mb-1.5">Nothing genuinely comparable came back.</p>
+            <p className="text-[13.5px] text-ink-700 leading-relaxed">
+              {research.market_gap || 'The search did not surface companies doing this. That can mean the space is genuinely open, or that the problem is described in language the web does not use. Both are worth knowing.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {(research.researched_competitors || []).map((c, i) => (
+                <motion.div
+                  key={c.url || c.name}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: Math.min(i * 0.05, 0.25) }}
+                  className="bg-surface rounded-xl border border-surface-border shadow-card p-6"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <p className="text-[16px] font-semibold text-ink-950">{c.name}</p>
+                    {c.url && (
+                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-ink-300 hover:text-violet-600 transition-colors shrink-0" title="Where this was found">
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
+                  </div>
+                  {c.what_they_do && <p className="text-[13.5px] text-ink-700 leading-relaxed mb-3">{c.what_they_do}</p>}
+                  {c.how_they_differ && (
+                    <div className="pt-3 border-t border-surface-border">
+                      <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-300 mb-1">Against you</p>
+                      <p className="text-[13px] text-ink-700 leading-relaxed">{c.how_they_differ}</p>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+
+            {research.market_gap && (
+              <div className="relative overflow-hidden rounded-xl bg-ink-950 p-7">
+                <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, #7C5CFC 0%, transparent 55%), radial-gradient(circle at 85% 80%, #1F5D52 0%, transparent 55%)' }} />
+                <div className="relative">
+                  <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-mint-500 mb-3">What none of them are doing</p>
+                  <p className="text-[15.5px] text-white/85 leading-relaxed max-w-2xl">{research.market_gap}</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {!analysis ? (
@@ -127,7 +238,7 @@ export default function CompetitorAnalysis() {
             <div className="mb-5">
               <div className="flex items-baseline justify-between mb-3">
                 <div>
-                  <h2 className="text-[15px] font-semibold text-ink-900">Go and find this out</h2>
+                  <h2 className="text-[15px] font-semibold text-ink-900">Questions worth answering yourself</h2>
                   <p className="text-[13px] text-ink-500 mt-0.5">Answering these is worth more than anything on this page.</p>
                 </div>
               </div>

@@ -28,23 +28,37 @@ const INSIGHT_CACHE_HOURS = 72;  // the personal read changes even less often
  * not 2) and topic 'news' with a recent time_range, because stale results
  * would defeat the entire purpose of this feature.
  */
-async function tavilySearch(query) {
+async function tavilySearch(query, opts = {}) {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return { success: false, error: 'TAVILY_NOT_CONFIGURED' };
 
+  // Defaults are exactly the previous hardcoded values, so every existing
+  // Signal caller behaves identically. Competitor research overrides them: a
+  // company existing is not news, and a one-month window would miss every
+  // established player in a market.
+  const {
+    topic = 'news',
+    timeRange = 'month',
+    maxResults = 6,
+  } = opts;
+
   try {
+    const body = {
+      query,
+      search_depth: 'basic',   // 1 credit, not 2
+      topic,
+      max_results: maxResults,
+      include_answer: false,   // we synthesize ourselves, personalized
+      include_raw_content: false,
+    };
+    // Tavily rejects time_range on the general topic, so it is only sent
+    // when it genuinely applies.
+    if (timeRange) body.time_range = timeRange;
+
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        query,
-        search_depth: 'basic',   // 1 credit, not 2
-        topic: 'news',
-        time_range: 'month',     // genuinely current, not archival
-        max_results: 6,
-        include_answer: false,   // we synthesize ourselves, personalized
-        include_raw_content: false,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
