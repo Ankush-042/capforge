@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { AlertTriangle, ArrowUpRight, Users, Presentation } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import VentureAssistant from '../components/VentureAssistant.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
 import { getVentureSummary } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
@@ -262,6 +263,7 @@ export default function Investability() {
           </div>
         </div>
       )}
+      <VentureAssistant startupId={activeStartup?.id} startupName={summary?.name} />
     </Shell>
   );
 }

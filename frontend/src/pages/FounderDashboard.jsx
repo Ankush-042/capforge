@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import Shell from '../components/Shell.jsx';
+import VentureAssistant from '../components/VentureAssistant.jsx';
 import RoleCoverageGrid from '../components/charts/RoleCoverageGrid.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useMyIdentity } from '../context/MyIdentityContext.jsx';
@@ -232,6 +233,7 @@ export default function FounderDashboard() {
             </div>
           )}
       </div>
+      <VentureAssistant startupId={startup?.id} startupName={startup?.name} />
     </Shell>
   );
 }
