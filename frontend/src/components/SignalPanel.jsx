@@ -10,7 +10,7 @@ import { RefreshCw, ExternalLink, Radio } from 'lucide-react';
  * clickable on purpose: this is the one surface in the app where the user
  * should be able to check the machine's work directly.
  */
-export default function SignalPanel({ endpoint }) {
+export default function SignalPanel({ endpoint, subtitle }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [signal, setSignal] = useState(null);
@@ -54,6 +54,10 @@ export default function SignalPanel({ endpoint }) {
       TAVILY_NOT_CONFIGURED: 'Market intelligence needs a Tavily API key set as TAVILY_API_KEY.',
       NO_THESIS_DOMAINS: 'Add domains to your investment thesis to get market intelligence for your space.',
       NO_INVESTOR_PROFILE: 'Complete your investor profile to get market intelligence.',
+      // Contributor-side states. Without these the panel would fall through to
+      // a generic message that tells someone nothing about what to do.
+      NO_PREFERRED_DOMAINS: 'Pick the fields you care about on your profile, and this will tell you what is actually happening in them.',
+      NO_CONTRIBUTOR_PROFILE: 'Complete your profile and this will show you what is moving in the fields you care about.',
       SYNTHESIS_FAILED: 'Could not synthesize the market read just now. Try again shortly.',
       SEARCH_FAILED: 'The market search did not return anything usable just now.',
     };
@@ -100,7 +104,7 @@ export default function SignalPanel({ endpoint }) {
           {signal.headline}
         </h3>
         <p className="text-[13px] text-white/40 mb-5">
-          Current industry trends, pulled from the live web in the last month. Not about your venture.
+          {subtitle || 'Current industry trends, pulled from the live web in the last month. Not about your venture.'}
         </p>
 
         <div className="text-[15px] text-white/70 leading-relaxed space-y-3">
