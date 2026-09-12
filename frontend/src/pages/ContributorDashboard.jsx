@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
+import SignalPanel from '../components/SignalPanel.jsx';
 import { getMyProfile, getMyRecommendationsAsContributor, getMyConversations } from '../services/startups.js';
 
 /** Real fix applied consistently now, everywhere this data is shown: group by startup, don't count/list raw gap-matches as if each were a separate opportunity. */
@@ -100,6 +101,11 @@ export default function ContributorDashboard() {
           caption={connections.length === 0 ? 'None started' : 'Founders you are talking to'}
         />
       </div>
+
+      {/* Market context before the options. Someone deciding where to spend
+          years should see what is happening in the field before they see
+          which venture scored highest in it. */}
+      <div className="mb-8"><SignalPanel endpoint="/signal/contributor" subtitle="What is actually happening in the fields you care about, pulled from the live web in the last month." /></div>
 
       {/* THE BEST OPTION — full width, dark, the way the founder home treats
           its critical role. This is the decision the page exists for. */}

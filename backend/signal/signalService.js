@@ -259,4 +259,102 @@ ${context}`,
   return { success: true, signal: saved.rows[0], cached: false };
 }
 
-module.exports = { getSignalForStartup, getSignalForInvestor, tavilySearch };
+
+/**
+ * What is moving in the fields a contributor cares about.
+ *
+ * Founders and investors both had market intelligence. Contributors had
+ * none, which is backwards: a contributor is the one being asked to commit
+ * years of their life to a space, usually with less information about that
+ * space than either of the other two parties.
+ *
+ * The angle is deliberately different from the investor version. An investor
+ * asks "should I deploy capital here". A contributor asks "is this worth my
+ * years, is this field growing or contracting, and are the skills I have
+ * becoming more or less valuable here". Same search machinery, different
+ * question.
+ *
+ * subject_type is a plain TEXT column with no CHECK constraint, verified in
+ * migration 024, so CONTRIBUTOR needs no migration.
+ */
+async function getSignalForContributor(userId, { force = false } = {}) {
+  if (!force) {
+    const cached = await pool.query(
+      `SELECT * FROM signal_insights WHERE subject_type = 'CONTRIBUTOR' AND subject_id = $1 AND expires_at > now()`,
+      [userId]
+    );
+    if (cached.rows.length > 0) return { success: true, signal: cached.rows[0], cached: true };
+  }
+
+  const profileRes = await pool.query(
+    `SELECT cp.preferred_domains, cp.preferred_stage, cp.looking_for, p.headline, p.skills
+     FROM contributor_profiles cp JOIN profiles p ON p.id = cp.profile_id
+     WHERE p.user_id = $1`,
+    [userId]
+  );
+  if (profileRes.rows.length === 0) return { success: false, error: 'NO_CONTRIBUTOR_PROFILE' };
+  const c = profileRes.rows[0];
+
+  const primaryDomain = (c.preferred_domains || [])[0];
+  if (!primaryDomain) return { success: false, error: 'NO_PREFERRED_DOMAINS' };
+  const primaryStage = (c.preferred_stage || [])[0];
+
+  // Shared cache with founders and investors. A domain+stage search is the
+  // same search whoever asked for it, so a contributor interested in
+  // healthtech costs nothing if a founder already pulled it today.
+  const search = await getMarketSearch(primaryDomain, primaryStage);
+  if (!search.success) return search;
+
+  const sources = extractSources(search.results);
+  const context = (search.results || []).slice(0, 6)
+    .map((r, i) => `[${i + 1}] ${r.title}\n${(r.content || '').slice(0, 500)}`)
+    .join('\n\n');
+
+  const ai = await callGroq(GROQ_MODEL, [
+    {
+      role: 'system',
+      content: `You are writing for one specific person deciding whether to commit years of their working life to an early-stage venture in this field. Ground every claim in the provided search results only. Never invent statistics, company names or funding figures that are not in the sources.
+
+Return ONLY valid JSON: {"headline": "...", "body": "..."}
+- headline: one sharp sentence on what is actually happening in this field right now. Under 110 characters.
+- body: 2 to 3 short paragraphs, plain prose, no markdown, no bullets. Speak to whether this field is growing or contracting, what that means for someone joining a small team in it, and whether their kind of work is becoming more or less needed here. Be honest about risk. This person is choosing where to spend years, not what to buy, so do not sell them anything.`,
+    },
+    {
+      role: 'user',
+      content: `THE PERSON
+ROLE: ${c.headline || 'not stated'}
+SKILLS: ${(c.skills || []).join(', ') || 'not stated'}
+FIELDS THEY CARE ABOUT: ${(c.preferred_domains || []).join(', ')}
+STAGES THEY WANT: ${(c.preferred_stage || []).join(', ') || 'unspecified'}
+WHAT THEY SAID THEY WANT: ${c.looking_for || 'not stated'}
+
+CURRENT MARKET SEARCH RESULTS:
+${context}`,
+    },
+  ], { temperature: 0.4, max_tokens: 900 });
+
+  if (!ai.success) return { success: false, error: 'SYNTHESIS_FAILED', detail: ai.detail || ai.error };
+
+  let parsed;
+  try {
+    parsed = JSON.parse(ai.content.replace(/```json|```/g, '').trim());
+  } catch {
+    return { success: false, error: 'SYNTHESIS_UNPARSEABLE' };
+  }
+  if (!parsed.headline || !parsed.body) return { success: false, error: 'SYNTHESIS_INCOMPLETE' };
+
+  const saved = await pool.query(
+    `INSERT INTO signal_insights (subject_type, subject_id, headline, body, sources, based_on, expires_at)
+     VALUES ('CONTRIBUTOR', $1, $2, $3, $4, $5, now() + interval '${INSIGHT_CACHE_HOURS} hours')
+     ON CONFLICT (subject_type, subject_id) DO UPDATE
+       SET headline = EXCLUDED.headline, body = EXCLUDED.body, sources = EXCLUDED.sources,
+           based_on = EXCLUDED.based_on, generated_at = now(), expires_at = EXCLUDED.expires_at
+     RETURNING *`,
+    [userId, parsed.headline, parsed.body, JSON.stringify(sources), primaryDomain]
+  );
+
+  return { success: true, signal: saved.rows[0], cached: false };
+}
+
+module.exports = {
+  getSignalForContributor, getSignalForStartup, getSignalForInvestor, tavilySearch };
