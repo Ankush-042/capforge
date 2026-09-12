@@ -38,6 +38,11 @@ async function getAlignmentScoresForStartups(userId, startupIds) {
   return map;
 }
 
+// The readiness an investor requires before a venture is visible to them.
+// Was declared inside rankStartupsForInvestor, which meant the inverse
+// founder-facing ranking could not see it. One definition, both directions.
+const MIN_READINESS_FOR_INVESTOR_VISIBILITY = 35;
+
 const WEIGHTS = {
   domainFit: 0.24,
   stageFit: 0.16,
@@ -189,7 +194,6 @@ async function rankStartupsForInvestor(investorUserId) {
   // noise, not curation. A venture must cross a real readiness bar to
   // be investor-facing at all, matching how real selective platforms
   // actually work: not everyone gets shown, not just everyone ranked.
-  const MIN_READINESS_FOR_INVESTOR_VISIBILITY = 35;
 
   // One cached lookup for every venture at once, before the loop. Reading
   // cache only: ranking never calls the LLM, so a rate limit can never slow
@@ -261,6 +265,117 @@ async function rankStartupsForInvestor(investorUserId) {
   }
 }
 
+
+/**
+ * The inverse: rank INVESTORS for one founder's venture.
+ *
+ * A founder could not find investors at all. Investors browsed deal flow and
+ * reached out; a founder could only wait to be discovered. That is a real
+ * hole, and it is the one direction of the flow that was never built.
+ *
+ * Deliberately reuses scoreStartupForInvestor rather than writing a second
+ * scoring function. The fit is symmetric: an investor who suits this venture
+ * is a venture that suits their thesis, computed from the same thesis, the
+ * same domains, the same readiness and the same risks. Two implementations of
+ * one rule is exactly how the investor engine silently fell behind the
+ * contributor engine in the first place, and I am not repeating it.
+ *
+ * Alignment comes through unchanged too, since alignment_scores is keyed on
+ * (user_id, startup_id) and both are in hand here.
+ *
+ * NOT gated on readiness. An investor only SEES ventures at 35+, but a
+ * founder below that should still be able to see who they are working
+ * toward. Hiding it would be less useful and less honest than showing it with
+ * the gap stated plainly, which the page does.
+ */
+async function rankInvestorsForStartup(startupId, founderUserId) {
+  const startupRes = await pool.query(`SELECT * FROM startups WHERE id = $1`, [startupId]);
+  if (startupRes.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
+  const startup = startupRes.rows[0];
+
+  // Same ownership rule as everywhere else, including the co-founder fix: a
+  // co-founder who joined at formation is a real owner of this venture.
+  let isOwner = startup.founder_id === founderUserId;
+  if (!isOwner) {
+    const co = await pool.query(
+      `SELECT 1 FROM startup_team_members WHERE startup_id = $1 AND user_id = $2 AND is_founder = true`,
+      [startupId, founderUserId]
+    );
+    isOwner = co.rows.length > 0;
+  }
+  if (!isOwner) return { success: false, error: 'NOT_AUTHORIZED' };
+
+  const [readinessRes, risksRes, investorsRes] = await Promise.all([
+    pool.query(
+      `SELECT * FROM readiness_assessments WHERE startup_id = $1 ORDER BY generated_at DESC LIMIT 1`,
+      [startupId]
+    ),
+    pool.query(`SELECT * FROM risks WHERE startup_id = $1`, [startupId]),
+    pool.query(
+      `SELECT p.user_id, p.display_name, p.headline, p.bio,
+              ip.thesis, ip.preferred_domains, ip.preferred_stages,
+              ip.ticket_min, ip.ticket_max, ip.investment_type
+       FROM investor_profiles ip
+       JOIN profiles p ON p.id = ip.profile_id
+       JOIN users u ON u.id = p.user_id
+       WHERE u.primary_role = 'INVESTOR' AND p.visibility = 'DISCOVERABLE'`
+    ),
+  ]);
+
+  const readiness = readinessRes.rows[0] || null;
+  const risks = risksRes.rows;
+
+  // One cached alignment lookup for every investor at once. Cache-only, so
+  // ranking never calls the LLM and a rate limit cannot break this page.
+  let alignmentByUser = {};
+  try {
+    const ids = investorsRes.rows.map(r => r.user_id);
+    if (ids.length > 0) {
+      const rows = await pool.query(
+        `SELECT user_id, score, reason FROM alignment_scores
+         WHERE startup_id = $1 AND user_id = ANY($2::uuid[])`,
+        [startupId, ids]
+      );
+      for (const r of rows.rows) {
+        alignmentByUser[r.user_id] = { score: parseFloat(r.score), reason: r.reason };
+      }
+    }
+  } catch (err) {
+    console.error('Alignment lookup failed in investor search (non-fatal):', err.message);
+  }
+
+  const ranked = [];
+  for (const inv of investorsRes.rows) {
+    const { score, breakdown, domainOverlap } = scoreStartupForInvestor(
+      inv, startup, readiness, risks, 0, alignmentByUser[inv.user_id] || null
+    );
+    const explanation = explainInvestorScore(breakdown, domainOverlap, risks);
+    ranked.push({
+      user_id: inv.user_id,
+      display_name: inv.display_name,
+      headline: inv.headline,
+      thesis: inv.thesis,
+      preferred_domains: inv.preferred_domains,
+      preferred_stages: inv.preferred_stages,
+      ticket_min: inv.ticket_min,
+      ticket_max: inv.ticket_max,
+      investment_type: inv.investment_type,
+      score,
+      breakdown,
+      explanation,
+    });
+  }
+
+  ranked.sort((a, b) => b.score - a.score);
+
+  return {
+    success: true,
+    investors: ranked,
+    readiness: readiness ? Math.round(parseFloat(readiness.overall_score)) : null,
+    investorBar: MIN_READINESS_FOR_INVESTOR_VISIBILITY,
+  };
+}
+
 async function getInvestorRecommendations(investorUserId) {
   const result = await pool.query(
     `SELECT r.*, s.name as startup_name, s.problem, s.stage, s.domain
@@ -272,4 +387,4 @@ async function getInvestorRecommendations(investorUserId) {
   return { success: true, recommendations: result.rows };
 }
 
-module.exports = { scoreStartupForInvestor, explainInvestorScore, rankStartupsForInvestor, getInvestorRecommendations };
+module.exports = { rankInvestorsForStartup, scoreStartupForInvestor, explainInvestorScore, rankStartupsForInvestor, getInvestorRecommendations };

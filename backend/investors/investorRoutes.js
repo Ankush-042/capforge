@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth, requireRole } = require('../auth/authMiddleware');
-const { rankStartupsForInvestor, getInvestorRecommendations } = require('./investorMatchingService');
+const { rankStartupsForInvestor, getInvestorRecommendations, rankInvestorsForStartup } = require('./investorMatchingService');
 const { getPortfolioAnalysis } = require('./portfolioService');
 const { sendInvestorConnectionRequest } = require('../connections/connectionService');
 
@@ -28,6 +28,15 @@ router.post('/connections', requireAuth, requireRole('INVESTOR'), async (req, re
 
 router.get('/portfolio', requireAuth, requireRole('INVESTOR'), async (req, res) => {
   res.json(await getPortfolioAnalysis(req.user.userId));
+});
+
+// A founder finding investors, which is the one direction of the flow that
+// was never built. Investors browsed and reached out; founders could only
+// wait to be found.
+router.get('/for-startup/:id', requireAuth, async (req, res) => {
+  const result = await rankInvestorsForStartup(req.params.id, req.user.userId);
+  if (!result.success) return res.status(result.error === 'NOT_AUTHORIZED' ? 403 : 404).json(result);
+  res.json(result);
 });
 
 module.exports = router;

@@ -12,6 +12,7 @@ import SparkFeed from './pages/SparkFeed.jsx';
 import SparkCompose from './pages/SparkCompose.jsx';
 import SparkDetail from './pages/SparkDetail.jsx';
 import PitchMode from './pages/PitchMode.jsx';
+import FindInvestors from './pages/FindInvestors.jsx';
 import PitchEditor from './pages/PitchEditor.jsx';
 import InvestorOnboarding from './pages/InvestorOnboarding.jsx';
 
@@ -135,6 +136,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/contributor/offers" element={<ProtectedRoute><MultiOfferComparison /></ProtectedRoute>} />
         <Route path="/app/contributor/learning" element={<ProtectedRoute><LearningRecommendations /></ProtectedRoute>} />
         <Route path="/app/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+        <Route path="/app/find-investors" element={<ProtectedRoute><FindInvestors /></ProtectedRoute>} />
         <Route path="/app/investability" element={<ProtectedRoute><Investability /></ProtectedRoute>} />
         <Route path="/app/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
         <Route path="/app/inbox/:id" element={<ProtectedRoute><ConversationThread /></ProtectedRoute>} />
