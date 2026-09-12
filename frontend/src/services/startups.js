@@ -97,3 +97,8 @@ export const sendPitch = (startupId, conversationId, note) => apiFetch(`/pitch/$
 
 // A founder finding investors — the inverse of deal flow.
 export const getInvestorsForStartup = (startupId) => apiFetch(`/investors/for-startup/${startupId}`);
+
+// The feedback system has existed since migration 007 and was wired into both
+// matching engines, but had no UI, so nothing could ever trigger it.
+export const recordRecommendationFeedback = (recommendationId, action) =>
+  apiFetch(`/recommendations/${recommendationId}/feedback`, { method: 'POST', body: JSON.stringify({ action }) });

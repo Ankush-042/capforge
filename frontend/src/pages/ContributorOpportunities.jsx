@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { MessageSquare, Check, AlertTriangle, Scale, ArrowUpRight } from 'lucide-react';
+import { MessageSquare, Check, AlertTriangle, Scale, ArrowUpRight, X } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { getMyRecommendationsAsContributor, startConversation } from '../services/startups.js';
+import { getMyRecommendationsAsContributor, startConversation, recordRecommendationFeedback } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 /**
@@ -44,7 +44,7 @@ function fitTone(score) {
   return { fg: '#6E7079', bg: '#F4F4F7', label: 'Worth a look' };
 }
 
-function VentureCard({ g, onMessage, index }) {
+function VentureCard({ g, onMessage, onDismiss, index }) {
   const top = g.roles[0];
   const score = parseFloat(top.score) || 0;
   const pct = Math.round(score * 100);
@@ -120,12 +120,23 @@ function VentureCard({ g, onMessage, index }) {
       )}
 
       <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
-        <Link
-          to={`/app/startups/${g.startup_id}`}
-          className="flex items-center gap-1 text-[13px] font-medium text-ink-500 hover:text-violet-700 transition-colors"
-        >
-          See the venture <ArrowUpRight size={13} />
-        </Link>
+        <div className="flex items-center gap-4 min-w-0">
+          <Link
+            to={`/app/startups/${g.startup_id}`}
+            className="flex items-center gap-1 text-[13px] font-medium text-ink-500 hover:text-violet-700 transition-colors shrink-0"
+          >
+            See the venture <ArrowUpRight size={13} />
+          </Link>
+          {/* Tells the engine this kind of thing is not for you. It hides this
+              one and nudges the whole category down in future rankings. */}
+          <button
+            onClick={() => onDismiss(top)}
+            title="Hides this and shows you less like it"
+            className="flex items-center gap-1 text-[13px] text-ink-300 hover:text-ink-700 transition-colors shrink-0"
+          >
+            <X size={13} /> Not for me
+          </button>
+        </div>
         <button
           onClick={() => onMessage(top)}
           className="flex items-center gap-1.5 text-[13px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-4 py-2 rounded-full transition-colors"
@@ -149,6 +160,21 @@ export default function ContributorOpportunities() {
       setLoading(false);
     });
   }, []);
+
+  async function handleDismiss(r) {
+    // Optimistic: remove it immediately, because leaving a card you just
+    // dismissed sitting on screen makes the button feel broken. Restored if
+    // the write actually fails.
+    const before = recs;
+    setRecs(recs.filter((x) => x.startup_id !== r.startup_id));
+    const { ok, data } = await recordRecommendationFeedback(r.id, 'DISMISS');
+    if (!ok || !data.success) {
+      setRecs(before);
+      showToast(data?.error === 'NOT_AUTHORIZED' ? 'That is not yours to dismiss.' : 'Could not save that.', 'error');
+    } else {
+      showToast('Noted. You will see less like this.');
+    }
+  }
 
   async function handleMessage(r) {
     const { ok, data } = await startConversation(r.founder_id, { startupId: r.startup_id, gapId: r.source_gap_id });
@@ -218,7 +244,7 @@ export default function ContributorOpportunities() {
             )}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {grouped.map((g, i) => <VentureCard key={g.startup_id} g={g} onMessage={handleMessage} index={i} />)}
+            {grouped.map((g, i) => <VentureCard key={g.startup_id} g={g} onMessage={handleMessage} onDismiss={handleDismiss} index={i} />)}
           </div>
         </>
       )}
