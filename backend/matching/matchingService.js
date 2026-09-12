@@ -661,6 +661,11 @@ async function getMyRecommendationsAsContributor(userId) {
   // except a nonzero experienceFit — noise, not a real opportunity.
   const MIN_RELEVANCE_SCORE = 0.20;
 
+  // A contributor's own dismissals were recorded and then ignored on their
+  // own page. recordFeedback has always stored a DISMISS against the
+  // recommendation and adjusted their preference signals, but this query
+  // never looked at either, so pressing "not interested" changed nothing
+  // they could see. Anything they explicitly dismissed is now excluded.
   const result = await pool.query(
     `SELECT r.*, s.name as startup_name, s.domain, s.stage, s.founder_id, g.role as gap_role, g.reason as gap_reason
      FROM recommendations r
@@ -668,14 +673,40 @@ async function getMyRecommendationsAsContributor(userId) {
      JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR' AND r.status = 'ACTIVE'
        AND r.score >= $2 AND g.status != 'FILLED'
+       AND NOT EXISTS (
+         SELECT 1 FROM recommendation_feedback f
+         WHERE f.recommendation_id = r.id AND f.user_id = $1
+           AND f.action IN ('DISMISS', 'REJECT')
+       )
      ORDER BY r.score DESC LIMIT 20`,
     [userId, MIN_RELEVANCE_SCORE]
   );
-  const withNarrative = result.rows.map(r => ({
-    ...r,
-    causal_narrative: r.gap_role && r.gap_reason ? buildCausalNarrative({ role: r.gap_role, reason: r.gap_reason }, 'You', r.explanation) : null
-  }));
-  return { success: true, recommendations: withNarrative };
+
+  // Their own preference signals, applied to their own view. The feedback
+  // system already computed these and only the FOUNDER's copy was ever used,
+  // when ranking candidates. A contributor saying "not this kind of thing"
+  // nudges the whole category down for them, which is the point of recording
+  // it at all. Bounded to 0.30 either way inside getPreferenceAdjustment, so
+  // it can shade an order but never override real evidence.
+  const { getPreferenceAdjustment } = require('../feedback/feedbackService');
+  const adjusted = [];
+  for (const r of result.rows) {
+    const signalKeys = [
+      `stage:${(r.stage || '').toLowerCase()}`,
+      ...(r.domain || []).map(d => `domain:${String(d).toLowerCase()}`),
+    ];
+    const adj = await getPreferenceAdjustment(userId, signalKeys);
+    adjusted.push({
+      ...r,
+      score: Math.max(0, Math.min(1, (parseFloat(r.score) || 0) + adj)),
+      preference_adjustment: adj,
+      causal_narrative: r.gap_role && r.gap_reason
+        ? buildCausalNarrative({ role: r.gap_role, reason: r.gap_reason }, 'You', r.explanation)
+        : null,
+    });
+  }
+  adjusted.sort((a, b) => b.score - a.score);
+  return { success: true, recommendations: adjusted };
 }
 
 

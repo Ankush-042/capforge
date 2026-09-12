@@ -24,12 +24,27 @@ const ADJUSTMENT_BOUND = 0.30; // hard cap, either direction — the actual enfo
  * For STARTUP-type recs (a venture suggested to an investor), the
  * investor IS target_user_id and acts on their own recommendation.
  */
-async function getAuthorizedActor(recommendation) {
+/**
+ * Who may give feedback on a recommendation.
+ *
+ * A CONTRIBUTOR recommendation has TWO legitimate actors, and this returned
+ * only one. The founder acts on it meaning "this candidate is not right for
+ * my role". The contributor sees the exact same row on their own
+ * Opportunities page and acts on it meaning "this venture is not right for
+ * me". Both are real, and returning only the founder meant a contributor
+ * dismissing anything got NOT_AUTHORIZED every time.
+ *
+ * recordFeedback already attributes the preference signal to whoever acted,
+ * so the founder's dismissal shapes the founder's future rankings and the
+ * contributor's shapes theirs. Nothing crosses over.
+ */
+async function getAuthorizedActors(recommendation) {
   if (recommendation.recommendation_type === 'CONTRIBUTOR') {
     const r = await pool.query('SELECT founder_id FROM startups WHERE id = $1', [recommendation.startup_id]);
-    return r.rows[0]?.founder_id;
+    return [r.rows[0]?.founder_id, recommendation.target_user_id].filter(Boolean);
   }
-  return recommendation.target_user_id; // STARTUP type: investor acts on their own feed
+  // STARTUP type: the investor acts on their own feed.
+  return [recommendation.target_user_id].filter(Boolean);
 }
 
 async function recordFeedback(actingUserId, recommendationId, action) {
@@ -42,8 +57,8 @@ async function recordFeedback(actingUserId, recommendationId, action) {
   if (recResult.rows.length === 0) return { success: false, error: 'RECOMMENDATION_NOT_FOUND' };
   const recommendation = recResult.rows[0];
 
-  const authorizedActor = await getAuthorizedActor(recommendation);
-  if (authorizedActor !== actingUserId) {
+  const authorizedActors = await getAuthorizedActors(recommendation);
+  if (!authorizedActors.includes(actingUserId)) {
     return { success: false, error: 'NOT_AUTHORIZED' };
   }
 
