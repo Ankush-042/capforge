@@ -196,8 +196,19 @@ function mean(xs) {
     const startup = { id: g.s_id, name: g.s_name, domain: g.s_domain, stage: g.s_stage, founder_id: g.s_founder_id };
 
     // THE REAL ENGINE, called exactly as the app calls it.
+    // The REAL pipeline is scoreCandidate PLUS the evidence filter that
+    // rankCandidatesForGap applies at line 562: a candidate needs genuine
+    // skill overlap, or semantic similarity of at least 0.5, to be shown at
+    // all. The first version of this harness called the scorer directly and
+    // skipped that filter, which measured raw scores rather than what a
+    // founder actually sees, and reported 24 of 39 candidates shown per role
+    // when the real app shows a fraction of that.
     const engineScored = candidates
-      .map((c) => ({ h: c.headline, s: scoreCandidate(g, startup, c, 0).score }))
+      .map((c) => {
+        const r = scoreCandidate(g, startup, c, 0);
+        return { h: c.headline, s: r.score, overlap: r.overlap, breakdown: r.breakdown };
+      })
+      .filter((r) => r.overlap.length > 0 || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
       .sort((a, b) => b.s - a.s);
 
     const naiveScored = candidates
