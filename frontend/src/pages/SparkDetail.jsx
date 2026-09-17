@@ -79,6 +79,40 @@ export default function SparkDetail() {
         <Link to="/app/sparks" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 transition-colors mb-6">
           <ArrowLeft size={15} /> Back to sparks
         </Link>
+
+      {/* WHAT HAPPENED TO THIS SPARK, for its author only.
+          A founder posting into silence could not tell whether nobody saw it
+          or fifty people saw it and scrolled past. Those are different
+          problems: the first is distribution, the second is description. This
+          says which one it is, in plain terms, without lecturing them about
+          their own idea. */}
+      {isAuthor && data.reach && (
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6 mb-5">
+          <div className="flex items-center gap-8 mb-3">
+            <div>
+              <p className="text-[26px] font-bold text-ink-950 leading-none tabular-nums">{data.reach.people}</p>
+              <p className="text-[12px] text-ink-500 mt-1">{data.reach.people === 1 ? 'person has read it' : 'people have read it'}</p>
+            </div>
+            <div className="h-9 w-px bg-surface-border" />
+            <div>
+              <p className="text-[26px] font-bold leading-none tabular-nums" style={{ color: data.reach.resonated > 0 ? '#3FB081' : '#3E4047' }}>
+                {data.reach.resonated}
+              </p>
+              <p className="text-[12px] text-ink-500 mt-1">said they want in</p>
+            </div>
+          </div>
+          <p className="text-[13.5px] text-ink-700 leading-relaxed">
+            {data.reach.state === 'UNSEEN'
+              ? 'Nobody has opened it yet. That is a reach problem, not a writing problem, and it usually just means it is early.'
+              : data.reach.state === 'EARLY'
+                ? 'Early days. Not enough people have read it yet to tell you anything either way.'
+                : data.reach.state === 'LANDING'
+                  ? 'It is landing. Someone read this and wanted in, which is the whole point.'
+                  : 'People are reading it and not responding. That points at how it is written rather than who is seeing it: usually the problem it solves is not clear enough yet.'}
+          </p>
+        </div>
+      )}
+
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
           <p className="text-[15px] text-ink-700 mb-1">This idea is no longer here.</p>
           <p className="text-[13px] text-ink-500">It may have become a venture, or the person who shared it removed it.</p>

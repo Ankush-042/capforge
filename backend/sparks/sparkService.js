@@ -34,6 +34,59 @@ async function createSpark(userId, { title, theIdea, whyMe, lookingFor, tags }) 
  * vision-first browsing, not skill-matched browsing. Ordering is recency and
  * genuine activity, so a raw idea posted today is as visible as a polished one.
  */
+
+/**
+ * Order sparks by what is likely to matter to this person.
+ *
+ * DELIBERATELY NOT A SCORE SHOWN TO ANYONE. Sparks were designed vision-first:
+ * you read an idea and decide for yourself whether it lands, rather than being
+ * told it is a 73% match. That is what separates this from a job board, and
+ * showing a number here would undo it.
+ *
+ * So relevance decides ORDER only. It never leaves the server as a percentage,
+ * and the feed still reads as browsing rather than ranking.
+ *
+ * Deterministic on purpose: no LLM call, no embedding lookup, nothing that can
+ * rate limit or fail. Opening the feed must never depend on an AI being up.
+ */
+function sparkRelevance(spark, viewer) {
+  if (!viewer) return 0;
+  let score = 0;
+
+  const { domainsMatch } = require('../matching/matchingService');
+
+  // The fields the founder wrote about who they hope finds this, against what
+  // this person actually does and cares about.
+  const tags = (spark.tags || []).map(t => String(t).toLowerCase().trim());
+  const domains = (viewer.preferred_domains || []).map(d => String(d).toLowerCase().trim());
+  for (const t of tags) {
+    if (domains.some(d => domainsMatch(d, t))) { score += 3; break; }
+  }
+
+  // "looking_for" on a spark is the founder describing the person they hope
+  // reads it. Matching that against the viewer's headline and skills is the
+  // most direct signal available.
+  const lookingFor = String(spark.looking_for || '').toLowerCase();
+  if (lookingFor) {
+    const headline = String(viewer.headline || '').toLowerCase();
+    const headlineWords = headline.split(/[\s/,-]+/).filter(w => w.length > 3);
+    if (headlineWords.some(w => lookingFor.includes(w))) score += 3;
+
+    const skills = (viewer.skills || []).map(sk => String(sk).toLowerCase());
+    const hit = skills.filter(sk => sk.length > 3 && lookingFor.includes(sk)).length;
+    score += Math.min(hit, 3);
+  }
+
+  // The idea itself against the fields they care about, weaker than an
+  // explicit tag match but real.
+  const idea = `${spark.title || ''} ${spark.the_idea || ''}`.toLowerCase();
+  for (const d of domains) {
+    if (d.length > 3 && idea.includes(d)) { score += 1; break; }
+  }
+
+  return score;
+}
+
 async function listSparks({ viewerId, tag, limit = 40 } = {}) {
   const params = [];
   let where = `s.status IN ('OPEN', 'FORMING')`;
@@ -63,7 +116,63 @@ async function listSparks({ viewerId, tag, limit = 40 } = {}) {
      LIMIT ${limitParam}`,
     params
   );
+
+  // Relevance ordering, applied in the application rather than SQL because it
+  // reads the viewer's profile and the spark's free text together. Recency
+  // remains the tiebreaker, so a quiet day does not bury a good idea and an
+  // irrelevant new one does not lead.
+  //
+  // The relevance value is used to sort and then DISCARDED. It is never part
+  // of the response, because a spark feed that shows match percentages stops
+  // being a place you read ideas and becomes a job board.
+  if (viewerId) {
+    const v = await pool.query(
+      `SELECT p.headline, p.skills, cp.preferred_domains
+       FROM profiles p LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
+       WHERE p.user_id = $1`,
+      [viewerId]
+    );
+    const viewer = v.rows[0];
+    if (viewer) {
+      const withRelevance = result.rows.map(sp => ({ sp, r: sparkRelevance(sp, viewer) }));
+      // Only reorder when there is something to go on. With no signal at all,
+      // pure recency is the honest default rather than an arbitrary shuffle.
+      if (withRelevance.some(x => x.r > 0)) {
+        withRelevance.sort((a, b) => {
+          if (b.r !== a.r) return b.r - a.r;
+          return new Date(b.sp.created_at) - new Date(a.sp.created_at);
+        });
+        return { success: true, sparks: withRelevance.map(x => x.sp) };
+      }
+    }
+  }
+
   return { success: true, sparks: result.rows };
+}
+
+/**
+ * Record that someone read this spark.
+ *
+ * A founder posting into silence could not tell whether nobody saw it or fifty
+ * people saw it and scrolled past. Those are completely different problems: the
+ * first is a distribution problem, the second is a description problem. Without
+ * this, the product could not tell them apart, and neither could the founder.
+ *
+ * One row per person, so it counts people rather than refreshes. Never records
+ * the author reading their own, which would make the number a lie.
+ * Fire-and-forget: a failed view record must never break reading a spark.
+ */
+async function recordSparkView(sparkId, viewerId, authorId) {
+  if (!viewerId || viewerId === authorId) return;
+  try {
+    await pool.query(
+      `INSERT INTO spark_views (spark_id, viewer_id) VALUES ($1, $2)
+       ON CONFLICT (spark_id, viewer_id) DO NOTHING`,
+      [sparkId, viewerId]
+    );
+  } catch (err) {
+    console.error('Spark view record failed (non-fatal):', err.message);
+  }
 }
 
 async function getSpark(sparkId, viewerId) {
@@ -77,7 +186,13 @@ async function getSpark(sparkId, viewerId) {
   const spark = result.rows[0];
 
   if (viewerId && viewerId !== spark.author_id) {
+    // view_count already existed and increments on every open, so it counts
+    // refreshes rather than people. Kept, because something else may read it,
+    // but the number shown to a founder comes from spark_views, which is one
+    // row per person. Telling someone "40 views" when it was four people
+    // looking ten times is worse than telling them nothing.
     pool.query(`UPDATE sparks SET view_count = view_count + 1 WHERE id = $1`, [sparkId]).catch(() => {});
+    recordSparkView(sparkId, viewerId, spark.author_id);
   }
 
   // The author sees who resonated. Others only see their own resonance.
@@ -89,7 +204,30 @@ async function getSpark(sparkId, viewerId) {
     viewerId === spark.author_id ? [sparkId] : [sparkId, viewerId || null]
   );
 
-  return { success: true, spark, resonances: resonances.rows, isAuthor: viewerId === spark.author_id };
+  const isAuthor = viewerId === spark.author_id;
+
+  // What actually happened to this spark, for its author only. Silence with
+  // numbers is information. Silence without numbers is just despair.
+  let reach = null;
+  if (isAuthor) {
+    const v = await pool.query(`SELECT COUNT(*)::int AS n FROM spark_views WHERE spark_id = $1`, [sparkId]);
+    const people = v.rows[0].n;
+    const resonated = resonances.rows.length;
+    reach = {
+      people,
+      resonated,
+      // The honest diagnosis. These are genuinely different problems and the
+      // fix for each is different, so the product should not blur them.
+      // Not shown as advice, just as the plain shape of what happened.
+      state:
+        people === 0 ? 'UNSEEN'
+        : resonated > 0 ? 'LANDING'
+        : people < 5 ? 'EARLY'
+        : 'SEEN_NOT_LANDING',
+    };
+  }
+
+  return { success: true, spark, resonances: resonances.rows, isAuthor, reach };
 }
 
 /**

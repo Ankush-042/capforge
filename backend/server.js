@@ -73,6 +73,40 @@ app.use('/api', assistantRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+/**
+ * SERVE THE FRONTEND FROM THE SAME PROCESS.
+ *
+ * In development, Vite proxies /api to localhost:3000 and the two run
+ * separately. That proxy does not exist in production, so a deployed frontend
+ * calling '/api' would hit its own static host and get a 404 on every
+ * request.
+ *
+ * The usual fix is two deployments plus CORS plus an API-URL environment
+ * variable, which is three more things that can be misconfigured. Serving the
+ * built frontend from this process instead means one deployment, one origin,
+ * no CORS, and '/api' keeps resolving exactly as it does locally. The
+ * frontend code needs no change at all.
+ *
+ * Mounted AFTER every API route, so nothing here can shadow them, and the SPA
+ * fallback explicitly refuses /api paths so a mistyped endpoint returns a JSON
+ * 404 rather than silently serving index.html, which would look to the caller
+ * like the API returning HTML.
+ */
+const path = require('path');
+const fs = require('fs');
+const clientDist = path.join(__dirname, '..', 'frontend', 'dist');
+
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+  console.log('Serving frontend build from frontend/dist');
+} else {
+  console.log('No frontend build found. Run: npm --prefix frontend run build');
+}
+
 // Global error-handling middleware — catches anything that slips past route-level handling.
 app.use((err, req, res, next) => {
   console.error('Unhandled route error:', err.message);
