@@ -121,6 +121,35 @@ function precisionAtK(rankedHeadlines, truth, k) {
   return judged.filter((v) => v === 'correct').length / judged.length;
 }
 
+/**
+ * THE METRIC THAT ACTUALLY MATTERS, added after the first run.
+ *
+ * The first version measured precision@1 and both the engine and a naive
+ * keyword baseline scored 100%. That is not a strong engine, it is a weak
+ * test: with 39 candidates and clean role families, putting SOMEONE correct
+ * first is easy for any method that looks at skills at all.
+ *
+ * The bug actually fixed today was never about rank 1. It was that a backend
+ * engineer appeared in a UX Designer's list at 36%, above the 0.20 threshold
+ * at which candidates are shown. Rank 1 was fine; the LIST was polluted. That
+ * is what a founder sees, and it is what made the results untrustworthy.
+ *
+ * So: of everyone shown to a founder for this role, how many are hand-labelled
+ * as the wrong kind of person?
+ */
+const DISPLAY_THRESHOLD = 0.20;
+
+function pollution(scoredCandidates, truth) {
+  const shown = scoredCandidates.filter((c) => c.s >= DISPLAY_THRESHOLD);
+  const judged = shown.map((c) => judge(truth, c.h)).filter((v) => v !== 'unlabelled');
+  if (judged.length === 0) return null;
+  return {
+    shown: shown.length,
+    wrong: judged.filter((v) => v === 'wrong').length,
+    rate: judged.filter((v) => v === 'wrong').length / judged.length,
+  };
+}
+
 function mean(xs) {
   const v = xs.filter((x) => x !== null);
   return v.length === 0 ? null : v.reduce((a, b) => a + b, 0) / v.length;
@@ -151,7 +180,11 @@ function mean(xs) {
   console.log('='.repeat(70));
   console.log(`Gaps available: ${gaps.length}   Candidates in pool: ${candidates.length}\n`);
 
-  const scored = { engine: { p1: [], p3: [] }, naive: { p1: [], p3: [] }, random: { p1: [], p3: [] } };
+  const scored = {
+    engine: { p1: [], p3: [], p5: [], poll: [], shown: [] },
+    naive: { p1: [], p3: [], p5: [], poll: [], shown: [] },
+    random: { p1: [], p3: [], p5: [], poll: [], shown: [] },
+  };
   let evaluated = 0;
   const failures = [];
 
@@ -163,22 +196,28 @@ function mean(xs) {
     const startup = { id: g.s_id, name: g.s_name, domain: g.s_domain, stage: g.s_stage, founder_id: g.s_founder_id };
 
     // THE REAL ENGINE, called exactly as the app calls it.
-    const engineRanked = candidates
+    const engineScored = candidates
       .map((c) => ({ h: c.headline, s: scoreCandidate(g, startup, c, 0).score }))
-      .sort((a, b) => b.s - a.s)
-      .map((x) => x.h);
+      .sort((a, b) => b.s - a.s);
 
-    const naiveRanked = candidates
+    const naiveScored = candidates
       .map((c) => ({ h: c.headline, s: naiveScore(g, c) }))
-      .sort((a, b) => b.s - a.s)
-      .map((x) => x.h);
+      .sort((a, b) => b.s - a.s);
 
-    const randomRanked = [...candidates].sort(() => Math.random() - 0.5).map((c) => c.headline);
+    const randomScored = [...candidates]
+      .map((c) => ({ h: c.headline, s: Math.random() }))
+      .sort((a, b) => b.s - a.s);
 
-    for (const [name, ranked] of [['engine', engineRanked], ['naive', naiveRanked], ['random', randomRanked]]) {
+    for (const [name, sc] of [['engine', engineScored], ['naive', naiveScored], ['random', randomScored]]) {
+      const ranked = sc.map((x) => x.h);
       scored[name].p1.push(precisionAtK(ranked, truth, 1));
       scored[name].p3.push(precisionAtK(ranked, truth, 3));
+      scored[name].p5.push(precisionAtK(ranked, truth, 5));
+      const poll = pollution(sc, truth);
+      if (poll) { scored[name].poll.push(poll.rate); scored[name].shown.push(poll.shown); }
     }
+
+    const engineRanked = engineScored.map((x) => x.h);
 
     // Record where the engine put something hand-labelled as wrong at rank 1.
     if (judge(truth, engineRanked[0]) === 'wrong') {
@@ -201,18 +240,31 @@ function mean(xs) {
 
   console.log(`Gaps evaluated against hand-written ground truth: ${evaluated} of ${gaps.length}`);
   console.log('(the rest have no label, and are skipped rather than guessed at)\n');
-  console.log('                            Precision@1   Precision@3');
-  console.log('-'.repeat(70));
-  for (const [name, p1, p3] of rows) {
-    console.log(`  ${name.padEnd(26)} ${pct(p1).padStart(8)}      ${pct(p3).padStart(8)}`);
+  console.log('                            Precision@1   Precision@3   Precision@5   Wrong-in-list');
+  console.log('-'.repeat(88));
+  for (const name of ['engine', 'naive', 'random']) {
+    const label = { engine: 'CapForge engine', naive: 'Naive keyword overlap', random: 'Random ordering' }[name];
+    console.log(
+      `  ${label.padEnd(26)} ${pct(mean(scored[name].p1)).padStart(8)}      ${pct(mean(scored[name].p3)).padStart(8)}` +
+      `      ${pct(mean(scored[name].p5)).padStart(8)}      ${pct(mean(scored[name].poll)).padStart(8)}`
+    );
   }
+  console.log('\nWrong-in-list = of everyone shown to a founder (score >= 0.20), the share');
+  console.log('who are hand-labelled as the wrong kind of person. Lower is better. This is');
+  console.log('the metric that matters: it is what a founder actually sees.');
+  const avgShown = mean(scored.engine.shown.map((n) => n / 1));
+  if (avgShown !== null) console.log(`Average candidates shown per role by the engine: ${avgShown.toFixed(1)} of ${candidates.length}.`);
 
-  const engineP1 = mean(scored.engine.p1);
-  const naiveP1 = mean(scored.naive.p1);
-  console.log('\n' + '='.repeat(70));
-  if (engineP1 !== null && naiveP1 !== null) {
-    const lift = ((engineP1 - naiveP1) * 100).toFixed(1);
-    console.log(`Engine beats the naive baseline by ${lift} points of precision@1.`);
+  console.log('\n' + '='.repeat(88));
+  const ep = mean(scored.engine.poll);
+  const np = mean(scored.naive.poll);
+  if (ep !== null && np !== null) {
+    const diff = ((np - ep) * 100).toFixed(1);
+    console.log(
+      diff > 0
+        ? `The engine shows ${diff} points fewer wrong people per list than naive keyword matching.`
+        : `The engine shows NO fewer wrong people than naive keyword matching. On this data, the extra machinery is not earning its place.`
+    );
   }
 
   if (failures.length > 0) {
