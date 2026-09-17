@@ -21,6 +21,7 @@ import GapDashboard from './pages/GapDashboard.jsx';
 import GapDetail from './pages/GapDetail.jsx';
 import CandidateComparison from './pages/CandidateComparison.jsx';
 import Readiness from './pages/Readiness.jsx';
+import Progress from './pages/Progress.jsx';
 import RiskPage from './pages/RiskPage.jsx';
 import Team from './pages/Team.jsx';
 import Milestones from './pages/Milestones.jsx';
@@ -98,6 +99,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/gaps" element={<ProtectedRoute><GapDashboard /></ProtectedRoute>} />
         <Route path="/app/gaps/:id" element={<ProtectedRoute><GapDetail /></ProtectedRoute>} />
         <Route path="/app/gaps/:id/compare" element={<ProtectedRoute><CandidateComparison /></ProtectedRoute>} />
+        <Route path="/app/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
         <Route path="/app/readiness" element={<ProtectedRoute><Readiness /></ProtectedRoute>} />
         <Route path="/app/risk" element={<ProtectedRoute><RiskPage /></ProtectedRoute>} />
         <Route path="/app/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />

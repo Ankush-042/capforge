@@ -112,3 +112,6 @@ export const runCompetitorResearch = (startupId) => apiFetch(`/startups/${startu
 // to those raw figures when the AI is unavailable.
 export const askAboutVenture = (startupId, question) =>
   apiFetch(`/startups/${startupId}/ask`, { method: 'POST', body: JSON.stringify({ question }) });
+
+// One question answered properly: how is this venture doing, and why.
+export const getProgress = (startupId) => apiFetch(`/startups/${startupId}/progress`);

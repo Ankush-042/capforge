@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Home, MessageSquare, Sparkles, Target, Users, PieChart, Flag, ShieldAlert,
   Crosshair, BarChart3, LayoutGrid, Gauge, Eye, Presentation, Search,
-  Bookmark, Briefcase, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark,
+  Bookmark, Briefcase, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity,
 } from 'lucide-react';
 import StartupSwitcher from './StartupSwitcher.jsx';
 import { useMyIdentity } from '../context/MyIdentityContext.jsx';
@@ -64,10 +64,10 @@ const NAV_BY_PERSONA = {
     {
       group: 'Grow',
       items: [
+        { label: 'Progress', icon: Activity, path: '/app/progress' },
         { label: 'Milestones', icon: Flag, path: '/app/milestones' },
         { label: 'Risks', icon: ShieldAlert, path: '/app/risk' },
         { label: 'Competitors', icon: Crosshair, path: '/app/competitors' },
-        { label: 'Analytics', icon: BarChart3, path: '/app/analytics' },
         { label: 'Workspace', icon: LayoutGrid, path: '/app/workspace' },
       ],
     },
@@ -75,6 +75,7 @@ const NAV_BY_PERSONA = {
       group: 'Raise',
       items: [
         { label: 'Readiness', icon: Gauge, path: '/app/readiness' },
+        { label: 'History', icon: BarChart3, path: '/app/analytics' },
         { label: 'Investor view', icon: Eye, path: '/app/investability' },
         { label: 'Find investors', icon: Landmark, path: '/app/find-investors' },
         { label: 'Pitch', icon: Presentation, path: '/app/pitch' },
