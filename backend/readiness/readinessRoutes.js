@@ -3,6 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { runReadinessAndRiskAnalysis, getLatestReadiness, getRisks, getReadinessHistory } = require('./readinessService');
 const { getVentureSummary } = require('./ventureSummaryService');
+const { getProgress } = require('./progressService');
 const pool = require('../shared/db');
 
 async function assertOwnership(startupId, userId) {
@@ -35,6 +36,15 @@ router.get('/startups/:id/risks', requireAuth, async (req, res) => {
   if (!own.ok) return res.status(own.code).json({ error: own.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
 
   const result = await getRisks(req.params.id);
+  res.json(result);
+});
+
+// One question answered properly: how is this venture doing, and why.
+// Joins readiness, risks, gaps and milestones so a founder does not have to
+// hold four screens in their head.
+router.get('/startups/:id/progress', requireAuth, async (req, res) => {
+  const result = await getProgress(req.params.id, req.user.userId);
+  if (!result.success) return res.status(result.error === 'NOT_AUTHORIZED' ? 403 : 404).json(result);
   res.json(result);
 });
 
