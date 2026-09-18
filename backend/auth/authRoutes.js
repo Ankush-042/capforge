@@ -37,4 +37,28 @@ router.get('/me', requireAuth, (req, res) => {
   res.status(200).json({ success: true, user: req.user });
 });
 
+/**
+ * Confirm an email. Public by design: the token IS the credential, and
+ * requiring a login to click a link from an inbox is a needless wall.
+ */
+router.get('/verify-email', async (req, res) => {
+  const { verifyToken } = require('./verificationService');
+  const result = await verifyToken(req.query.token);
+  res.json(result);
+});
+
+/** Ask for a new link. Never reveals whether an address exists. */
+router.post('/resend-verification', requireAuth, async (req, res) => {
+  const pool = require('../shared/db');
+  const u = await pool.query('SELECT email, email_verified FROM users WHERE id = $1', [req.user.userId]);
+  const user = u.rows[0];
+  if (!user) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
+  if (user.email_verified) return res.json({ success: true, alreadyVerified: true });
+
+  const p = await pool.query('SELECT display_name FROM profiles WHERE user_id = $1', [req.user.userId]);
+  const { sendVerificationEmail } = require('./verificationService');
+  const r = await sendVerificationEmail(req.user.userId, user.email, p.rows[0]?.display_name);
+  res.json({ success: true, emailSent: r.emailSent });
+});
+
 module.exports = router;

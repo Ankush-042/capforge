@@ -57,6 +57,15 @@ async function register({ email, password, primaryRole, displayName }) {
 
     await client.query('COMMIT');
 
+    // AFTER commit, and fire-and-forget. The account exists and is fully
+    // usable at this point. Verification is a nicety layered on top: it
+    // blocks nothing, gates nothing, and must never be able to fail a signup
+    // that has already succeeded. If no email provider is configured, or the
+    // provider is down, this does nothing and the user notices nothing.
+    require('./verificationService')
+      .sendVerificationEmail(user.id, user.email, displayName)
+      .catch((err) => console.error('Verification dispatch failed (non-fatal):', err.message));
+
     const token = signToken(user);
     return { success: true, user: { id: user.id, email: user.email, primaryRole: user.primary_role }, token };
   } catch (err) {
