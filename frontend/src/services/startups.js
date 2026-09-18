@@ -118,3 +118,6 @@ export const getProgress = (startupId) => apiFetch(`/startups/${startupId}/progr
 
 // Which role to fill first, across every open role at once.
 export const getRoleComparison = (startupId) => apiFetch(`/startups/${startupId}/role-comparison`);
+
+// What changed since you were last here.
+export const getWhatsNew = () => apiFetch('/whats-new');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
+import WhatsNew from '../components/WhatsNew.jsx';
 import { Search, Sparkles, BarChart3, MessageSquare, ArrowUpRight } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
@@ -48,6 +49,8 @@ export default function InvestorDashboard() {
           <Link to="/app/investor/onboarding" className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Finish now</Link>
         </div>
       )}
+      <WhatsNew />
+
       {/* WHERE YOU ARE. An investor opening this wants to know if anything
           new is worth their attention, not to read a greeting. */}
       <div className="mb-7">
