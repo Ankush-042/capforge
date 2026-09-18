@@ -18,7 +18,11 @@ const opportunityRoutes = require('./opportunities/opportunityRoutes');
 const workspaceRoutes = require('./workspace/workspaceRoutes');
 
 const app = express();
-app.use(express.json());
+// Explicit rather than relying on the 100KB default, so the limit is a
+// decision rather than an accident. Profile updates carry an inline avatar and
+// need more, but they ask for it on their own route rather than widening this
+// one for every endpoint.
+app.use(express.json({ limit: '100kb' }));
 
 // Real fix for a confirmed identity-leak symptom: no response from this
 // API ever declared it shouldn't be cached, meaning a browser could

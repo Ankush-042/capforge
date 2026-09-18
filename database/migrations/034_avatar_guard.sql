@@ -1,0 +1,32 @@
+-- Migration 034: a size guard on the profile image column that already exists.
+--
+-- NO NEW COLUMN. profiles.profile_image has existed since migration 001 and is
+-- already in the updateBaseProfile allowlist. It was simply never used by any
+-- interface, so everyone rendered as a coloured circle with one initial. Adding
+-- an `avatar` column would have duplicated a field that was there all along,
+-- which is exactly the kind of thing that leaves two half-used columns behind.
+--
+-- WHY THE IMAGE LIVES IN POSTGRES RATHER THAN OBJECT STORAGE, written down
+-- because the decision looks like ignorance otherwise:
+--
+-- At scale this is wrong. The image belongs in object storage behind a CDN and
+-- the column should hold a URL.
+--
+-- At THIS scale it is the better trade. Object storage means a bucket to
+-- provision by hand, new environment variables, a new SDK or a hand-written
+-- signed-upload flow, and another external service that can be down during a
+-- live demonstration, all to serve images for a few dozen accounts. Images are
+-- resized to a 256px square and re-encoded as JPEG in the browser before they
+-- are ever sent, so the whole population costs single-digit megabytes.
+--
+-- Moving to object storage later means changing what this column HOLDS, a data
+-- URI becoming a URL, and nothing else: every read site treats it as an opaque
+-- image source.
+--
+-- The guard exists so an oversized value cannot reach the table regardless of
+-- what a client sends. 200000 characters is roughly a 145KB image once base64
+-- encoded: comfortably above the 120KB the client targets, and far below
+-- anything that would bloat every query selecting a profile.
+
+ALTER TABLE profiles ADD CONSTRAINT profile_image_size_limit
+  CHECK (profile_image IS NULL OR length(profile_image) <= 200000);

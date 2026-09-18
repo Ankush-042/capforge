@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Check, AlertTriangle, X } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import AvatarUpload from '../components/AvatarUpload.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { getMyProfile, updateBaseProfile, upsertContributorProfile, upsertInvestorProfile } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
@@ -92,7 +93,7 @@ export default function MyProfile() {
   const [savingContrib, setSavingContrib] = useState(false);
   const [savingInvestor, setSavingInvestor] = useState(false);
 
-  const [base, setBase] = useState({ displayName: '', headline: '', bio: '', location: '', skillsInput: '' });
+  const [base, setBase] = useState({ displayName: '', headline: '', bio: '', location: '', skillsInput: '', profileImage: null });
   const [contrib, setContrib] = useState({ availability: '', lookingFor: '', portfolioUrl: '', preferredDomains: [], preferredStage: [], experienceYears: '' });
   const [investor, setInvestor] = useState({ thesis: '', ticketMin: '', ticketMax: '', preferredDomains: [], preferredStages: '', investmentType: '' });
 
@@ -104,6 +105,7 @@ export default function MyProfile() {
         setBase({
           displayName: p.display_name || '', headline: p.headline || '', bio: p.bio || '',
           location: p.location || '', skillsInput: (p.skills || []).join(', '),
+          profileImage: p.profile_image || null,
         });
         const rp = data.roleProfile;
         if (rp && persona === 'CONTRIBUTOR') {
@@ -140,6 +142,7 @@ export default function MyProfile() {
     const { ok, data } = await withTimeout(updateBaseProfile({
       displayName: base.displayName, headline: base.headline, bio: base.bio,
       location: base.location, skills: parseList(base.skillsInput),
+      profile_image: base.profileImage,
     }));
     setSavingBase(false);
     if (ok && data.success) showToast('Saved. Your matches are updating, give it a few seconds.');
@@ -229,6 +232,16 @@ export default function MyProfile() {
           detail="Your headline is what people see first, in search and next to every match."
           onSave={handleSaveBase} saving={savingBase} saveLabel="Save basics"
         >
+          <div className="mb-6 pb-6 border-b border-surface-border">
+            <label className="text-[13px] font-medium text-ink-700 mb-2.5 block">Your photo</label>
+            <AvatarUpload
+              name={base.displayName}
+              value={base.profileImage}
+              onChange={(v) => setBase({ ...base, profileImage: v })}
+              disabled={savingBase}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Your name</label>

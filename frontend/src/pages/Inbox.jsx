@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { MessageSquare, Sparkles, Building2 } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { getMyConversations } from '../services/startups.js';
 
@@ -19,13 +20,6 @@ import { getMyConversations } from '../services/startups.js';
  * reply come first and say so.
  */
 
-const AVATAR_TONES = [
-  { bg: '#EED8FF', fg: '#6D28D9' },
-  { bg: '#D1EAFE', fg: '#1677E8' },
-  { bg: '#EAF7F0', fg: '#1F5D52' },
-  { bg: '#FFE8DA', fg: '#E84C32' },
-];
-
 function timeAgo(iso) {
   if (!iso) return null;
   const then = new Date(iso).getTime();
@@ -41,7 +35,6 @@ function timeAgo(iso) {
 }
 
 function ConversationCard({ c, index }) {
-  const tone = AVATAR_TONES[index % AVATAR_TONES.length];
   const unread = parseInt(c.unread_count) || 0;
   const when = timeAgo(c.last_message_at);
 
@@ -60,12 +53,7 @@ function ConversationCard({ c, index }) {
         {unread > 0 && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-violet-600" />}
 
         <div className="flex items-start gap-3.5">
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center text-[15px] font-semibold shrink-0"
-            style={{ backgroundColor: tone.bg, color: tone.fg }}
-          >
-            {(c.other_display_name || '?').charAt(0).toUpperCase()}
-          </div>
+          <Avatar name={c.other_display_name} src={c.other_avatar} size={44} />
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-3 mb-0.5">

@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'motion/react';
 import { ArrowLeft, RefreshCw, MessageSquare, Scale, Check, AlertTriangle } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { getGaps, rankCandidates, startConversation } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -50,9 +51,7 @@ function CandidateCard({ candidate, gap, startupId, gapId, onConnect, index }) {
           to={`/app/profile/${candidate.target_user_id}?startupId=${startupId}&gapId=${gapId}`}
           className="flex items-center gap-3 min-w-0 group"
         >
-          <div className="w-11 h-11 rounded-full bg-violet-100 flex items-center justify-center text-[15px] font-semibold text-violet-700 shrink-0">
-            {(candidate.candidate_headline || '?').charAt(0).toUpperCase()}
-          </div>
+          <Avatar name={candidate.candidate_headline} src={candidate.candidate_avatar} size={44} />
           <div className="min-w-0">
             <p className="text-[15px] font-semibold text-ink-950 truncate group-hover:text-violet-700 transition-colors">
               {candidate.candidate_headline || 'Candidate'}

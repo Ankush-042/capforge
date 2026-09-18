@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ExternalLink, MessageSquare, Briefcase, MapPin, Clock, Target } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { getUserProfile, startConversation } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
@@ -19,18 +20,6 @@ import { useToast } from '../components/Toast.jsx';
  * out of it matters more than their skill list, which is why the matching
  * engine weighs it and why it leads here.
  */
-
-const AVATAR_TONES = [
-  { bg: '#EED8FF', fg: '#6D28D9' },
-  { bg: '#D1EAFE', fg: '#1677E8' },
-  { bg: '#EAF7F0', fg: '#1F5D52' },
-  { bg: '#FFE8DA', fg: '#E84C32' },
-];
-
-function toneFor(name) {
-  const i = (name || '?').charCodeAt(0) % AVATAR_TONES.length;
-  return AVATAR_TONES[i];
-}
 
 export default function ProfileView() {
   const { userId } = useParams();
@@ -80,7 +69,6 @@ export default function ProfileView() {
     );
   }
 
-  const tone = toneFor(profile.display_name);
   const mission = roleProfile?.looking_for;
   const thesis = roleProfile?.investment_thesis || roleProfile?.thesis;
   // Contributors store preferred_stage, investors preferred_stages.
@@ -93,12 +81,7 @@ export default function ProfileView() {
       <div className="bg-surface rounded-xl border border-surface-border shadow-card p-8 mb-4">
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-start gap-5 min-w-0">
-            <div
-              className="w-[68px] h-[68px] rounded-full flex items-center justify-center text-[26px] font-semibold shrink-0"
-              style={{ backgroundColor: tone.bg, color: tone.fg }}
-            >
-              {(profile.display_name || '?').charAt(0).toUpperCase()}
-            </div>
+            <Avatar name={profile.display_name} src={profile.profile_image} size={68} />
             <div className="min-w-0">
               <h1 className="font-display text-[26px] font-semibold text-ink-950 leading-tight">{profile.display_name}</h1>
               {profile.headline && <p className="text-[15px] text-ink-700 mt-1">{profile.headline}</p>}

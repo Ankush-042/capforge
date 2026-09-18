@@ -77,7 +77,7 @@ async function getMyConversations(userId) {
   const result = await pool.query(
     `SELECT c.*, 
             CASE WHEN c.participant_a_id = $1 THEN c.participant_b_id ELSE c.participant_a_id END as other_user_id,
-            p.display_name as other_display_name, p.headline as other_headline,
+            p.display_name as other_display_name, p.headline as other_headline, p.profile_image as other_avatar,
             s.name as startup_name,
             (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
             (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != $1 AND read_at IS NULL) as unread_count
@@ -102,6 +102,7 @@ async function getMessages(conversationId, userId) {
             CASE WHEN c.participant_a_id = $2 THEN c.participant_b_id ELSE c.participant_a_id END AS other_user_id,
             p.display_name AS other_display_name,
             p.headline AS other_headline,
+            p.profile_image AS other_avatar,
             s.name AS startup_name
      FROM conversations c
      JOIN profiles p ON p.user_id = (CASE WHEN c.participant_a_id = $2 THEN c.participant_b_id ELSE c.participant_a_id END)
