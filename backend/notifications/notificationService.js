@@ -13,6 +13,20 @@ async function createNotification(userId, { type, title, message, referenceType,
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
     [userId, type, title, message, referenceType || null, referenceId || null]
   );
+
+  // Mirror to email for the handful of events worth interrupting someone for.
+  // Hooked HERE rather than at each call site, so a new notification type gets
+  // the behaviour by adding one entry to an allowlist rather than by
+  // remembering to call something in six places.
+  //
+  // Fire-and-forget, and after the row is written. The in-app notification is
+  // the source of truth and must never fail because an email service is
+  // having a bad day. emailMirror itself cannot throw, and this catch is a
+  // second guard rather than a substitute for that.
+  require('./emailMirror')
+    .mirrorToEmail(userId, { type, title, message, referenceType, referenceId })
+    .catch((err) => console.error('Email mirror dispatch failed (non-fatal):', err.message));
+
   return result.rows[0];
 }
 
