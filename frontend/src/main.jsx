@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 import Landing from './pages/Landing.jsx';
 import SignIn from './pages/SignIn.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
 import SignUp from './pages/SignUp.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import ContributorOnboarding from './pages/ContributorOnboarding.jsx';
@@ -91,6 +92,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/sign-in" element={<SignIn />} />
         <Route path="/sign-up" element={<SignUp />} />
 
