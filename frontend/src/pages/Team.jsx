@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Users, Crown, Target, ArrowUpRight, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Avatar from '../components/Avatar.jsx';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import { getTeamMembers, getGaps } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
@@ -16,15 +17,7 @@ import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
  * actually committed, and what the team cannot do yet.
  */
 
-const AVATAR_TONES = [
-  { bg: '#EED8FF', fg: '#6D28D9' },
-  { bg: '#D1EAFE', fg: '#1677E8' },
-  { bg: '#EAF7F0', fg: '#1F5D52' },
-  { bg: '#FFE8DA', fg: '#E84C32' },
-];
-
 function MemberCard({ member, index }) {
-  const tone = AVATAR_TONES[index % AVATAR_TONES.length];
   const joined = member.joined_at ? new Date(member.joined_at) : null;
 
   return (
@@ -35,12 +28,7 @@ function MemberCard({ member, index }) {
       className="bg-surface rounded-xl border border-surface-border shadow-card p-6"
     >
       <div className="flex items-start gap-4">
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-[17px] font-semibold shrink-0"
-          style={{ backgroundColor: tone.bg, color: tone.fg }}
-        >
-          {(member.display_name || '?').charAt(0).toUpperCase()}
-        </div>
+        <Avatar name={member.display_name} src={member.profile_image} size={48} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="text-[16px] font-semibold text-ink-950 truncate">{member.display_name}</p>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { FileText, Scale, CheckSquare, MessageSquare, Plus, ExternalLink, X, Copy } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { getWorkspace, createTask, postDiscussion, getWorkspaceFiles, addWorkspaceFile, generateLegalDocument, getLegalDocuments } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useToast } from '../components/Toast.jsx';
@@ -21,13 +22,6 @@ import { useToast } from '../components/Toast.jsx';
  *    A document you cannot open is not a document.
  */
 
-const AVATAR_TONES = [
-  { bg: '#EED8FF', fg: '#6D28D9' },
-  { bg: '#D1EAFE', fg: '#1677E8' },
-  { bg: '#EAF7F0', fg: '#1F5D52' },
-  { bg: '#FFE8DA', fg: '#E84C32' },
-];
-const toneFor = (n) => AVATAR_TONES[(n || '?').charCodeAt(0) % AVATAR_TONES.length];
 
 const FIELD = 'px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[14px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors';
 
@@ -184,15 +178,9 @@ export default function Workspace() {
             <div className="space-y-4 max-h-[320px] overflow-y-auto">
               {discussions.map((d) => {
                 const name = d.author_name || 'Someone';
-                const tone = toneFor(name);
                 return (
                   <div key={d.id} className="flex items-start gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-[12.5px] font-semibold shrink-0"
-                      style={{ backgroundColor: tone.bg, color: tone.fg }}
-                    >
-                      {name.charAt(0).toUpperCase()}
-                    </div>
+                    <Avatar name={name} src={d.author_avatar} size={32} />
                     <div className="min-w-0">
                       <div className="flex items-baseline gap-2">
                         {/* Was 'Team member' for everyone, because the query

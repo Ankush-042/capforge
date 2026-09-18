@@ -56,7 +56,7 @@ router.get('/me/views', requireAuth, async (req, res) => {
     // viewer_id added so the UI can link through to whoever looked. Without
     // it the settings page could show a name it was unable to open, which is
     // worse than not showing it at all.
-    `SELECT pv.viewed_at, pv.viewer_id AS user_id, p.display_name, p.headline, u.primary_role
+    `SELECT pv.viewed_at, pv.viewer_id AS user_id, p.display_name, p.headline, p.profile_image, u.primary_role
      FROM profile_views pv
      JOIN users u ON u.id = pv.viewer_id
      JOIN profiles p ON p.user_id = pv.viewer_id
@@ -68,7 +68,11 @@ router.get('/me/views', requireAuth, async (req, res) => {
   res.json({ success: true, views: result.rows, totalCount: parseInt(countResult.rows[0].count) });
 });
 
-router.patch('/me', requireAuth, async (req, res) => {
+// This route carries an inline profile image, so it needs more than the 100KB
+// global limit. Scoped here rather than raised globally: every other endpoint
+// keeps the smaller ceiling.
+const express2 = require('express');
+router.patch('/me', requireAuth, express2.json({ limit: '1mb' }), async (req, res) => {
   const result = await updateBaseProfile(req.user.userId, req.body);
   if (!result.success) return res.status(400).json(result);
 

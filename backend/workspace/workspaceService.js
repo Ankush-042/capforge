@@ -27,7 +27,7 @@ async function getWorkspace(startupId, userId) {
   // message and rendered every one as 'Team member'. A discussion where you
   // cannot tell who said what is not a discussion.
   const discussions = await pool.query(
-    `SELECT d.*, p.display_name AS author_name, p.headline AS author_headline
+    `SELECT d.*, p.display_name AS author_name, p.headline AS author_headline, p.profile_image AS author_avatar
      FROM discussions d
      LEFT JOIN profiles p ON p.user_id = d.created_by
      WHERE d.workspace_id = $1

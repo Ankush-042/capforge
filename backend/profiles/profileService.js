@@ -68,11 +68,31 @@ async function getMyProfile(userId, role) {
 
 async function updateBaseProfile(userId, updates) {
   const allowed = ['display_name', 'headline', 'bio', 'location', 'profile_image', 'skills', 'visibility'];
-  const fields = Object.keys(updates).filter(k => allowed.includes(k));
+
+  // CONFIRMED BUG, found while wiring up avatars. The frontend sends
+  // camelCase and this allowlist is snake_case, so `displayName` was filtered
+  // out and SILENTLY DROPPED on every save. Changing your display name simply
+  // never worked, and nothing surfaced an error because the other fields in
+  // the same request saved fine.
+  //
+  // It went unnoticed because every OTHER field here is a single word that is
+  // identical in both conventions: headline, bio, location, skills,
+  // visibility. display_name and profile_image are the only two-word fields,
+  // and profile_image had no UI until now.
+  //
+  // Normalising here rather than renaming the payload, so both conventions
+  // work and no existing caller breaks.
+  const normalized = {};
+  for (const [k, v] of Object.entries(updates || {})) {
+    const snake = k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    normalized[allowed.includes(k) ? k : snake] = v;
+  }
+
+  const fields = Object.keys(normalized).filter(k => allowed.includes(k));
   if (fields.length === 0) return { success: false, error: 'NO_VALID_FIELDS' };
 
   const setClauses = fields.map((f, i) => `${f} = $${i + 2}`).join(', ');
-  const values = fields.map(f => updates[f]);
+  const values = fields.map(f => normalized[f]);
 
   const result = await pool.query(
     `UPDATE profiles SET ${setClauses}, updated_at = now() WHERE user_id = $1 RETURNING *`,

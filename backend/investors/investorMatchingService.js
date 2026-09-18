@@ -337,7 +337,7 @@ async function rankInvestorsForStartup(startupId, founderUserId) {
     ),
     pool.query(`SELECT * FROM risks WHERE startup_id = $1`, [startupId]),
     pool.query(
-      `SELECT p.user_id, p.display_name, p.headline, p.bio,
+      `SELECT p.user_id, p.display_name, p.headline, p.bio, p.profile_image,
               ip.thesis, ip.preferred_domains, ip.preferred_stages,
               ip.ticket_min, ip.ticket_max, ip.investment_type
        FROM investor_profiles ip

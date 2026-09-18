@@ -266,7 +266,7 @@ async function listMyStartups(founderId) {
 async function getTeamMembers(startupId) {
   const result = await pool.query(
     `SELECT stm.id, stm.user_id, stm.role, stm.skills, stm.is_founder, stm.joined_at,
-            p.display_name, p.headline
+            p.display_name, p.headline, p.profile_image
      FROM startup_team_members stm
      JOIN profiles p ON p.user_id = stm.user_id
      WHERE stm.startup_id = $1
