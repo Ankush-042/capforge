@@ -69,7 +69,6 @@ export const runSavedSearch = (id) => apiFetch(`/saved-searches/${id}/run`, { me
 export const getMyRecommendationsAsContributor = () => apiFetch('/recommendations/mine');
 export const refreshInvestorRecommendations = () => apiFetch('/investors/recommendations/refresh', { method: 'POST' });
 export const getInvestorRecommendations = () => apiFetch('/investors/recommendations');
-export const getPortfolioAnalysis = () => apiFetch('/investors/portfolio');
 export const getSkillDemand = () => apiFetch('/skill-demand');
 export const requestVerification = (startupId) => apiFetch(`/startups/${startupId}/request-verification`, { method: 'POST' });
 export const getMyReputation = () => apiFetch('/reputation/me');
@@ -121,3 +120,11 @@ export const getRoleComparison = (startupId) => apiFetch(`/startups/${startupId}
 
 // What changed since you were last here.
 export const getWhatsNew = () => apiFetch('/whats-new');
+
+// What an investor is tracking: watching, and passed on with the reasoning.
+export const getWatchlist = () => apiFetch('/investors/watchlist');
+export const getWatchState = (startupId) => apiFetch(`/investors/watchlist/${startupId}`);
+export const setWatchStatus = (startupId, status, note) =>
+  apiFetch(`/investors/watchlist/${startupId}`, { method: 'POST', body: JSON.stringify({ status, note }) });
+export const removeFromWatchlist = (startupId) =>
+  apiFetch(`/investors/watchlist/${startupId}`, { method: 'DELETE' });

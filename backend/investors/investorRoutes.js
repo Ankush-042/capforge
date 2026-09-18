@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireRole } = require('../auth/authMiddleware');
 const { rankStartupsForInvestor, getInvestorRecommendations, rankInvestorsForStartup } = require('./investorMatchingService');
-const { getPortfolioAnalysis } = require('./portfolioService');
 const { sendInvestorConnectionRequest } = require('../connections/connectionService');
 
 router.post('/recommendations/refresh', requireAuth, requireRole('INVESTOR'), async (req, res) => {
@@ -26,9 +25,6 @@ router.post('/connections', requireAuth, requireRole('INVESTOR'), async (req, re
   res.status(201).json(result);
 });
 
-router.get('/portfolio', requireAuth, requireRole('INVESTOR'), async (req, res) => {
-  res.json(await getPortfolioAnalysis(req.user.userId));
-});
 
 // A founder finding investors, which is the one direction of the flow that
 // was never built. Investors browsed and reached out; founders could only
@@ -37,6 +33,28 @@ router.get('/for-startup/:id', requireAuth, async (req, res) => {
   const result = await rankInvestorsForStartup(req.params.id, req.user.userId);
   if (!result.success) return res.status(result.error === 'NOT_AUTHORIZED' ? 403 : 404).json(result);
   res.json(result);
+});
+
+// An investor tracking what they are watching and what they passed on.
+// Every other role on this platform had state; the investor had none.
+const { setWatchStatus, removeFromWatchlist, getWatchlist, getWatchState } = require('./watchlistService');
+
+router.get('/watchlist', requireAuth, requireRole('INVESTOR'), async (req, res) => {
+  res.json(await getWatchlist(req.user.userId));
+});
+
+router.get('/watchlist/:startupId', requireAuth, requireRole('INVESTOR'), async (req, res) => {
+  res.json(await getWatchState(req.user.userId, req.params.startupId));
+});
+
+router.post('/watchlist/:startupId', requireAuth, requireRole('INVESTOR'), async (req, res) => {
+  const result = await setWatchStatus(req.user.userId, req.params.startupId, req.body?.status, req.body?.note);
+  if (!result.success) return res.status(400).json(result);
+  res.json(result);
+});
+
+router.delete('/watchlist/:startupId', requireAuth, requireRole('INVESTOR'), async (req, res) => {
+  res.json(await removeFromWatchlist(req.user.userId, req.params.startupId));
 });
 
 module.exports = router;

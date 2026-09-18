@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Home, MessageSquare, Sparkles, Target, Users, PieChart, Flag, ShieldAlert,
   Crosshair, BarChart3, LayoutGrid, Gauge, Eye, Presentation, Search,
-  Bookmark, Briefcase, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity,
+  Bookmark, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity,
 } from 'lucide-react';
 import StartupSwitcher from './StartupSwitcher.jsx';
 import { useMyIdentity } from '../context/MyIdentityContext.jsx';
@@ -126,7 +126,7 @@ const NAV_BY_PERSONA = {
     {
       group: 'Track',
       items: [
-        { label: 'Portfolio', icon: Briefcase, path: '/app/investor/portfolio' },
+        { label: 'Tracking', icon: Eye, path: '/app/investor/portfolio' },
       ],
     },
   ],

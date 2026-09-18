@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { RefreshCw, Check, AlertTriangle, ArrowUpRight, Bookmark } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import WatchControls from '../components/WatchControls.jsx';
 import { getInvestorRecommendations, refreshInvestorRecommendations } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -82,13 +83,14 @@ function DealCard({ d, index }) {
         </div>
       )}
 
-      <div className="pt-4 border-t border-surface-border">
+      <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
         <Link
           to={`/app/startups/${d.startup_id}`}
           className="flex items-center gap-1.5 text-[13px] font-medium text-violet-700 hover:text-violet-600 transition-colors"
         >
           Look properly <ArrowUpRight size={13} />
         </Link>
+        <WatchControls startupId={d.startup_id} compact />
       </div>
     </motion.div>
   );
