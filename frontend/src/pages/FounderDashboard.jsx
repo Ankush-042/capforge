@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { ArrowUpRight, Target, Users, Gauge, ListChecks } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import Shell from '../components/Shell.jsx';
+import WhatsNew from '../components/WhatsNew.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import RoleCoverageGrid from '../components/charts/RoleCoverageGrid.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
@@ -116,6 +117,8 @@ export default function FounderDashboard() {
 
   return (
     <Shell title={startup.name} subtitle={startup.problem?.slice(0, 60) + '…'}>
+      <WhatsNew />
+
       {/* WHERE YOU ARE, and what happens next.
           This said "Good evening, Founder" over a wall of cards. A founder
           opening this should know, without reading anything else, what stage

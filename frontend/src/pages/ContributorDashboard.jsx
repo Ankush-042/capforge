@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
+import WhatsNew from '../components/WhatsNew.jsx';
 import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
@@ -55,6 +56,8 @@ export default function ContributorDashboard() {
           <Link to="/app/contributor/onboarding" className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Finish now</Link>
         </div>
       )}
+      <WhatsNew />
+
       {/* WHERE YOU ARE. A contributor opening this should know whether
           anyone actually wants them yet, and what the single best option
           is, before reading anything else. */}

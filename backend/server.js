@@ -68,6 +68,21 @@ const signalRoutes = require('./signal/signalRoutes');
 app.use('/api', signalRoutes);
 const pitchRoutes = require('./pitch/pitchRoutes');
 app.use('/api', pitchRoutes);
+// Track when someone was last here, so the product can tell them what
+// changed. Runs on every authenticated API call, fire-and-forget.
+const { touchSession } = require('./shared/sessionTracker');
+const { requireAuth: _requireAuthForTouch } = require('./auth/authMiddleware');
+app.use('/api', (req, res, next) => {
+  // Only touches when a valid token is already attached by a downstream
+  // route's own requireAuth. Decoding here would duplicate auth work on every
+  // request, so this reads what is already there and does nothing otherwise.
+  if (req.user?.userId) return touchSession(req, res, next);
+  next();
+});
+
+const whatsNewRoutes = require('./shared/whatsNewRoutes');
+app.use('/api', whatsNewRoutes);
+
 const assistantRoutes = require('./assistant/assistantRoutes');
 app.use('/api', assistantRoutes);
 
