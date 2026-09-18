@@ -57,6 +57,7 @@ const NAV_BY_PERSONA = {
       items: [
         { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
         { label: 'Roles', icon: Target, path: '/app/gaps' },
+        { label: 'Which first', icon: Scale, path: '/app/which-role' },
         { label: 'Team', icon: Users, path: '/app/team' },
         { label: 'Equity', icon: PieChart, path: '/app/equity' },
       ],

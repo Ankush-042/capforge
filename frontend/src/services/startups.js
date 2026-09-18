@@ -115,3 +115,6 @@ export const askAboutVenture = (startupId, question) =>
 
 // One question answered properly: how is this venture doing, and why.
 export const getProgress = (startupId) => apiFetch(`/startups/${startupId}/progress`);
+
+// Which role to fill first, across every open role at once.
+export const getRoleComparison = (startupId) => apiFetch(`/startups/${startupId}/role-comparison`);

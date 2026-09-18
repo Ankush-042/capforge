@@ -22,6 +22,7 @@ import GapDetail from './pages/GapDetail.jsx';
 import CandidateComparison from './pages/CandidateComparison.jsx';
 import Readiness from './pages/Readiness.jsx';
 import Progress from './pages/Progress.jsx';
+import RoleComparison from './pages/RoleComparison.jsx';
 import RiskPage from './pages/RiskPage.jsx';
 import Team from './pages/Team.jsx';
 import Milestones from './pages/Milestones.jsx';
@@ -96,6 +97,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         {/* Authenticated app — Founder */}
         <Route path="/app/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/app" element={<ProtectedRoute><FounderDashboard /></ProtectedRoute>} />
+        <Route path="/app/which-role" element={<ProtectedRoute><RoleComparison /></ProtectedRoute>} />
         <Route path="/app/gaps" element={<ProtectedRoute><GapDashboard /></ProtectedRoute>} />
         <Route path="/app/gaps/:id" element={<ProtectedRoute><GapDetail /></ProtectedRoute>} />
         <Route path="/app/gaps/:id/compare" element={<ProtectedRoute><CandidateComparison /></ProtectedRoute>} />

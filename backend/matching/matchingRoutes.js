@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
-const { rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor } = require('./matchingService');
+const { rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, compareOpenRoles } = require('./matchingService');
 const { getMultiOfferComparison, getLearningRecommendations } = require('./multiOfferService');
 const pool = require('../shared/db');
 
@@ -42,5 +42,25 @@ router.get('/recommendations/mine', requireAuth, async (req, res) => {
 
 router.get('/offers/compare', requireAuth, async (req, res) => res.json(await getMultiOfferComparison(req.user.userId)));
 router.get('/learning-recommendations', requireAuth, async (req, res) => res.json(await getLearningRecommendations(req.user.userId)));
+
+// Which role to fill first, across every open role at once. A founder with
+// three critical gaps and capacity for one had no way to compare them.
+router.get('/startups/:id/role-comparison', requireAuth, async (req, res) => {
+  const pool = require('../shared/db');
+  const own = await pool.query(`SELECT founder_id FROM startups WHERE id = $1`, [req.params.id]);
+  if (own.rows.length === 0) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
+
+  let isOwner = own.rows[0].founder_id === req.user.userId;
+  if (!isOwner) {
+    const co = await pool.query(
+      `SELECT 1 FROM startup_team_members WHERE startup_id = $1 AND user_id = $2 AND is_founder = true`,
+      [req.params.id, req.user.userId]
+    );
+    isOwner = co.rows.length > 0;
+  }
+  if (!isOwner) return res.status(403).json({ success: false, error: 'NOT_AUTHORIZED' });
+
+  res.json(await compareOpenRoles(req.params.id));
+});
 
 module.exports = router;

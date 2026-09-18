@@ -818,4 +818,99 @@ async function refreshRankingsForContributor(userId) {
   return { success: true, gapsScanned: gaps.rows.length, written, expired };
 }
 
-module.exports = { domainsMatch, refreshRankingsForContributor, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
+
+/**
+ * Which role to fill first, across every open role at once.
+ *
+ * A founder with three critical gaps and the capacity to fill one had no way
+ * to compare them. They opened a role, saw its candidates, went back, opened
+ * another, and held the whole thing in their head. The engine is symmetric,
+ * the experience was not: a contributor can weigh ventures side by side and a
+ * founder could not weigh roles.
+ *
+ * THE INSIGHT THAT MAKES THIS MORE THAN A LIST: the right role to fill first
+ * is not simply the most critical one. It is the one where urgency and a
+ * genuinely available person meet. A CRITICAL role with nobody good available
+ * is less actionable today than a HIGH role with an excellent candidate
+ * waiting, because you can actually close the second one. That is a real
+ * distinction a founder makes instinctively and no screen was helping with.
+ *
+ * Both halves are shown separately rather than collapsed into a single
+ * ranking, so the founder can disagree with the ordering and still use the
+ * page. It suggests; it does not decide.
+ */
+const PRIORITY_WEIGHT = { CRITICAL: 1.0, HIGH: 0.7, MEDIUM: 0.45, LOW: 0.25 };
+
+async function compareOpenRoles(startupId) {
+  const gaps = await pool.query(
+    `SELECT id, role, priority_level, seeking_type, reason, required_skills, coverage
+     FROM gaps
+     WHERE startup_id = $1 AND status NOT IN ('FILLED','DISMISSED')`,
+    [startupId]
+  );
+  if (gaps.rows.length === 0) return { success: true, roles: [] };
+
+  const recs = await pool.query(
+    `SELECT r.source_gap_id, r.target_user_id, r.score, r.explanation, r.score_breakdown,
+            p.headline AS candidate_headline, p.display_name AS candidate_name
+     FROM recommendations r
+     JOIN profiles p ON p.user_id = r.target_user_id
+     JOIN gaps g ON g.id = r.source_gap_id
+     WHERE r.startup_id = $1 AND r.status = 'ACTIVE' AND g.status NOT IN ('FILLED','DISMISSED')
+     ORDER BY r.score DESC`,
+    [startupId]
+  );
+
+  const byGap = new Map();
+  for (const r of recs.rows) {
+    if (!byGap.has(r.source_gap_id)) byGap.set(r.source_gap_id, []);
+    byGap.get(r.source_gap_id).push(r);
+  }
+
+  const roles = gaps.rows.map((g) => {
+    const candidates = byGap.get(g.id) || [];
+    const best = candidates[0] || null;
+    const bestScore = best ? parseFloat(best.score) || 0 : 0;
+    const urgency = PRIORITY_WEIGHT[g.priority_level] ?? 0.25;
+
+    return {
+      gapId: g.id,
+      role: g.role,
+      priority: g.priority_level,
+      seekingType: g.seeking_type,
+      reason: g.reason,
+      requiredSkills: g.required_skills || [],
+      candidateCount: candidates.length,
+      best: best
+        ? {
+            userId: best.target_user_id,
+            name: best.candidate_name,
+            headline: best.candidate_headline,
+            score: bestScore,
+            explanation: best.explanation,
+          }
+        : null,
+      urgency,
+      // Urgency alone tells you what hurts most. Readiness alone tells you
+      // what you could close today. The product of the two is what a founder
+      // with limited capacity actually wants, and it is shown alongside both
+      // inputs rather than instead of them.
+      actionability: Math.round(urgency * bestScore * 100),
+    };
+  });
+
+  roles.sort((a, b) => b.actionability - a.actionability);
+
+  // Named honestly: the role most worth moving on, not "the best role".
+  const startHere = roles.find((r) => r.best !== null) || null;
+  // Urgent but nobody to hire is a genuinely different situation, and the one
+  // most likely to be missed, so it is surfaced rather than buried at the
+  // bottom of an actionability sort.
+  const urgentButStuck = roles.filter(
+    (r) => (r.priority === 'CRITICAL' || r.priority === 'HIGH') && (r.best === null || r.best.score < 0.4)
+  );
+
+  return { success: true, roles, startHere, urgentButStuck };
+}
+
+module.exports = { compareOpenRoles, domainsMatch, refreshRankingsForContributor, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
