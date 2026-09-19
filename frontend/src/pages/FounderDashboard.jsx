@@ -20,7 +20,7 @@ import { getGaps, getReadiness, getReadinessHistory } from '../services/startups
  * persisted design system (design-system/capforge/MASTER.md).
  */
 export default function FounderDashboard() {
-  const { isAdmin } = useMyIdentity();
+  const { isAdmin, persona } = useMyIdentity();
   const { activeStartup, loading: startupLoading } = useActiveStartup();
   const [loading, setLoading] = useState(true);
   const [startup, setStartup] = useState(null);
@@ -52,6 +52,19 @@ export default function FounderDashboard() {
   }, [loading]);
 
   if (isAdmin) return <Navigate to="/app/admin" replace />;
+
+  // CONFIRMED BUG: /app is routed to this component for EVERY persona, so a
+  // contributor or investor arriving here, from a bookmark, from a redirect
+  // after sign-in, or from any link pointing at /app, was shown the founder's
+  // dashboard telling them they had not created a startup. Correct for a
+  // founder with no venture; nonsense for someone who is not a founder at all.
+  //
+  // Fixed at the ROUTE rather than at each link, because a link is one of many
+  // ways to arrive here and fixing them individually leaves the next one
+  // broken. persona is null while identity is still loading, so this waits
+  // rather than guessing, which is the same trap useMyPersona was fixed for.
+  if (persona === 'CONTRIBUTOR') return <Navigate to="/app/contributor" replace />;
+  if (persona === 'INVESTOR') return <Navigate to="/app/investor" replace />;
 
   if (loading) return <Shell title="Dashboard"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-trust animate-spin" /></div></Shell>;
 
