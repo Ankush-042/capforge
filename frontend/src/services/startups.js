@@ -139,3 +139,6 @@ export const getMyStanding = () => apiFetch('/my-standing');
 // The assistant, from the contributor's side of the table.
 export const askAboutMyMatches = (question) =>
   apiFetch('/ask-about-my-matches', { method: 'POST', body: JSON.stringify({ question }) });
+
+// Which conversation a contributor should start first.
+export const getWhereToStart = () => apiFetch('/where-to-start');

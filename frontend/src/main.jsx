@@ -34,6 +34,7 @@ import Workspace from './pages/Workspace.jsx';
 import ContributorDashboard from './pages/ContributorDashboard.jsx';
 import ContributorOpportunities from './pages/ContributorOpportunities.jsx';
 import ContributorStanding from './pages/ContributorStanding.jsx';
+import WhereToStart from './pages/WhereToStart.jsx';
 import SkillDemand from './pages/SkillDemand.jsx';
 import ContributorEquityAsk from './pages/ContributorEquityAsk.jsx';
 
@@ -123,6 +124,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/pitch/edit" element={<ProtectedRoute><PitchEditor /></ProtectedRoute>} />
         <Route path="/app/pitch/:id/edit" element={<ProtectedRoute><PitchEditor /></ProtectedRoute>} />
         <Route path="/app/pitch/:id" element={<ProtectedRoute><PitchMode /></ProtectedRoute>} />
+        <Route path="/app/contributor/where-to-start" element={<ProtectedRoute><WhereToStart /></ProtectedRoute>} />
         <Route path="/app/contributor/standing" element={<ProtectedRoute><ContributorStanding /></ProtectedRoute>} />
         <Route path="/app/contributor/opportunities" element={<ProtectedRoute><ContributorOpportunities /></ProtectedRoute>} />
         <Route path="/app/contributor/skill-demand" element={<ProtectedRoute><SkillDemand /></ProtectedRoute>} />
