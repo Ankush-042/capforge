@@ -913,4 +913,109 @@ async function compareOpenRoles(startupId) {
   return { success: true, roles, startHere, urgentButStuck };
 }
 
-module.exports = { compareOpenRoles, domainsMatch, refreshRankingsForContributor, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
+
+/**
+ * Which conversation a contributor should start first.
+ *
+ * The founder side got this: every open role weighed against each other, with
+ * urgency and candidate strength shown separately. A contributor with five
+ * interested ventures had Compare, which weighs them on criteria, but nothing
+ * that says start here and why.
+ *
+ * THE INSIGHT IS DIFFERENT FROM THE FOUNDER'S, and it took working out. For a
+ * founder the question is what can I move. For a contributor it is where do I
+ * matter most, which is not the same as where do I fit best.
+ *
+ * The piece they genuinely cannot see: HOW MANY OTHER PEOPLE FIT THE SAME
+ * ROLE. Being one of eight candidates for a role is a completely different
+ * position from being the only person who fits, and it changes both the odds
+ * of a reply and the leverage in any conversation that follows. A contributor
+ * has no way to know this and the platform knows it exactly.
+ *
+ * So: your fit, how badly they need that role, and how few alternatives they
+ * have. All three shown separately as well as combined, because a contributor
+ * who disagrees with the ordering should still be able to read the parts.
+ *
+ * Venture readiness is shown and NOT folded into the ranking. A low-readiness
+ * venture is riskier and earlier, which for a contributor is both a warning
+ * and the reason the equity is worth more. Scoring it would pick a side on a
+ * trade-off that is genuinely theirs to make.
+ */
+async function whereToStart(userId) {
+  const recs = await pool.query(
+    `SELECT r.id, r.score, r.explanation, r.source_gap_id, r.startup_id,
+            s.name AS startup_name, s.domain, s.stage, s.founder_id,
+            g.role AS gap_role, g.priority_level, g.seeking_type,
+            (SELECT overall_score FROM readiness_assessments ra
+             WHERE ra.startup_id = s.id ORDER BY ra.generated_at DESC LIMIT 1) AS readiness,
+            (SELECT COUNT(*) FROM recommendations r2
+             WHERE r2.source_gap_id = r.source_gap_id AND r2.status = 'ACTIVE'
+               AND r2.score >= 0.20) AS rival_count
+     FROM recommendations r
+     JOIN startups s ON s.id = r.startup_id
+     JOIN gaps g ON g.id = r.source_gap_id
+     WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR'
+       AND r.status = 'ACTIVE' AND g.status NOT IN ('FILLED','DISMISSED')
+       AND r.score >= 0.20
+       AND NOT EXISTS (
+         SELECT 1 FROM recommendation_feedback f
+         WHERE f.recommendation_id = r.id AND f.user_id = $1
+           AND f.action IN ('DISMISS','REJECT')
+       )
+     ORDER BY r.score DESC`,
+    [userId]
+  );
+
+  // Conversations they have already started, so the page does not tell someone
+  // to reach out to a venture they are already talking to.
+  const talking = await pool.query(
+    `SELECT DISTINCT startup_id FROM conversations
+     WHERE (participant_a_id = $1 OR participant_b_id = $1) AND startup_id IS NOT NULL`,
+    [userId]
+  );
+  const alreadyTalking = new Set(talking.rows.map((r) => r.startup_id));
+
+  const options = recs.rows.map((r) => {
+    const fit = parseFloat(r.score) || 0;
+    const need = PRIORITY_WEIGHT[r.priority_level] ?? 0.25;
+    const rivals = Math.max(0, (parseInt(r.rival_count) || 1) - 1);
+
+    // Scarcity: being the only fit is worth a lot, and the advantage falls
+    // away quickly rather than linearly. Two rivals is meaningfully different
+    // from none; eight is barely different from six.
+    const scarcity = 1 / (1 + rivals * 0.5);
+
+    return {
+      recommendationId: r.id,
+      gapId: r.source_gap_id,
+      startupId: r.startup_id,
+      startupName: r.startup_name,
+      domain: r.domain,
+      stage: r.stage,
+      founderId: r.founder_id,
+      role: r.gap_role,
+      priority: r.priority_level,
+      seekingType: r.seeking_type,
+      fit: Math.round(fit * 100),
+      need: Math.round(need * 100),
+      rivals,
+      onlyFit: rivals === 0,
+      readiness: r.readiness !== null ? Math.round(parseFloat(r.readiness)) : null,
+      alreadyTalking: alreadyTalking.has(r.startup_id),
+      strengths: r.explanation?.strengths || [],
+      limitations: r.explanation?.limitations || [],
+      leverage: Math.round(fit * need * scarcity * 100),
+    };
+  });
+
+  options.sort((a, b) => b.leverage - a.leverage);
+
+  const startHere = options.find((o) => !o.alreadyTalking) || null;
+  // Worth naming separately: strong fits where they are the only candidate.
+  // That is the rarest and most valuable position a contributor can be in.
+  const onlyFitFor = options.filter((o) => o.onlyFit && o.fit >= 50 && !o.alreadyTalking);
+
+  return { success: true, options, startHere, onlyFitFor };
+}
+
+module.exports = { whereToStart, compareOpenRoles, domainsMatch, refreshRankingsForContributor, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };

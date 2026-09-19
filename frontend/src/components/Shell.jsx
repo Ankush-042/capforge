@@ -96,6 +96,7 @@ const NAV_BY_PERSONA = {
       items: [
         { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
         { label: 'Opportunities', icon: Target, path: '/app/contributor/opportunities' },
+        { label: 'Where to start', icon: Scale, path: '/app/contributor/where-to-start' },
         { label: 'Compare', icon: Scale, path: '/app/contributor/offers' },
       ],
     },

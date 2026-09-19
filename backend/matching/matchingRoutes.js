@@ -73,4 +73,11 @@ router.get('/my-standing', requireAuth, async (req, res) => {
   res.json(result);
 });
 
+// Which conversation to start first. The founder side had this for roles;
+// a contributor with five interested ventures had nothing.
+router.get('/where-to-start', requireAuth, async (req, res) => {
+  const { whereToStart } = require('./matchingService');
+  res.json(await whereToStart(req.user.userId));
+});
+
 module.exports = router;
