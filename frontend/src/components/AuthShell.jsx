@@ -125,23 +125,23 @@ export function AuthShell({ mode }) {
       </header>
 
       <div className="flex-1 flex items-center justify-center px-6 py-10">
-        <div className={`grid gap-16 w-full items-center ${isSignUp ? 'lg:grid-cols-[1fr_460px] max-w-5xl' : 'lg:grid-cols-2 max-w-4xl'}`}>
+        <div className={`grid gap-20 w-full items-center ${isSignUp ? 'lg:grid-cols-[1.15fr_440px] max-w-6xl' : 'lg:grid-cols-[1.1fr_420px] max-w-5xl'}`}>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:block"
+            className="hidden lg:block pr-4"
           >
-            <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase text-forest-600 mb-4">
+            <p className="flex items-center gap-2 text-[12px] font-semibold tracking-[0.16em] uppercase text-forest-600 mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-forest-500" />
               {isSignUp ? 'Where startups actually begin' : 'Welcome back'}
             </p>
-            <h1 className="font-display text-[40px] font-semibold text-ink-950 leading-[1.08] tracking-tight">
+            <h1 className="font-display text-[52px] font-semibold text-ink-950 leading-[1.05] tracking-[-0.02em]">
               {isSignUp
                 ? <>It starts with one idea and one person who <span className="italic font-normal text-forest-600">believes it.</span></>
                 : <>Someone may have <span className="italic font-normal text-forest-600">written back.</span></>}
             </h1>
-            <p className="text-ink-700 mt-5 text-[15.5px] leading-relaxed max-w-md">
+            <p className="text-ink-700 mt-6 text-[17px] leading-[1.65] max-w-lg">
               {isSignUp
                 ? 'Share what you cannot stop thinking about, find the person who wants to build it with you, and grow it until investors come looking.'
                 : 'Pick up where you left off.'}
