@@ -87,6 +87,9 @@ app.use('/api', (req, res, next) => {
 const whatsNewRoutes = require('./shared/whatsNewRoutes');
 app.use('/api', whatsNewRoutes);
 
+const roomsRoutes = require('./rooms/roomsRoutes');
+app.use('/api', roomsRoutes);
+
 const assistantRoutes = require('./assistant/assistantRoutes');
 app.use('/api', assistantRoutes);
 
