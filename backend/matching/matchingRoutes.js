@@ -63,4 +63,14 @@ router.get('/startups/:id/role-comparison', requireAuth, async (req, res) => {
   res.json(await compareOpenRoles(req.params.id));
 });
 
+// How a contributor is actually doing, and why. A founder gets readiness and
+// a breakdown of what is holding it back; a contributor got nothing about
+// themselves at all.
+router.get('/my-standing', requireAuth, async (req, res) => {
+  const { getContributorStanding } = require('./contributorStandingService');
+  const result = await getContributorStanding(req.user.userId);
+  if (!result.success) return res.status(400).json(result);
+  res.json(result);
+});
+
 module.exports = router;

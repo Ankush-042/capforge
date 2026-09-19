@@ -132,3 +132,6 @@ export const removeFromWatchlist = (startupId) =>
 // Rewrite a spark that did not land, and lift it back into the feed.
 export const updateSpark = (sparkId, updates) =>
   apiFetch(`/sparks/${sparkId}`, { method: 'PATCH', body: JSON.stringify(updates) });
+
+// How a contributor is actually doing, and why.
+export const getMyStanding = () => apiFetch('/my-standing');

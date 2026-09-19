@@ -102,6 +102,7 @@ const NAV_BY_PERSONA = {
     {
       group: 'Your worth',
       items: [
+        { label: 'How you are doing', icon: Activity, path: '/app/contributor/standing' },
         { label: 'Skill demand', icon: BarChart3, path: '/app/contributor/skill-demand' },
         { label: 'Learning', icon: GraduationCap, path: '/app/contributor/learning' },
         { label: 'Equity ask', icon: HandCoins, path: '/app/contributor/equity-ask' },
