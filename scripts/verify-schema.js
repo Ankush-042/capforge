@@ -117,14 +117,24 @@ for (const file of walk(BACKEND)) {
     }
 
     // Unknown tables
+    // Common Table Expressions are named inline by the query itself and are
+    // not real tables. Without collecting them first, every WITH ... AS (...)
+    // is reported as an unknown table, which trains people to ignore this
+    // guard, which is the one thing it cannot survive.
+    const cteNames = new Set();
+    const cteRe = /(?:\bWITH\b|,)\s*(\w+)\s+AS\s*\(/gi;
+    let cteMatch;
+    while ((cteMatch = cteRe.exec(sql)) !== null) cteNames.add(cteMatch[1].toLowerCase());
+
     const tableRe = /\b(?:FROM|JOIN|INSERT INTO|UPDATE)\s+(\w+)/gi;
     let m;
     while ((m = tableRe.exec(sql)) !== null) {
       const t = m[1];
-      if (tables.has(t) || aliases.has(t)) continue;
+      if (tables.has(t) || aliases.has(t) || cteNames.has(t.toLowerCase())) continue;
       if (/^\$/.test(t)) continue;
       // UPDATE <t> SET: 'SET' is a keyword, not a table. Postgres functions too.
-      if (['SET','unnest','generate_series','jsonb_array_elements'].includes(t)) continue;
+      // LATERAL is a join modifier, not a table: 'CROSS JOIN LATERAL unnest(...)'
+      if (['SET','LATERAL','unnest','generate_series','jsonb_array_elements'].includes(t)) continue;
       problems.push({ file: rel, kind: 'UNKNOWN TABLE', detail: t });
     }
 

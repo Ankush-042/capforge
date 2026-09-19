@@ -142,3 +142,11 @@ export const askAboutMyMatches = (question) =>
 
 // Which conversation a contributor should start first.
 export const getWhereToStart = () => apiFetch('/where-to-start');
+
+// Rooms: the one low-stakes door in this product.
+export const listRooms = () => apiFetch('/rooms');
+export const getRoom = (room) => apiFetch(`/rooms/${encodeURIComponent(room)}`);
+export const postToRoom = (room, body, parentId) =>
+  apiFetch(`/rooms/${encodeURIComponent(room)}/posts`, { method: 'POST', body: JSON.stringify({ body, parentId }) });
+export const toggleHelped = (postId) => apiFetch(`/rooms/posts/${postId}/helped`, { method: 'POST' });
+export const deleteRoomPost = (postId) => apiFetch(`/rooms/posts/${postId}`, { method: 'DELETE' });
