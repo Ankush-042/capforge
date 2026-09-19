@@ -65,9 +65,14 @@ async function getContributorStanding(userId) {
        WHERE g.status NOT IN ('FILLED','DISMISSED')
          AND u.email != 'system.import@capforge.internal'
          AND s.verification_status != 'UNVERIFIED'
-         AND ($2::text[] IS NULL OR array_length($2::text[], 1) IS NULL
-              OR EXISTS (SELECT 1 FROM unnest(s.domain) d WHERE lower(d) = ANY($2::text[])))`,
-      [userId, (p.preferred_domains || []).map((d) => String(d).toLowerCase())]
+         AND ($1::text[] IS NULL OR array_length($1::text[], 1) IS NULL
+              OR EXISTS (SELECT 1 FROM unnest(s.domain) d WHERE lower(d) = ANY($1::text[])))`,
+      // BUG: this passed [userId, domains] while the SQL only ever referenced
+      // $2. Postgres rejects a statement whose parameters are not all used in
+      // sequence, so the entire page failed to load. userId is not needed
+      // here: this counts open roles across the WHOLE platform in these
+      // fields, which is the point of the comparison.
+      [(p.preferred_domains || []).map((d) => String(d).toLowerCase())]
     ),
     pool.query(
       `SELECT COUNT(*)::int AS n FROM recommendation_feedback
