@@ -29,20 +29,20 @@ const ROLES = [
   {
     value: 'FOUNDER',
     icon: Lightbulb,
-    label: 'I have an idea',
-    detail: 'Find the people to build it with, then the money to grow it.',
+    label: 'Founder',
+    detail: 'You have an idea. Find the people to build it with, then the money to grow it.',
   },
   {
     value: 'CONTRIBUTOR',
     icon: Hammer,
-    label: 'I want to build',
-    detail: 'Find something worth your years, early enough that it is yours too.',
+    label: 'Contributor',
+    detail: 'You want to build. Join something early enough that it is yours too.',
   },
   {
     value: 'INVESTOR',
     icon: Landmark,
-    label: 'I back companies',
-    detail: 'See ventures as they form, with honest signal on what is real.',
+    label: 'Investor',
+    detail: 'You back companies. See ventures as they form, with honest signal on what is real.',
   },
 ];
 
