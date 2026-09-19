@@ -26,6 +26,10 @@ async function createSpark(userId, { title, theIdea, whyMe, lookingFor, tags }) 
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
     [userId, title.trim(), theIdea.trim(), whyMe?.trim() || null, lookingFor?.trim() || null, tags || []]
   );
+  // Tell the few people this genuinely needs. After the row exists, and
+  // fire-and-forget: posting must never fail because notification did.
+  pushSparkToFits(result.rows[0]).catch(() => {});
+
   return { success: true, spark: result.rows[0] };
 }
 
@@ -49,9 +53,13 @@ async function createSpark(userId, { title, theIdea, whyMe, lookingFor, tags }) 
  * Deterministic on purpose: no LLM call, no embedding lookup, nothing that can
  * rate limit or fail. Opening the feed must never depend on an AI being up.
  */
-function sparkRelevance(spark, viewer) {
-  if (!viewer) return 0;
+function sparkRelevance(spark, viewer, opts = {}) {
+  if (!viewer) return opts.detailed ? { score: 0, roleEvidence: 0, domainEvidence: 0 } : 0;
   let score = 0;
+  // Tracked separately because "right field" and "right person" are different
+  // claims, and a push must rest on the second.
+  let roleEvidence = 0;
+  let domainEvidence = 0;
 
   const { domainsMatch } = require('../matching/matchingService');
 
@@ -60,7 +68,7 @@ function sparkRelevance(spark, viewer) {
   const tags = (spark.tags || []).map(t => String(t).toLowerCase().trim());
   const domains = (viewer.preferred_domains || []).map(d => String(d).toLowerCase().trim());
   for (const t of tags) {
-    if (domains.some(d => domainsMatch(d, t))) { score += 3; break; }
+    if (domains.some(d => domainsMatch(d, t))) { score += 3; domainEvidence += 3; break; }
   }
 
   // "looking_for" on a spark is the founder describing the person they hope
@@ -70,21 +78,22 @@ function sparkRelevance(spark, viewer) {
   if (lookingFor) {
     const headline = String(viewer.headline || '').toLowerCase();
     const headlineWords = headline.split(/[\s/,-]+/).filter(w => w.length > 3);
-    if (headlineWords.some(w => lookingFor.includes(w))) score += 3;
+    if (headlineWords.some(w => lookingFor.includes(w))) { score += 3; roleEvidence += 3; }
 
     const skills = (viewer.skills || []).map(sk => String(sk).toLowerCase());
     const hit = skills.filter(sk => sk.length > 3 && lookingFor.includes(sk)).length;
     score += Math.min(hit, 3);
+    roleEvidence += Math.min(hit, 3);
   }
 
   // The idea itself against the fields they care about, weaker than an
   // explicit tag match but real.
   const idea = `${spark.title || ''} ${spark.the_idea || ''}`.toLowerCase();
   for (const d of domains) {
-    if (d.length > 3 && idea.includes(d)) { score += 1; break; }
+    if (d.length > 3 && idea.includes(d)) { score += 1; domainEvidence += 1; break; }
   }
 
-  return score;
+  return opts.detailed ? { score, roleEvidence, domainEvidence } : score;
 }
 
 async function listSparks({ viewerId, tag, limit = 40 } = {}) {
@@ -112,7 +121,7 @@ async function listSparks({ viewerId, tag, limit = 40 } = {}) {
      FROM sparks s
      JOIN profiles p ON p.user_id = s.author_id
      WHERE ${where}
-     ORDER BY s.created_at DESC
+     ORDER BY COALESCE(s.resurfaced_at, s.created_at) DESC
      LIMIT ${limitParam}`,
     params
   );
@@ -140,7 +149,7 @@ async function listSparks({ viewerId, tag, limit = 40 } = {}) {
       if (withRelevance.some(x => x.r > 0)) {
         withRelevance.sort((a, b) => {
           if (b.r !== a.r) return b.r - a.r;
-          return new Date(b.sp.created_at) - new Date(a.sp.created_at);
+          return new Date(b.sp.resurfaced_at || b.sp.created_at) - new Date(a.sp.resurfaced_at || a.sp.created_at);
         });
         return { success: true, sparks: withRelevance.map(x => x.sp) };
       }
@@ -172,6 +181,161 @@ async function recordSparkView(sparkId, viewerId, authorId) {
     );
   } catch (err) {
     console.error('Spark view record failed (non-fatal):', err.message);
+  }
+}
+
+
+const RESURFACE_COOLDOWN_HOURS = 24;
+
+/**
+ * Rewrite a spark, and optionally lift it back into the feed.
+ *
+ * The first attempt at describing an idea is almost always the worst one: it
+ * is written before anyone has reacted, before the author has had to explain
+ * it out loud, before they know which part people find confusing. A spark's
+ * whole job is turning attention into a conversation, and the highest-leverage
+ * thing for that is letting someone fix what did not land.
+ *
+ * RESURFACING IS RATE LIMITED, and that limit is the point. Editing alone
+ * changes nothing if the spark stays buried by recency, but without a cooldown
+ * "edit" becomes a bump button and the feed becomes whoever edits most often.
+ * Once a day, tied to an actual rewrite.
+ *
+ * A spark that has already become a venture cannot be edited. Its words are
+ * what other people committed to, and rewriting them afterwards would change
+ * the thing they said yes to.
+ */
+async function updateSpark(sparkId, authorId, updates) {
+  const existing = await pool.query(`SELECT * FROM sparks WHERE id = $1`, [sparkId]);
+  if (existing.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
+  const spark = existing.rows[0];
+
+  if (spark.author_id !== authorId) return { success: false, error: 'NOT_AUTHORIZED' };
+
+  // Once people have committed, the words are no longer only the author's.
+  if (spark.status === 'FORMED') return { success: false, error: 'ALREADY_FORMED' };
+
+  const allowed = ['title', 'the_idea', 'why_me', 'looking_for', 'tags'];
+  const fields = Object.keys(updates || {}).filter((k) => allowed.includes(k) && updates[k] !== undefined);
+  if (fields.length === 0) return { success: false, error: 'NOTHING_TO_UPDATE' };
+
+  if (updates.title !== undefined && !String(updates.title).trim()) {
+    return { success: false, error: 'TITLE_REQUIRED' };
+  }
+  if (updates.the_idea !== undefined && String(updates.the_idea).trim().length < 40) {
+    return { success: false, error: 'IDEA_TOO_SHORT' };
+  }
+
+  // Whether this rewrite may also lift it back into the feed.
+  const lastLift = spark.resurfaced_at || spark.created_at;
+  const hoursSince = (Date.now() - new Date(lastLift).getTime()) / 3600000;
+  const canResurface = hoursSince >= RESURFACE_COOLDOWN_HOURS;
+
+  const setClauses = fields.map((f, i) => `${f} = $${i + 3}`).join(', ');
+  const values = fields.map((f) => updates[f]);
+
+  const result = await pool.query(
+    `UPDATE sparks SET ${setClauses},
+            edited_at = now(),
+            edit_count = edit_count + 1,
+            updated_at = now()
+            ${canResurface ? ', resurfaced_at = now()' : ''}
+     WHERE id = $1 AND author_id = $2
+     RETURNING *`,
+    [sparkId, authorId, ...values]
+  );
+
+  return {
+    success: true,
+    spark: result.rows[0],
+    resurfaced: canResurface,
+    // Told plainly rather than silently ignored, so an author who rewrote
+    // twice in an hour knows why nothing moved.
+    nextResurfaceInHours: canResurface ? null : Math.ceil(RESURFACE_COOLDOWN_HOURS - hoursSince),
+  };
+}
+
+
+const PUSH_MAX_RECIPIENTS = 5;
+const PUSH_MIN_RELEVANCE = 4;
+const PUSH_QUIET_DAYS = 3;
+
+/**
+ * Tell the handful of people a spark genuinely needs.
+ *
+ * A spark waits to be found. The platform already knows every contributor's
+ * skills, fields and stated mission, so it can do better than waiting: it can
+ * tell the few people who actually fit that someone is building the thing they
+ * care about. That matters most at cold start, when the feed is thin and
+ * nobody is browsing much.
+ *
+ * THE OBVIOUS FAILURE MODE, and the three guards against it. With few sparks
+ * and few contributors, the same handful of people would hear about
+ * everything, and a good mechanism becomes spam inside a week:
+ *
+ *   1. PUSH_MIN_RELEVANCE — only a genuine fit qualifies, not a weak one.
+ *      The threshold is deliberately above a bare tag match.
+ *   2. PUSH_MAX_RECIPIENTS — at most five people per spark, the best fits
+ *      only. A spark that "matches" twenty people matches nobody.
+ *   3. PUSH_QUIET_DAYS — nobody hears about a spark twice in three days,
+ *      however well they fit the next one.
+ *
+ * The founder never sees a list and never picks recipients. Letting them
+ * choose would turn this into cold outreach, which is the thing this product
+ * exists to replace.
+ *
+ * Fire-and-forget. A spark posting must never fail because notification did.
+ */
+async function pushSparkToFits(spark) {
+  try {
+    const candidates = await pool.query(
+      `SELECT p.user_id, p.headline, p.skills, cp.preferred_domains
+       FROM profiles p
+       JOIN contributor_profiles cp ON cp.profile_id = p.id
+       JOIN users u ON u.id = p.user_id
+       WHERE u.primary_role = 'CONTRIBUTOR'
+         AND p.visibility = 'DISCOVERABLE'
+         AND p.user_id != $1
+         AND NOT EXISTS (
+           SELECT 1 FROM notifications n
+           WHERE n.user_id = p.user_id
+             AND n.type = 'SPARK_FITS_YOU'
+             AND n.created_at > now() - interval '${PUSH_QUIET_DAYS} days'
+         )`,
+      [spark.author_id]
+    );
+
+    // ROLE EVIDENCE IS REQUIRED, not merely a high enough total. A test
+    // caught a product designer in healthcare scoring exactly at the threshold
+    // for a spark that explicitly asked for a backend engineer who knows
+    // python, purely because they shared a field. Being in the right field is
+    // not a reason to interrupt someone: the spark said what it wanted, and a
+    // push has to rest on that rather than on adjacency.
+    //
+    // Same principle as the capability ceiling on the contributor side, where
+    // alignment alone could not carry someone into a role they could not do.
+    const scored = candidates.rows
+      .map((c) => ({ c, d: sparkRelevance(spark, c, { detailed: true }) }))
+      .filter((x) => x.d.score >= PUSH_MIN_RELEVANCE && x.d.roleEvidence > 0)
+      .sort((a, b) => b.d.score - a.d.score)
+      .slice(0, PUSH_MAX_RECIPIENTS);
+
+    if (scored.length === 0) return { pushed: 0 };
+
+    const { createNotification } = require('../notifications/notificationService');
+    for (const { c } of scored) {
+      await createNotification(c.user_id, {
+        type: 'SPARK_FITS_YOU',
+        title: 'Someone is building something you might care about',
+        message: `"${spark.title}" needs the kind of work you do.`,
+        referenceType: 'SPARK',
+        referenceId: spark.id,
+      });
+    }
+    return { pushed: scored.length };
+  } catch (err) {
+    console.error('Spark push failed (non-fatal):', err.message);
+    return { pushed: 0 };
   }
 }
 
@@ -408,4 +572,4 @@ async function getMySparks(userId) {
   return { success: true, authored: authored.rows, resonated: resonated.rows };
 }
 
-module.exports = { createSpark, listSparks, getSpark, resonate, commitToSpark, getMySparks };
+module.exports = { updateSpark, pushSparkToFits, sparkRelevance, createSpark, listSparks, getSpark, resonate, commitToSpark, getMySparks };

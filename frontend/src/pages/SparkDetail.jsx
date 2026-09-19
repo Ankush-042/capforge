@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Flame, MessageCircle, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import { updateSpark } from '../services/startups.js';
 import { getSpark, resonateWithSpark, commitToSpark } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -23,6 +24,9 @@ export default function SparkDetail() {
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({ title: '', the_idea: '', looking_for: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [committing, setCommitting] = useState(false);
@@ -70,6 +74,36 @@ export default function SparkDetail() {
     }
   }
 
+  function startEditing() {
+    setDraft({
+      title: data.spark.title || '',
+      the_idea: data.spark.the_idea || '',
+      looking_for: data.spark.looking_for || '',
+    });
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    if (!draft.title.trim() || draft.the_idea.trim().length < 40) {
+      showToast('Give it a title, and say a bit more about the idea.', 'error');
+      return;
+    }
+    setSavingEdit(true);
+    const { ok, data: res } = await updateSpark(id, draft);
+    setSavingEdit(false);
+    if (!ok || !res?.success) {
+      showToast(res?.error === 'ALREADY_FORMED'
+        ? 'This has already become a venture, so its words are not only yours to change.'
+        : 'Could not save that.', 'error');
+      return;
+    }
+    setData({ ...data, spark: res.spark });
+    setEditing(false);
+    showToast(res.resurfaced
+      ? 'Rewritten, and back near the top of the feed.'
+      : `Rewritten. It can be lifted back into the feed in ${res.nextResurfaceInHours}h.`);
+  }
+
   if (loading) {
     return <Shell title="Spark"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
   }
@@ -86,6 +120,69 @@ export default function SparkDetail() {
           problems: the first is distribution, the second is description. This
           says which one it is, in plain terms, without lecturing them about
           their own idea. */}
+      {/* REWRITING WHAT DID NOT LAND. The first attempt at describing an idea
+          is almost always the worst one: written before anyone reacted, before
+          the author had to explain it aloud, before they knew which part
+          confused people. A spark's whole job is turning attention into a
+          conversation, and letting someone fix it is the highest-leverage
+          thing for that. */}
+      {isAuthor && editing && (
+        <div className="bg-surface rounded-xl border border-violet-500/40 shadow-card p-7 mb-5">
+          <p className="text-[16px] font-semibold text-ink-950 mb-1">Rewrite it</p>
+          <p className="text-[13px] text-ink-500 mb-5">
+            Nobody is told it changed. Anyone who already said they want in keeps their conversation with you.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Title</label>
+              <input
+                value={draft.title}
+                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                className="w-full px-4 py-3 rounded-lg border border-surface-border bg-surface-muted text-[15px] text-ink-900 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">The idea</label>
+              <textarea
+                value={draft.the_idea}
+                onChange={(e) => setDraft({ ...draft, the_idea: e.target.value })}
+                rows={6}
+                className="w-full px-4 py-3 rounded-lg border border-surface-border bg-surface-muted text-[15px] text-ink-900 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors resize-none leading-relaxed"
+              />
+              <p className="text-[12px] text-ink-500 mt-1.5">{draft.the_idea.trim().length} characters, 40 minimum</p>
+            </div>
+            <div>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Who you hope finds this</label>
+              <input
+                value={draft.looking_for}
+                onChange={(e) => setDraft({ ...draft, looking_for: e.target.value })}
+                placeholder="A backend engineer who has worked in healthcare"
+                className="w-full px-4 py-3 rounded-lg border border-surface-border bg-surface-muted text-[15px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors"
+              />
+              {/* This field is not decoration: it is what decides who gets
+                  told about this spark. */}
+              <p className="text-[12px] text-ink-500 mt-1.5">
+                This decides who hears about it, so being specific helps more than being broad.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 mt-6">
+            <button
+              onClick={saveEdit}
+              disabled={savingEdit}
+              className="bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-full text-[14px] font-medium transition-colors disabled:opacity-50"
+            >
+              {savingEdit ? 'Saving…' : 'Save and resurface'}
+            </button>
+            <button onClick={() => setEditing(false)} className="text-[13.5px] text-ink-500 hover:text-ink-900 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {isAuthor && data.reach && (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6 mb-5">
           <div className="flex items-center gap-8 mb-3">
@@ -101,6 +198,7 @@ export default function SparkDetail() {
               <p className="text-[12px] text-ink-500 mt-1">said they want in</p>
             </div>
           </div>
+          <div className="flex items-start justify-between gap-6">
           <p className="text-[13.5px] text-ink-700 leading-relaxed">
             {data.reach.state === 'UNSEEN'
               ? 'Nobody has opened it yet. That is a reach problem, not a writing problem, and it usually just means it is early.'
@@ -110,6 +208,15 @@ export default function SparkDetail() {
                   ? 'It is landing. Someone read this and wanted in, which is the whole point.'
                   : 'People are reading it and not responding. That points at how it is written rather than who is seeing it: usually the problem it solves is not clear enough yet.'}
           </p>
+          {!editing && (
+            <button
+              onClick={startEditing}
+              className="shrink-0 text-[13px] font-medium text-violet-700 hover:text-violet-600 transition-colors"
+            >
+              Rewrite it
+            </button>
+          )}
+          </div>
         </div>
       )}
 
