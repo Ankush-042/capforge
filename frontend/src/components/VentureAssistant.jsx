@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Send, X, AlertTriangle } from 'lucide-react';
-import { askAboutVenture } from '../services/startups.js';
+import { askAboutVenture, askAboutMyMatches } from '../services/startups.js';
 
 /**
  * Ask about your own venture.
@@ -18,13 +18,19 @@ import { askAboutVenture } from '../services/startups.js';
  * visibility even when no model is reachable.
  */
 
-const SUGGESTIONS = [
+const FOUNDER_SUGGESTIONS = [
   'How close am I to investors seeing me?',
   'What is holding my readiness back?',
   'Which role should I fill first, and why?',
 ];
 
-function DegradedFacts({ facts, note }) {
+const CONTRIBUTOR_SUGGESTIONS = [
+  'Which of these is the strongest fit for me?',
+  'What are the weaknesses in the ones matching me?',
+  'Which one should I be most careful about?',
+];
+
+function DegradedFacts({ facts, note, isContributor }) {
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
       <div className="flex items-start gap-2.5 mb-3">
@@ -32,25 +38,42 @@ function DegradedFacts({ facts, note }) {
         <p className="text-[13.5px] text-amber-800 leading-relaxed">{note}</p>
       </div>
       <div className="space-y-1.5 pl-[26px]">
-        {facts.score !== null && (
+        {isContributor ? (
+          <>
+            <p className="text-[13.5px] text-amber-800">
+              {facts.matchCount === 0 ? 'Nothing currently matches you.' : `${facts.matchCount} ${facts.matchCount === 1 ? 'venture matches' : 'ventures match'} you.`}
+            </p>
+            {facts.best && (
+              <p className="text-[13.5px] text-amber-800">
+                Best fit: {facts.best.name} — {facts.best.role}, {facts.best.fit}%.
+              </p>
+            )}
+            <p className="text-[13.5px] text-amber-800">
+              {facts.conversations === 0 ? 'No conversations started yet.' : `${facts.conversations} ${facts.conversations === 1 ? 'conversation' : 'conversations'} open.`}
+            </p>
+          </>
+        ) : null}
+        {!isContributor && facts.score !== null && (
           <p className="text-[13.5px] text-amber-800">
             Readiness {facts.score}
             {facts.visibleToInvestors ? ' — investors can see you.' : ` — ${facts.pointsFromVisibility} from investor visibility.`}
           </p>
         )}
-        {facts.openRoles?.length > 0 && (
+        {!isContributor && facts.openRoles?.length > 0 && (
           <p className="text-[13.5px] text-amber-800">Open roles: {facts.openRoles.join(', ')}.</p>
         )}
-        {facts.criticalRisks?.length > 0 && (
+        {!isContributor && facts.criticalRisks?.length > 0 && (
           <p className="text-[13.5px] text-amber-800">Critical risks: {facts.criticalRisks.join(', ')}.</p>
         )}
-        {facts.nextMilestone && <p className="text-[13.5px] text-amber-800">Next milestone: {facts.nextMilestone}.</p>}
+        {!isContributor && facts.nextMilestone && <p className="text-[13.5px] text-amber-800">Next milestone: {facts.nextMilestone}.</p>}
       </div>
     </div>
   );
 }
 
-export default function VentureAssistant({ startupId, startupName }) {
+export default function VentureAssistant({ startupId, startupName, mode = 'founder' }) {
+  const isContributor = mode === 'contributor';
+  const SUGGESTIONS = isContributor ? CONTRIBUTOR_SUGGESTIONS : FOUNDER_SUGGESTIONS;
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [thread, setThread] = useState([]);
@@ -66,7 +89,7 @@ export default function VentureAssistant({ startupId, startupName }) {
     setThread((t) => [...t, { role: 'you', text }]);
     setAsking(true);
 
-    const { ok, data } = await askAboutVenture(startupId, text);
+    const { ok, data } = isContributor ? await askAboutMyMatches(text) : await askAboutVenture(startupId, text);
     setAsking(false);
 
     if (!ok || !data?.success) {
@@ -81,7 +104,7 @@ export default function VentureAssistant({ startupId, startupName }) {
     setThread((t) => [...t, { role: 'assistant', text: data.answer, degraded: data.degraded, facts: data.facts, note: data.note }]);
   }
 
-  if (!startupId) return null;
+  if (!isContributor && !startupId) return null;
 
   return (
     <>
@@ -91,7 +114,7 @@ export default function VentureAssistant({ startupId, startupName }) {
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-ink-950 hover:bg-ink-900 text-white pl-4 pr-5 py-3 rounded-full shadow-elevated transition-colors"
         >
           <Sparkles size={15} className="text-mint-500" />
-          <span className="text-[13.5px] font-medium">Ask about {startupName || 'your venture'}</span>
+          <span className="text-[13.5px] font-medium">{isContributor ? 'Ask about your matches' : `Ask about ${startupName || 'your venture'}`}</span>
         </button>
       )}
 
@@ -107,9 +130,9 @@ export default function VentureAssistant({ startupId, startupName }) {
             <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-border">
               <div className="min-w-0">
                 <p className="text-[14.5px] font-semibold text-ink-950 flex items-center gap-1.5">
-                  <Sparkles size={14} className="text-violet-600" /> Ask about {startupName || 'your venture'}
+                  <Sparkles size={14} className="text-violet-600" /> {isContributor ? 'Ask about your matches' : `Ask about ${startupName || 'your venture'}`}
                 </p>
-                <p className="text-[12px] text-ink-500 mt-0.5">Answers only from your real data. Not general advice.</p>
+                <p className="text-[12px] text-ink-500 mt-0.5">{isContributor ? 'Answers only from the ventures actually matching you.' : 'Answers only from your real data. Not general advice.'}</p>
               </div>
               <button onClick={() => setOpen(false)} className="text-ink-300 hover:text-ink-900 transition-colors shrink-0">
                 <X size={17} />
@@ -120,7 +143,7 @@ export default function VentureAssistant({ startupId, startupName }) {
               {thread.length === 0 && (
                 <div>
                   <p className="text-[13px] text-ink-500 mb-3 leading-relaxed">
-                    It can see your readiness, your open roles, your risks and your milestones. It cannot see anything else, and will say so.
+                    {isContributor ? 'It can see every venture matching you, why each one fits, and where it does not. It cannot see anything else, and will say so.' : 'It can see your readiness, your open roles, your risks and your milestones. It cannot see anything else, and will say so.'}
                   </p>
                   <div className="space-y-2">
                     {SUGGESTIONS.map((s) => (
@@ -145,7 +168,7 @@ export default function VentureAssistant({ startupId, startupName }) {
                   ) : m.error ? (
                     <p className="text-[13.5px] text-signal-critical leading-relaxed">{m.error}</p>
                   ) : m.degraded ? (
-                    <DegradedFacts facts={m.facts} note={m.note} />
+                    <DegradedFacts facts={m.facts} note={m.note} isContributor={isContributor} />
                   ) : (
                     <p className="text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">{m.text}</p>
                   )}
@@ -155,7 +178,7 @@ export default function VentureAssistant({ startupId, startupName }) {
               {asking && (
                 <div className="flex items-center gap-2 text-[13px] text-ink-500">
                   <span className="w-3.5 h-3.5 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-                  Reading your venture…
+                  {isContributor ? 'Reading your matches…' : 'Reading your venture…'}
                 </div>
               )}
               <div ref={bottomRef} />
@@ -166,7 +189,7 @@ export default function VentureAssistant({ startupId, startupName }) {
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && ask()}
-                placeholder="Ask something about this venture…"
+                placeholder={isContributor ? 'Ask something about your matches…' : 'Ask something about this venture…'}
                 className="flex-1 px-3.5 py-2.5 rounded-full border border-surface-border bg-surface-muted text-[13.5px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors"
               />
               <button

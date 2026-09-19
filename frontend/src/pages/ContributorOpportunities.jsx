@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { MessageSquare, Check, AlertTriangle, Scale, ArrowUpRight, X } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import VentureAssistant from '../components/VentureAssistant.jsx';
 import { getMyRecommendationsAsContributor, startConversation, recordRecommendationFeedback } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -248,6 +249,7 @@ export default function ContributorOpportunities() {
           </div>
         </>
       )}
+      <VentureAssistant mode="contributor" />
     </Shell>
   );
 }
