@@ -50,7 +50,7 @@ const NAV_BY_PERSONA = {
       items: [
         { label: 'Home', icon: Home, path: '/app' },
         { label: 'Messages', icon: MessageSquare, path: '/app/inbox' },
-        { label: 'Rooms', icon: Users, path: '/app/rooms' },
+        { label: 'Circles', icon: Users, path: '/app/circles' },
       ],
     },
     {
@@ -90,7 +90,7 @@ const NAV_BY_PERSONA = {
       items: [
         { label: 'Home', icon: Home, path: '/app/contributor' },
         { label: 'Messages', icon: MessageSquare, path: '/app/inbox' },
-        { label: 'Rooms', icon: Users, path: '/app/rooms' },
+        { label: 'Circles', icon: Users, path: '/app/circles' },
       ],
     },
     {
@@ -118,7 +118,7 @@ const NAV_BY_PERSONA = {
       items: [
         { label: 'Home', icon: Home, path: '/app/investor' },
         { label: 'Messages', icon: MessageSquare, path: '/app/inbox' },
-        { label: 'Rooms', icon: Users, path: '/app/rooms' },
+        { label: 'Circles', icon: Users, path: '/app/circles' },
       ],
     },
     {
