@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowUpRight, MessageSquare } from 'lucide-react';
-import Shell from '../components/Shell.jsx';
+import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { listRooms } from '../services/startups.js';
 
 /**
- * The rooms that exist.
+ * Choosing which circle to walk into.
  *
- * Derived from the domains actually in use, not a hardcoded list, so a venture
- * in a field nobody anticipated gets a room automatically.
+ * Previously a grid of cards inside the standard Shell, which meant it looked
+ * like every other list in the product and gave no hint that the thing behind
+ * it was different. Entering a circle then felt like a jarring page swap.
  *
- * Ordered by yours first, then by what is alive. A room nobody has posted in
- * sits below one that is moving, because the honest signal of a room is
- * whether anything is happening in it.
+ * This shares the circle's own language: same dark ground, same grain, same
+ * editorial type. The list previews the place rather than describing it, so
+ * walking in is continuous.
+ *
+ * Rows rather than cards. A card grid implies a catalogue of equivalent
+ * things; a list of rows with real scale implies doors along a corridor, which
+ * is closer to what these are.
  */
 
 function ago(iso) {
@@ -24,6 +28,77 @@ function ago(iso) {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   return d === 1 ? 'yesterday' : `${d}d ago`;
+}
+
+function Grain() {
+  return (
+    <svg className="pointer-events-none fixed inset-0 w-full h-full opacity-[0.16] mix-blend-overlay" aria-hidden="true">
+      <filter id="circlesGrain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" />
+        <feColorMatrix type="saturate" values="0" />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#circlesGrain)" />
+    </svg>
+  );
+}
+
+function Row({ r, index }) {
+  const alive = r.recently_around > 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.045, 0.3), ease: [0.16, 1, 0.3, 1] }}
+    >
+      <Link
+        to={`/app/circles/${encodeURIComponent(r.room)}`}
+        className="group flex items-center gap-6 py-7 border-b border-white/[0.06] transition-colors hover:border-white/[0.14]"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h3
+              className="font-display text-white capitalize transition-transform duration-300 group-hover:translate-x-1"
+              style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2.05rem)', letterSpacing: '-0.028em', fontWeight: 600, lineHeight: 1.1 }}
+            >
+              {r.room}
+            </h3>
+            {r.yours && (
+              <span className="text-[10.5px] tracking-[0.14em] uppercase font-medium" style={{ color: '#B79CFF' }}>
+                yours
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 mt-2.5 flex-wrap">
+            <span className="text-[13.5px] text-white/35">
+              {r.posts === 0 ? 'nothing said yet' : `${r.posts} ${r.posts === 1 ? 'post' : 'posts'}`}
+              {r.last_post_at && ` · last ${ago(r.last_post_at)}`}
+            </span>
+
+            {alive && (
+              <span className="flex items-center gap-2 text-[13px]" style={{ color: '#5FD3A0' }}>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: '#5FD3A0' }} />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: '#5FD3A0' }} />
+                </span>
+                {r.recently_around} here recently
+              </span>
+            )}
+          </div>
+        </div>
+
+        <span className="text-[13px] text-white/20 tabular-nums shrink-0 hidden sm:block">
+          {r.people} in this field
+        </span>
+
+        <ArrowUpRight
+          size={20}
+          className="text-white/15 group-hover:text-white/70 shrink-0 transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1"
+        />
+      </Link>
+    </motion.div>
+  );
 }
 
 export default function Circles() {
@@ -37,109 +112,83 @@ export default function Circles() {
     });
   }, []);
 
-  if (loading) {
-    return (
-      <Shell title="Rooms">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
-      </Shell>
-    );
-  }
-
   const yours = rooms.filter((r) => r.yours);
   const rest = rooms.filter((r) => !r.yours);
 
   return (
-    <Shell title="Rooms" subtitle="People in your field, talking">
-      <div className="mb-7">
-        <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-          {rooms.length === 0 ? 'Nothing yet' : `${rooms.length} ${rooms.length === 1 ? 'circle' : 'circles'}`}
-        </p>
-        <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
-          Everywhere else asks you to commit. Here you can just talk.
-        </h1>
-        <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
-          People in the same field, working through the same things. Founders, contributors and investors together, because the person who can answer you is usually on the other side of the table.
-        </p>
-      </div>
+    <div className="min-h-screen relative" style={{ backgroundColor: '#0E0C14' }}>
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'radial-gradient(ellipse 70% 55% at 8% -5%, rgba(109,40,217,0.42) 0%, transparent 58%),' +
+            'radial-gradient(ellipse 60% 50% at 95% 8%, rgba(31,93,82,0.34) 0%, transparent 55%)',
+        }}
+      />
+      <Grain />
 
-      {rooms.length === 0 ? (
-        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <MessageSquare size={22} className="text-ink-300 mx-auto mb-3" />
-          <p className="text-[15px] text-ink-700 mb-1">No circles yet.</p>
-          <p className="text-[13px] text-ink-500 max-w-sm mx-auto">
-            A circle appears once a few people are genuinely in that field. Pick the fields you care about and yours will show up.
+      <div className="relative max-w-[880px] mx-auto px-8 pb-28">
+        <div className="pt-10 pb-12">
+          <Link to="/app" className="inline-flex items-center gap-2 text-[13px] text-white/30 hover:text-white/75 transition-colors">
+            <ArrowLeft size={14} /> Back to CapForge
+          </Link>
+        </div>
+
+        {/* Says what this place is for in a sentence, because the whole point
+            is that it works differently from everywhere else in the product. */}
+        <div className="pb-14">
+          <h1
+            className="font-display text-white"
+            style={{ fontSize: 'clamp(2.75rem, 6vw, 4.25rem)', lineHeight: 1.02, letterSpacing: '-0.038em', fontWeight: 600 }}
+          >
+            Everywhere else asks
+            <br />
+            you to commit.
+          </h1>
+          <p className="text-[17px] text-white/40 mt-6 max-w-lg leading-relaxed">
+            Here you can just talk. Founders, people building, and investors in the same
+            place, because whoever can answer you is usually on the other side of the table.
           </p>
         </div>
-      ) : (
-        <>
-          {yours.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-[15px] font-semibold text-ink-900 mb-3">Yours</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {yours.map((r, i) => <RoomCard key={r.room} r={r} index={i} highlight />)}
-              </div>
-            </div>
-          )}
-          {rest.length > 0 && (
-            <div>
-              <h2 className="text-[15px] font-semibold text-ink-900 mb-3">
-                {yours.length > 0 ? 'Everywhere else' : 'All circles'}
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                {rest.map((r, i) => <RoomCard key={r.room} r={r} index={i} />)}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </Shell>
-  );
-}
 
-function RoomCard({ r, index, highlight }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.25) }}
-    >
-      <Link
-        to={`/app/circles/${encodeURIComponent(r.room)}`}
-        className="group relative block rounded-2xl overflow-hidden p-6 transition-all duration-200 hover:-translate-y-0.5"
-        style={{ backgroundColor: '#14121C' }}
-      >
-        {/* The card previews where you are going: same depth, same warmth as
-            the circle itself, so entering one feels continuous rather than
-            like a page swap. */}
-        <div
-          className="absolute inset-0 opacity-[0.5] group-hover:opacity-[0.7] transition-opacity pointer-events-none"
-          style={{ backgroundImage: highlight
-            ? 'radial-gradient(ellipse 90% 70% at 0% 0%, #6D28D9 0%, transparent 62%), radial-gradient(ellipse 70% 60% at 100% 100%, #1F5D52 0%, transparent 62%)'
-            : 'radial-gradient(ellipse 90% 70% at 0% 0%, #3E3A52 0%, transparent 62%)' }}
-        />
-        <div className="relative">
-          <div className="flex items-start justify-between gap-3 mb-2.5">
-            <p className="text-[18px] font-semibold text-white capitalize leading-tight">{r.room}</p>
-            <ArrowUpRight size={16} className="text-white/25 group-hover:text-white/70 transition-colors shrink-0 mt-0.5" />
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <div className="w-7 h-7 rounded-full border-2 border-white/8 animate-spin" style={{ borderTopColor: '#B79CFF' }} />
           </div>
+        ) : rooms.length === 0 ? (
+          <div className="py-20 max-w-md">
+            <p className="text-[22px] text-white/80 leading-snug mb-3" style={{ letterSpacing: '-0.02em' }}>
+              No circles yet.
+            </p>
+            <p className="text-[15.5px] text-white/35 leading-relaxed">
+              One appears for a field once a few people are genuinely in it. Pick the fields
+              you care about on your profile and yours will show up here.
+            </p>
+          </div>
+        ) : (
+          <>
+            {yours.length > 0 && (
+              <div className="mb-16">
+                <p className="text-[11px] tracking-[0.16em] uppercase text-white/25 mb-2">Your fields</p>
+                <div className="border-t border-white/[0.06]">
+                  {yours.map((r, i) => <Row key={r.room} r={r} index={i} />)}
+                </div>
+              </div>
+            )}
 
-          <p className="text-[13.5px] text-white/45">
-            {r.posts === 0 ? 'Nothing said yet' : `${r.posts} ${r.posts === 1 ? 'post' : 'posts'}`}
-            {r.last_post_at && ` · last ${ago(r.last_post_at)}`}
-          </p>
-
-          {/* Who was around, not how many are members. A place feels alive
-              when somebody else was here today. */}
-          <p className="text-[12.5px] mt-1.5" style={{ color: r.recently_around > 0 ? '#3FB081' : 'rgba(255,255,255,0.25)' }}>
-            {r.recently_around > 0
-              ? `${r.recently_around} here recently`
-              : `${r.people} in this field`}
-          </p>
-        </div>
-      </Link>
-    </motion.div>
+            {rest.length > 0 && (
+              <div>
+                <p className="text-[11px] tracking-[0.16em] uppercase text-white/25 mb-2">
+                  {yours.length > 0 ? 'Everywhere else' : 'All circles'}
+                </p>
+                <div className="border-t border-white/[0.06]">
+                  {rest.map((r, i) => <Row key={r.room} r={r} index={i} />)}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
