@@ -194,4 +194,150 @@ Now answer only this, in your own words: ${question.trim()}`,
   return { success: true, degraded: false, answer: ai.content.trim(), facts: fallback };
 }
 
-module.exports = { askAboutVenture, gatherContext, renderContext };
+
+/**
+ * The same assistant, pointed at the contributor's side of the table.
+ *
+ * A founder could ask questions about their venture. A contributor, the person
+ * being asked to bet years of their life, could ask nothing about the ventures
+ * courting them. They had to read each match, hold five of them in their head,
+ * and reason it out alone.
+ *
+ * SAME RULE AS THE FOUNDER VERSION: it answers only from real data. Their
+ * actual matches, actual scores, actual explanations, actual conversations.
+ * Generic career advice is available anywhere and offering it here would
+ * dilute the one thing this has, which is that it can see the real numbers.
+ *
+ * It is also told to be honest about weak matches. An assistant that talks up
+ * every opportunity is a salesperson, and this person is deciding where to
+ * spend years.
+ */
+async function gatherContributorContext(userId) {
+  const [profileRes, recsRes, convoRes] = await Promise.all([
+    pool.query(
+      `SELECT p.display_name, p.headline, p.skills,
+              cp.looking_for, cp.preferred_domains, cp.preferred_stage,
+              cp.availability, cp.experience_years
+       FROM profiles p LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
+       WHERE p.user_id = $1`,
+      [userId]
+    ),
+    pool.query(
+      `SELECT r.score, r.explanation, r.score_breakdown,
+              s.name AS startup_name, s.domain, s.stage, s.problem, s.solution, s.founder_vision,
+              g.role AS gap_role, g.seeking_type, g.priority_level,
+              (SELECT overall_score FROM readiness_assessments ra
+               WHERE ra.startup_id = s.id ORDER BY ra.generated_at DESC LIMIT 1) AS readiness
+       FROM recommendations r
+       JOIN startups s ON s.id = r.startup_id
+       JOIN gaps g ON g.id = r.source_gap_id
+       WHERE r.target_user_id = $1 AND r.recommendation_type = 'CONTRIBUTOR'
+         AND r.status = 'ACTIVE' AND g.status NOT IN ('FILLED','DISMISSED')
+         AND r.score >= 0.20
+       ORDER BY r.score DESC LIMIT 10`,
+      [userId]
+    ),
+    pool.query(
+      `SELECT s.name AS startup_name, c.team_formed_at
+       FROM conversations c LEFT JOIN startups s ON s.id = c.startup_id
+       WHERE c.participant_a_id = $1 OR c.participant_b_id = $1`,
+      [userId]
+    ),
+  ]);
+
+  if (profileRes.rows.length === 0) return null;
+  return { me: profileRes.rows[0], matches: recsRes.rows, conversations: convoRes.rows };
+}
+
+function renderContributorContext(ctx) {
+  const me = ctx.me;
+  const matches = ctx.matches.map((m, i) => {
+    const strengths = (m.explanation?.strengths || []).join('; ');
+    const limits = (m.explanation?.limitations || []).join('; ');
+    return `[${i + 1}] ${m.startup_name} — wants a ${m.gap_role}${m.seeking_type === 'CO_FOUNDER' ? ' (co-founder)' : ''}
+    Fit: ${Math.round(parseFloat(m.score) * 100)}%   Role priority: ${m.priority_level}
+    Field: ${(m.domain || []).join(', ') || 'not stated'}   Stage: ${m.stage || 'not stated'}
+    Venture readiness: ${m.readiness !== null ? Math.round(parseFloat(m.readiness)) + ' out of 100' : 'never assessed'}
+    Problem: ${(m.problem || 'not stated').slice(0, 250)}
+    Why the founder is building it: ${(m.founder_vision || 'not stated').slice(0, 300)}
+    Why you fit: ${strengths || 'not recorded'}
+    Where you do not: ${limits || 'nothing flagged'}`;
+  }).join('\n\n');
+
+  return `THE PERSON ASKING
+Name: ${me.display_name || 'not stated'}
+What they do: ${me.headline || 'not stated'}
+Skills: ${(me.skills || []).join(', ') || 'not stated'}
+Fields they care about: ${(me.preferred_domains || []).join(', ') || 'none picked'}
+Stages they want: ${(me.preferred_stage || []).join(', ') || 'unspecified'}
+Time they can give: ${me.availability || 'not stated'}
+Years doing this work: ${me.experience_years ?? 'not stated'}
+WHAT THEY SAID THEY WANT: ${me.looking_for || 'they have not said'}
+
+VENTURES MATCHING THEM (${ctx.matches.length}):
+${ctx.matches.length === 0 ? '  nothing currently matches them' : matches}
+
+CONVERSATIONS: ${ctx.conversations.length === 0 ? 'none started' : ctx.conversations.map(c => `${c.startup_name || 'a venture'}${c.team_formed_at ? ' (team formed)' : ''}`).join(', ')}`;
+}
+
+/**
+ * Answer a contributor's question about the ventures courting them.
+ */
+async function askAsContributor(userId, question) {
+  if (!question || question.trim().length < 3) return { success: false, error: 'EMPTY_QUESTION' };
+
+  const ctx = await gatherContributorContext(userId);
+  if (!ctx) return { success: false, error: 'NO_PROFILE' };
+
+  // Assembled BEFORE the AI call, so it exists whatever happens to it.
+  const fallback = {
+    matchCount: ctx.matches.length,
+    best: ctx.matches[0]
+      ? { name: ctx.matches[0].startup_name, role: ctx.matches[0].gap_role, fit: Math.round(parseFloat(ctx.matches[0].score) * 100) }
+      : null,
+    conversations: ctx.conversations.length,
+    hasMission: Boolean(ctx.me.looking_for),
+  };
+
+  const ai = await callGroq(GROQ_MODEL, [
+    {
+      role: 'system',
+      content: `You answer a contributor's questions about the ventures currently matching them, using only the data provided.
+
+ABSOLUTE RULES:
+- Answer only from the provided data. If it does not contain the answer, say so plainly and name what would be needed. Never fill a gap with a plausible guess.
+- Never give generic career advice. They can get that anywhere. Your only value is that you can see their actual matches and actual numbers.
+- Refer to real specifics by name: the actual venture, the actual role, the actual fit percentage, the actual limitation the engine recorded.
+- BE HONEST ABOUT WEAK MATCHES. This person is deciding where to spend years of their life. An assistant that talks up every opportunity is a salesperson. If a venture is early, under-staffed or a poor fit, say so.
+- Never tell them what to choose. Lay out what is true and let them decide.
+- ANSWER THE QUESTION ASKED. The reference data is large and the question is short; do not default to summarising everything.
+- Plain prose. No markdown, no bullets, no headings. Two to four short paragraphs at most.`,
+    },
+    {
+      role: 'user',
+      content: `THE QUESTION TO ANSWER: ${question.trim()}
+
+Answer that specific question. Do not summarise everything unless that is what was asked.
+
+--- REFERENCE DATA (use only what the question needs) ---
+${renderContributorContext(ctx)}
+--- END REFERENCE DATA ---
+
+Now answer only this: ${question.trim()}`,
+    },
+  ], { temperature: 0.3, max_tokens: 800 });
+
+  if (!ai.success || !ai.content) {
+    return {
+      success: true,
+      degraded: true,
+      answer: null,
+      facts: fallback,
+      note: 'The assistant is unavailable right now, so here is what is actually on the table.',
+    };
+  }
+
+  return { success: true, degraded: false, answer: ai.content.trim(), facts: fallback };
+}
+
+module.exports = { askAsContributor, askAboutVenture, gatherContext, renderContext };

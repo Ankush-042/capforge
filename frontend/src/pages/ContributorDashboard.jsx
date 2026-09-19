@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
+import VentureAssistant from '../components/VentureAssistant.jsx';
 import WhatsNew from '../components/WhatsNew.jsx';
 import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
@@ -169,6 +170,7 @@ export default function ContributorDashboard() {
           </div>
         )}
       </div>
+      <VentureAssistant mode="contributor" />
     </Shell>
   );
 }
