@@ -128,3 +128,7 @@ export const setWatchStatus = (startupId, status, note) =>
   apiFetch(`/investors/watchlist/${startupId}`, { method: 'POST', body: JSON.stringify({ status, note }) });
 export const removeFromWatchlist = (startupId) =>
   apiFetch(`/investors/watchlist/${startupId}`, { method: 'DELETE' });
+
+// Rewrite a spark that did not land, and lift it back into the feed.
+export const updateSpark = (sparkId, updates) =>
+  apiFetch(`/sparks/${sparkId}`, { method: 'PATCH', body: JSON.stringify(updates) });
