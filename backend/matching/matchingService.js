@@ -103,6 +103,35 @@ function domainsMatch(a, b) {
  * person holding one could credibly do meaningful work in another. Kept
  * deliberately tight: this is real overlap, not "both are technical".
  */
+/**
+ * TWO TIERS, because treating all adjacency as equal caused a real false
+ * positive that the quality suite caught: a Data Scientist was admitted to a
+ * BACKEND ENGINEER role at 35%, purely because one group happened to list
+ * 'data scientist' and 'backend engineer' together.
+ *
+ * That group is not wrong as a weak scoring nudge. It is wrong as EVIDENCE.
+ * The two things were conflated, and the distinction is simple:
+ *
+ *   SYNONYMS are the same job in different words. 'ML Engineer' and 'Machine
+ *   Learning Engineer' are one role. Someone holding one holds the other, so
+ *   this is real evidence and scores like a direct match.
+ *
+ *   ADJACENT roles are genuinely different jobs that sit near each other. A
+ *   Data Scientist is near a Backend Engineer and is not one. Worth a nudge
+ *   in the score, never enough on its own to put somebody in a list.
+ */
+const ROLE_SYNONYMS = [
+  ['machine learning engineer', 'ai/ml engineer', 'ml engineer', 'nlp/ml engineer', 'ai engineer'],
+  ['ui/ux designer', 'ux/ui designer', 'ui designer', 'ux designer'],
+  ['mobile app developer', 'mobile engineer', 'mobile app engineer'],
+  ['product manager', 'product owner'],
+  ['business development manager', 'business development'],
+  ['compliance specialist', 'compliance/finance specialist'],
+  ['security engineer', 'cloud security engineer'],
+  ['data engineer', 'analytics engineer'],
+  ['full stack engineer', 'software engineer'],
+];
+
 const ROLE_ADJACENCY = [
   ['full stack engineer', 'backend engineer', 'frontend engineer', 'software engineer', 'web developer'],
   ['backend engineer', 'devops engineer', 'site reliability engineer', 'cloud infrastructure architect', 'platform engineer'],
@@ -193,13 +222,23 @@ function computeRoleFit(headline, gapRole) {
       continue;
     }
 
-    // Adjacent roles earn partial credit, never full. Someone who actually
-    // holds the role must always outrank someone merely adjacent to it.
+    // Same job, different words. Real evidence, scored like a direct match.
+    for (const group of ROLE_SYNONYMS) {
+      const normalized = group.map((g) => normalizeRole(applyRoleSynonyms(g)));
+      const aIn = normalized.some((n) => n === a || (n.length >= 8 && a.length >= 8 && (a.includes(n) || n.includes(a))));
+      const bIn = normalized.includes(b);
+      if (aIn && bIn) best = Math.max(best, 0.85);
+    }
+
+    // Genuinely different jobs that sit near each other. Worth a nudge, and
+    // deliberately BELOW the evidence threshold: being near a role is not a
+    // reason to put somebody in the list for it. This is what wrongly admitted
+    // a Data Scientist to a Backend Engineer role.
     for (const group of ROLE_ADJACENCY) {
       const normalized = group.map((g) => normalizeRole(applyRoleSynonyms(g)));
       const aIn = normalized.some((n) => n === a || (n.length >= 8 && a.length >= 8 && (a.includes(n) || n.includes(a))));
       const bIn = normalized.includes(b);
-      if (aIn && bIn) best = Math.max(best, 0.6);
+      if (aIn && bIn) best = Math.max(best, 0.5);
     }
   }
 
@@ -453,8 +492,8 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
     strengths.push(`Profile headline directly matches the "${gap.role}" role.`);
   } else if (breakdown.roleFit >= 0.8) {
     strengths.push(`Works in this role: their headline describes "${gap.role}" work.`);
-  } else if (breakdown.roleFit >= 0.6) {
-    strengths.push(`Comes from an adjacent role, close enough to "${gap.role}" to do it.`);
+  } else if (breakdown.roleFit >= 0.5) {
+    limitations.push(`Comes from an adjacent role rather than "${gap.role}" itself.`);
   }
 
   // Phase 3: real vision alignment, only ever present for co-founder
@@ -665,7 +704,7 @@ async function rankCandidatesForGap(gapId) {
     // role and remains excluded. This admits people who obviously fit; it does
     // not admit people who do not.
     .filter(r => r.overlap.length > 0
-      || (r.breakdown.roleFit !== null && r.breakdown.roleFit >= 0.6)
+      || (r.breakdown.roleFit !== null && r.breakdown.roleFit >= 0.8)
       || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
     .sort((a, b) => b.score - a.score);
 
@@ -916,7 +955,7 @@ async function refreshRankingsForContributor(userId) {
     // Same rule as the main ranking path. These two diverging is exactly how
     // the targeted refresh silently fell behind the full re-rank before.
     const hasRealEvidence = overlap.length > 0
-      || (breakdown.roleFit !== null && breakdown.roleFit >= 0.6)
+      || (breakdown.roleFit !== null && breakdown.roleFit >= 0.8)
       || (breakdown.semanticSimilarity !== null && breakdown.semanticSimilarity >= 0.5);
 
     if (score < 0.20 || !hasRealEvidence) {
