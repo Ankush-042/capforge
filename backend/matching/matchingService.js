@@ -440,8 +440,21 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
     limitations.push(`No overlapping skills found for the specific requirements of "${gap.role}".`);
   }
 
+  // Role evidence now ADMITS people to a list, so it has to be able to explain
+  // why they are there. This only fired at exactly 1.0, which meant somebody
+  // matched on adjacency showed a card with limitations and no strengths at
+  // all: the engine saying "here is a good match" and then listing only
+  // reasons they are not.
+  //
+  // Each band says something different and true. Adjacent is stated as
+  // adjacent rather than dressed up as a direct match, because the whole
+  // reason these scores differ is that they are not the same claim.
   if (breakdown.roleFit === 1.0) {
     strengths.push(`Profile headline directly matches the "${gap.role}" role.`);
+  } else if (breakdown.roleFit >= 0.8) {
+    strengths.push(`Works in this role: their headline describes "${gap.role}" work.`);
+  } else if (breakdown.roleFit >= 0.6) {
+    strengths.push(`Comes from an adjacent role, close enough to "${gap.role}" to do it.`);
   }
 
   // Phase 3: real vision alignment, only ever present for co-founder
@@ -637,7 +650,23 @@ async function rankCandidatesForGap(gapId) {
     // scoreCandidate) — it must never, alone, be sufficient to
     // recommend someone for a role they have zero real skill relevance
     // to. A recommendation now requires genuine role-level evidence.
-    .filter(r => r.overlap.length > 0 || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
+    // EVIDENCE, and what counts as it.
+    //
+    // This accepted literal skill-token overlap or semantic similarity, and
+    // nothing else. Measured against a real profile, that rejected an ML
+    // engineer for a 'Machine Learning Engineer' role at an edtech venture
+    // whose field they had explicitly chosen, because the required skills read
+    // 'adaptive algorithms, student behaviour modelling, real-time data
+    // processing' and nobody lists those verbatim.
+    //
+    // A genuine role match IS evidence, and stronger evidence than one shared
+    // token: roleFit only reaches 0.6 through a real adjacency-group match or
+    // a substantial containment, so a UX designer still scores 0 against an ML
+    // role and remains excluded. This admits people who obviously fit; it does
+    // not admit people who do not.
+    .filter(r => r.overlap.length > 0
+      || (r.breakdown.roleFit !== null && r.breakdown.roleFit >= 0.6)
+      || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
     .sort((a, b) => b.score - a.score);
 
   const client = await pool.connect();
@@ -884,7 +913,10 @@ async function refreshRankingsForContributor(userId) {
     // which one ran last.
     //
     // Both paths now apply the identical rule.
+    // Same rule as the main ranking path. These two diverging is exactly how
+    // the targeted refresh silently fell behind the full re-rank before.
     const hasRealEvidence = overlap.length > 0
+      || (breakdown.roleFit !== null && breakdown.roleFit >= 0.6)
       || (breakdown.semanticSimilarity !== null && breakdown.semanticSimilarity >= 0.5);
 
     if (score < 0.20 || !hasRealEvidence) {

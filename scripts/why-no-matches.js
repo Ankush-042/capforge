@@ -48,14 +48,18 @@ const { scoreCandidate } = require('../backend/matching/matchingService');
   const gaps = (await pool.query(
     `SELECT g.*, s.name AS startup_name, s.domain AS s_domain, s.stage AS s_stage,
             s.id AS s_id, s.founder_id AS s_founder_id,
-            CASE WHEN g.embedding IS NOT NULL THEN true ELSE false END AS gap_has_embedding
+            CASE WHEN g.embedding IS NOT NULL THEN true ELSE false END AS gap_has_embedding,
+            CASE WHEN g.embedding IS NOT NULL AND p.embedding IS NOT NULL
+                 THEN 1 - (g.embedding <=> p.embedding) ELSE NULL END AS semantic_similarity
      FROM gaps g
      JOIN startups s ON s.id = g.startup_id
      JOIN users u ON u.id = s.founder_id
+     CROSS JOIN (SELECT embedding FROM profiles WHERE user_id = $1) p
      WHERE g.status NOT IN ('FILLED','DISMISSED')
        AND u.email != 'system.import@capforge.internal'
        AND s.verification_status != 'UNVERIFIED'
-     ORDER BY s.name, g.role`
+     ORDER BY s.name, g.role`,
+    [me.user_id]
   )).rows;
 
   console.log(`\n${gaps.length} OPEN ROLES ON THE PLATFORM\n`);
@@ -67,7 +71,10 @@ const { scoreCandidate } = require('../backend/matching/matchingService');
 
   for (const g of gaps) {
     const startup = { id: g.s_id, name: g.startup_name, domain: g.s_domain, stage: g.s_stage, founder_id: g.s_founder_id };
-    const { score, breakdown, overlap } = scoreCandidate(g, startup, { ...me, semantic_similarity: null }, 0);
+    // The real engine computes this in SQL against the gap embedding. Passing
+    // null here understated every score and made 'no gap embedding' look like
+    // the cause when the embedding existed. Computed properly now.
+    const { score, breakdown, overlap } = scoreCandidate(g, startup, { ...me, semantic_similarity: g.semantic_similarity ?? null }, 0);
 
     const hasEvidence = overlap.length > 0
       || (breakdown.semanticSimilarity !== null && breakdown.semanticSimilarity >= 0.5);
