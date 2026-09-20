@@ -13,9 +13,13 @@ require('dotenv').config();
  *   node scripts/judge-matches.js <email>       judge one person
  */
 const pool = require('../backend/shared/db');
-const { judgeCandidateAgainstGaps, profileFingerprint } = require('../backend/shared/matchJudgement');
+const { judgeCandidateAgainstGaps, profileFingerprint, prefilterGaps } = require('../backend/shared/matchJudgement');
 
-const DELAY_MS = 3000; // between people; the chunker paces its own calls
+// Paced for a free tier. The first run fired ~170 calls back to back and
+// collapsed: almost everyone ended with 2 of 62 roles judged because rate
+// limits ate every chunk but the last. Slower and complete beats fast and
+// useless.
+const DELAY_MS = 8000;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 (async () => {
@@ -56,18 +60,24 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   for (const person of people) {
     if (force) { todo.push(person); continue; }
     const myHash = profileFingerprint(person);
+    // Compare against the SHORTLIST, not every role. Comparing against all 62
+    // would mark everybody as unjudged forever, since most roles are
+    // deliberately never judged at all.
+    const shortlist = prefilterGaps(person, gaps);
     const have = await pool.query(
       `SELECT COUNT(*)::int AS n FROM match_judgements
        WHERE user_id = $1 AND profile_hash = $2`,
       [person.user_id, myHash]
     );
-    if (have.rows[0].n < gaps.length) todo.push(person);
+    if (have.rows[0].n < shortlist.length) todo.push(person);
   }
 
   console.log(`${gaps.length} open roles, ${todo.length} of ${people.length} people to judge.`);
   if (todo.length === 0) { console.log('Everyone is already judged against their current profile.'); await pool.end(); process.exit(0); }
-  const callsEach = Math.ceil(gaps.length / 15);
-  console.log(`${callsEach} call(s) each, roughly ${Math.ceil(todo.length * callsEach * 4 / 60)} minute(s).\n`);
+  // Only plausible roles are judged now, so this is a shortlist per person
+  // rather than the whole platform.
+  console.log(`Up to 12 roles judged per person, 2 call(s) each.`);
+  console.log(`Roughly ${Math.ceil(todo.length * 20 / 60)} minute(s). Slower on purpose: the free tier cannot take a burst.\n`);
 
   let ok = 0, failed = 0;
   for (const person of todo) {
@@ -81,7 +91,8 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       // Say plainly when a run is incomplete rather than reporting OK for
       // something that only half worked.
       const label = r.partial ? 'PART' : 'OK  ';
-      console.log(`  ${label}  ${person.headline || person.email} — ${r.judged.length}/${r.expected ?? gaps.length} roles judged`);
+      const skipped = r.skipped ? `, ${r.skipped} skipped as clearly irrelevant` : '';
+      console.log(`  ${label}  ${person.headline || person.email} — ${r.judged.length}/${r.expected ?? 0} judged${skipped}`);
       if (r.partial) console.log(`        incomplete: ${r.failures[0]}`);
       if (sorted[0]) console.log(`        best:  ${Math.round(sorted[0].score * 100)}% ${sorted[0].startup} / ${sorted[0].role} — "${sorted[0].reason}"`);
       const worst = sorted[sorted.length - 1];

@@ -41,7 +41,27 @@ const GROQ_MODEL = 'openai/gpt-oss-120b';
  * while still being large enough that the model sees a real set and judges
  * relatively rather than scoring each role blind.
  */
-const ROLES_PER_CALL = 15;
+const ROLES_PER_CALL = 6;
+
+/**
+ * How many roles are worth judging per person.
+ *
+ * The first design judged everyone against EVERY open role: 40 people by 62
+ * roles is 2,480 judgements, roughly 170 calls. A free tier cannot take that,
+ * and the run collapsed with almost everyone getting 2 of 62 because rate
+ * limits ate every chunk but the last.
+ *
+ * The deeper mistake was conceptual. You do not need a language model to tell
+ * you a UX Writer is not a Machine Learning Engineer. The deterministic layer
+ * already knows that, cheaply and correctly. The model is only worth spending
+ * on the AMBIGUOUS MIDDLE: the roles where the string rules are uncertain and
+ * a human reading the profile would see something the tables cannot.
+ *
+ * So candidates are pre-filtered deterministically and only the plausible ones
+ * are judged. That turns 2,480 calls into a few hundred, and the judgements
+ * land where they actually change an outcome.
+ */
+const MAX_ROLES_JUDGED = 12;
 
 const hash = (t) => crypto.createHash('sha256').update(String(t || '')).digest('hex').slice(0, 16);
 
@@ -115,7 +135,7 @@ ${roleList}
 
 Return the JSON array now, ${gaps.length} objects.`,
     },
-  ], { temperature: 0.1, max_tokens: 1200 });
+  ], { temperature: 0.1, max_tokens: 1800 });
 
   if (!ai.success) return { failed: true, reason: ai.error || 'AI_CALL_FAILED', detail: ai.detail };
 
@@ -168,6 +188,61 @@ Return the JSON array now, ${gaps.length} objects.`,
 }
 
 /**
+ * The roles worth spending a model call on.
+ *
+ * Deliberately GENEROUS rather than precise. Its job is to remove the
+ * obviously-irrelevant majority, not to make the final decision: that is what
+ * the judgement is for. Anything with a shared skill word, a related role
+ * name, or a field the person chose stays in.
+ */
+function prefilterGaps(profile, gaps) {
+  const skills = (profile.skills || []).map((x) => String(x).toLowerCase());
+  const headline = String(profile.headline || '').toLowerCase();
+  const domains = (profile.preferred_domains || []).map((x) => String(x).toLowerCase());
+  // Words too generic to indicate anything on their own.
+  const GENERIC = new Set(['engineer','engineering','developer','manager','specialist','analyst','design','designer','lead','senior','data','product','technical','software']);
+
+  const meaningful = (text) => String(text || '').toLowerCase()
+    .split(/[^a-z0-9+#.]+/)
+    .filter((w) => w.length > 3 && !GENERIC.has(w));
+
+  const myWords = new Set([...skills.flatMap(meaningful), ...meaningful(headline)]);
+
+  const scored = gaps.map((g) => {
+    let signal = 0;
+    const roleWords = meaningful(g.role);
+    const skillWords = (g.required_skills || []).flatMap(meaningful);
+
+    // A meaningful word shared with the role name or its requirements.
+    if (roleWords.some((w) => myWords.has(w))) signal += 3;
+    if (skillWords.some((w) => myWords.has(w))) signal += 2;
+
+    // A field they actually chose. Worth judging even with no word overlap,
+    // because that is exactly where the tables are weakest and the model is
+    // strongest.
+    const gDomains = (g.domain || []).map((d) => String(d).toLowerCase());
+    if (domains.some((d) => gDomains.some((gd) => gd.includes(d) || d.includes(gd)))) signal += 2;
+
+    // Same broad family, so 'ML Engineer' still reaches 'Machine Learning
+    // Engineer' even when every specific word differs.
+    const rl = String(g.role || '').toLowerCase();
+    if ((headline.includes('ml') || headline.includes('machine learning') || headline.includes('ai')) &&
+        (rl.includes('ml') || rl.includes('machine learning') || rl.includes('ai') || rl.includes('data scien'))) signal += 3;
+    if (headline.includes('design') && rl.includes('design')) signal += 3;
+    if (headline.includes('backend') && (rl.includes('backend') || rl.includes('full stack'))) signal += 3;
+    if (headline.includes('frontend') && (rl.includes('frontend') || rl.includes('full stack'))) signal += 3;
+
+    return { g, signal };
+  });
+
+  return scored
+    .filter((x) => x.signal >= 2)
+    .sort((a, b) => b.signal - a.signal)
+    .slice(0, MAX_ROLES_JUDGED)
+    .map((x) => x.g);
+}
+
+/**
  * Cached judgements for one person, only where still valid.
  *
  * A stale judgement is worse than none: it describes a profile or a role that
@@ -201,12 +276,19 @@ async function getJudgements(userId, gaps) {
  * re-running only redoes what is missing. Losing good work because a later
  * call failed is the mistake the alignment layer already made once.
  */
-async function judgeCandidateAgainstGaps(profile, gaps) {
+async function judgeCandidateAgainstGaps(profile, gaps, opts = {}) {
   if (!gaps.length) return { judged: [] };
 
+  // PRE-FILTER. Only the plausible roles are worth a model call. A role with
+  // no shared skill token, no role-name relationship and no domain overlap is
+  // something the deterministic layer already rules out correctly, and paying
+  // to have that confirmed is what made the first run collapse.
+  const shortlist = opts.preFiltered ? gaps : prefilterGaps(profile, gaps);
+  if (shortlist.length === 0) return { judged: [], skipped: gaps.length };
+
   const chunks = [];
-  for (let i = 0; i < gaps.length; i += ROLES_PER_CALL) {
-    chunks.push(gaps.slice(i, i + ROLES_PER_CALL));
+  for (let i = 0; i < shortlist.length; i += ROLES_PER_CALL) {
+    chunks.push(shortlist.slice(i, i + ROLES_PER_CALL));
   }
 
   const judged = [];
@@ -225,11 +307,12 @@ async function judgeCandidateAgainstGaps(profile, gaps) {
   if (judged.length === 0 && failures.length > 0) {
     return { failed: true, reason: 'ALL_CHUNKS_FAILED', detail: failures[0] };
   }
-  return { judged, partial: failures.length > 0, failures, expected: gaps.length };
+  return { judged, partial: failures.length > 0, failures, expected: shortlist.length, skipped: gaps.length - shortlist.length };
 }
 
 module.exports = {
   judgeCandidateAgainstGaps,
+  prefilterGaps,
   getJudgements,
   profileFingerprint,
   gapFingerprint,
