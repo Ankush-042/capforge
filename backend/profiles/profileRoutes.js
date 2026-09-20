@@ -163,6 +163,55 @@ async function refreshEverythingForUser(userId) {
       }
     }
 
+    // JUDGE THEM, before ranking.
+    //
+    // CONFIRMED GAP, and the reason a new signup kept getting nothing. The
+    // judgement layer only ever ran from judge-matches.js, a script somebody
+    // had to remember to execute. So the engine worked for anyone who existed
+    // when it was last run by hand and gave nothing to everyone after them.
+    // That is not a working engine, it is a working engine plus a person with
+    // a terminal.
+    //
+    // It runs here now, on the same save that already refreshes alignment and
+    // rankings. Pre-filtered to a shortlist, so this is two model calls rather
+    // than dozens, and awaited so the ranking below actually sees the result
+    // instead of racing it, which is the same mistake the embedding made.
+    try {
+      const { judgeCandidateAgainstGaps } = require('../shared/matchJudgement');
+      const meFull = (await pool.query(
+        `SELECT u.id AS user_id, p.headline, p.skills, p.bio,
+                cp.looking_for, cp.preferred_domains, cp.preferred_stage,
+                cp.experience_years, cp.availability
+         FROM users u
+         JOIN profiles p ON p.user_id = u.id
+         LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
+         WHERE u.id = $1 AND u.primary_role = 'CONTRIBUTOR'`,
+        [userId]
+      )).rows[0];
+
+      if (meFull && ((meFull.skills || []).length > 0 || meFull.headline)) {
+        const openGaps = (await pool.query(
+          `SELECT g.id, g.role, g.required_skills, g.reason, g.seeking_type,
+                  s.name AS startup_name, s.problem, s.solution, s.domain, s.stage
+           FROM gaps g
+           JOIN startups s ON s.id = g.startup_id
+           JOIN users u2 ON u2.id = s.founder_id
+           WHERE g.status NOT IN ('FILLED','DISMISSED')
+             AND u2.email != 'system.import@capforge.internal'
+             AND s.verification_status != 'UNVERIFIED'`
+        )).rows;
+
+        if (openGaps.length > 0) {
+          const jr = await judgeCandidateAgainstGaps(meFull, openGaps);
+          if (jr?.failed) console.error(`Judgement failed for ${userId}: ${jr.reason}`);
+        }
+      }
+    } catch (err) {
+      // Non-fatal by design. Without a judgement the deterministic score
+      // stands, which is exactly how the engine behaved before this existed.
+      console.error('Judgement step failed (non-fatal):', err.message);
+    }
+
     // WAIT FOR THE EMBEDDING before ranking. It is generated in the
     // background on save, and this used to race it: the re-rank read a null
     // embedding, semantic similarity came back null, and a contributor with a
