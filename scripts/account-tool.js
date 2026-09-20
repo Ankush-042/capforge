@@ -20,7 +20,7 @@ require('dotenv').config();
  *   node scripts/account-tool.js fix-whitespace           trim stored emails
  */
 const pool = require('../backend/shared/db');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const [, , cmd, arg1, arg2] = process.argv;
 
