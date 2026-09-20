@@ -78,7 +78,10 @@ const { scoreCandidate } = require('../backend/matching/matchingService');
     const mark = hasEvidence ? (score >= 0.20 ? 'YES ' : 'low ') : 'NO  ';
     console.log(`  ${String(pct).padStart(4)}%  ${mark}  ${String(g.role).slice(0, 34).padEnd(34)}  ${g.startup_name}`);
 
-    if (!hasEvidence && score >= 0.25) {
+    const focus = process.argv[3];
+    if (focus && String(g.startup_name).toLowerCase().includes(focus.toLowerCase())) {
+      nearMisses.push({ g, score: pct, breakdown, overlap });
+    } else if (!focus && !hasEvidence && score >= 0.16) {
       nearMisses.push({ g, score: pct, breakdown, overlap });
     }
   }
@@ -86,7 +89,7 @@ const { scoreCandidate } = require('../backend/matching/matchingService');
   console.log(`\n  ${passed} role(s) would actually be shown to this person.`);
 
   if (nearMisses.length > 0) {
-    console.log(`\n${nearMisses.length} ROLE(S) SCORED WELL BUT WERE FILTERED OUT ENTIRELY`);
+    console.log(`\n${nearMisses.length} ROLE(S) IN DETAIL`);
     console.log('These are the ones worth arguing about.\n');
     for (const n of nearMisses.slice(0, 6)) {
       console.log(`  ${n.g.startup_name} — ${n.g.role}  (${n.score}%)`);
@@ -94,6 +97,9 @@ const { scoreCandidate } = require('../backend/matching/matchingService');
       console.log(`     skill fit       ${Math.round((n.breakdown.skillFit ?? 0) * 100)}%`);
       console.log(`     domain fit      ${Math.round((n.breakdown.domainFit ?? 0) * 100)}%`);
       console.log(`     stage fit       ${Math.round((n.breakdown.stageFit ?? 0) * 100)}%`);
+      console.log(`     experience fit  ${Math.round((n.breakdown.experienceFit ?? 0) * 100)}%`);
+      console.log(`     semantic sim    ${n.breakdown.semanticSimilarity === null || n.breakdown.semanticSimilarity === undefined ? 'null (no gap embedding)' : Math.round(n.breakdown.semanticSimilarity * 100) + '%'}`);
+      console.log(`     gap embedding   ${n.g.gap_has_embedding}`);
       console.log(`     alignment       ${n.breakdown.alignmentFit === null || n.breakdown.alignmentFit === undefined ? 'not scored' : Math.round(n.breakdown.alignmentFit * 100) + '%'}`);
       console.log(`     skills required ${JSON.stringify(n.g.required_skills || [])}`);
       console.log(`     literal overlap ${JSON.stringify(n.overlap)}  <- empty is why it was filtered`);
