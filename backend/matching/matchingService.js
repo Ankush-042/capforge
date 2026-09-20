@@ -448,6 +448,40 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
 
   let finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
   if (!hasCapability) finalScore = Math.min(finalScore, CAPABILITY_CEILING);
+
+  // WANTING THE WORK IS NOT A TIEBREAKER.
+  //
+  // Measured from a real profile: someone who wrote that they want AI for
+  // education was shown eight ventures the engine ITSELF described as wrong
+  // for them, in its own words, inside the same card. 'You want AI for
+  // education, not ad campaign management' scored 33%. The one genuine
+  // education match scored 43%. Twelve points between a perfect fit and an
+  // explicit mismatch.
+  //
+  // That is what a 15% weight buys: going from 'exactly what you want' to
+  // 'the opposite of what you want' cost about ten points, which is less than
+  // one extra shared skill token. The engine was writing an honest verdict
+  // and then almost entirely ignoring it.
+  //
+  // A LOW alignment score is not a small deduction, it is a different claim:
+  // this person has said, in their own words, that they do not want this kind
+  // of work. Below 0.35 the whole score is scaled rather than nudged, because
+  // no amount of skill overlap makes a venture a good match for somebody who
+  // does not want to work on it.
+  //
+  // Deliberately one-directional: high alignment does NOT inflate a score.
+  // Enthusiasm is not capability, and someone who loves the mission but
+  // cannot do the job should not be promoted over someone who can. The
+  // capability ceiling above already enforces that from the other side.
+  const MISMATCH_THRESHOLD = 0.35;
+  if (typeof alignmentFit === 'number' && alignmentFit < MISMATCH_THRESHOLD) {
+    // Scales smoothly from full score at the threshold down to 45% of it at
+    // zero alignment, so a genuine mismatch falls well clear of a real fit
+    // without ever being erased entirely. They still appear, still explain
+    // themselves, and a person is still free to disagree with the engine.
+    const damp = 0.45 + 0.55 * (alignmentFit / MISMATCH_THRESHOLD);
+    finalScore = finalScore * damp;
+  }
   breakdown.feedbackAdjustment = feedbackAdjustment;
 
   return { score: Math.round(finalScore * 100) / 100, breakdown, overlap, domainOverlap, seekingType };
