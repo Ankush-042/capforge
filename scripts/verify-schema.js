@@ -121,14 +121,20 @@ for (const file of walk(BACKEND)) {
     // not real tables. Without collecting them first, every WITH ... AS (...)
     // is reported as an unknown table, which trains people to ignore this
     // guard, which is the one thing it cannot survive.
+    // Strip SQL comments before scanning. Prose inside a -- comment contains
+    // ordinary English like "from their own refresh", and the table regex
+    // cannot tell that from "FROM their_table". Censoring the comments to
+    // please the scanner would be backwards: the scanner should only read SQL.
+    const bare = String(sql).replace(/--[^\n]*/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
+
     const cteNames = new Set();
     const cteRe = /(?:\bWITH\b|,)\s*(\w+)\s+AS\s*\(/gi;
     let cteMatch;
-    while ((cteMatch = cteRe.exec(sql)) !== null) cteNames.add(cteMatch[1].toLowerCase());
+    while ((cteMatch = cteRe.exec(bare)) !== null) cteNames.add(cteMatch[1].toLowerCase());
 
     const tableRe = /\b(?:FROM|JOIN|INSERT INTO|UPDATE)\s+(\w+)/gi;
     let m;
-    while ((m = tableRe.exec(sql)) !== null) {
+    while ((m = tableRe.exec(bare)) !== null) {
       const t = m[1];
       if (tables.has(t) || aliases.has(t) || cteNames.has(t.toLowerCase())) continue;
       if (/^\$/.test(t)) continue;

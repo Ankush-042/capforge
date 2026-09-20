@@ -484,9 +484,20 @@ async function rankCandidatesForGap(gapId) {
                  THEN 1 - (p.embedding <=> $2::vector) ELSE NULL END as semantic_similarity
      FROM users u
      JOIN profiles p ON p.user_id = u.id
-     JOIN contributor_profiles cp ON cp.profile_id = p.id
+     -- SAME BUG AS THE TARGETED PATH, and worse here because this is the main
+     -- candidate pool. Requiring the row made anyone without a
+     -- contributor_profiles record invisible to EVERY gap on the platform, not
+     -- merely excluded from their own refresh. That row only appears once
+     -- somebody saves the
+     -- optional 'What you are looking for' section, so a new contributor with
+     -- a headline and skills simply did not exist as far as matching was
+     -- concerned, and no amount of re-ranking would have found them.
+     LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
      WHERE u.primary_role = 'CONTRIBUTOR'
        AND p.visibility = 'DISCOVERABLE'
+       -- Still a real floor: something to match on. Optional refinements are
+       -- not required, but an entirely empty profile is genuinely unrankable.
+       AND (array_length(p.skills, 1) > 0 OR p.headline IS NOT NULL)
        AND u.id NOT IN (SELECT user_id FROM startup_team_members WHERE startup_id = $1)`,
     [startup.id, gap.embedding || null]
   );
@@ -727,16 +738,34 @@ async function getMyRecommendationsAsContributor(userId) {
  * Everyone else's rows are untouched, which is correct: nobody else changed.
  */
 async function refreshRankingsForContributor(userId) {
+  // CONFIRMED BUG: this was an INNER JOIN on contributor_profiles, and that
+  // row does not exist until someone saves the 'What you are looking for'
+  // section. A new contributor who signed up, filled in their name, headline
+  // and skills, and pressed Save basics was therefore rejected as
+  // NOT_AN_ELIGIBLE_CONTRIBUTOR, and that error was explicitly swallowed at
+  // the call site as an expected condition. They got no recommendations, ever,
+  // with nothing anywhere telling them why.
+  //
+  // LEFT JOIN, because skills and headline alone are enough to rank somebody.
+  // Domains, stage and availability all refine a match; none of them is
+  // required to produce one. Refusing to rank a person because they have not
+  // filled in an optional section is the platform withholding the thing it
+  // exists to do.
   const me = await pool.query(
     `SELECT u.id as user_id, p.headline, p.skills, p.embedding, cp.availability,
             cp.preferred_domains, cp.preferred_stage, cp.experience_years, cp.equity_preference
      FROM users u
      JOIN profiles p ON p.user_id = u.id
-     JOIN contributor_profiles cp ON cp.profile_id = p.id
+     LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
      WHERE u.id = $1 AND u.primary_role = 'CONTRIBUTOR' AND p.visibility = 'DISCOVERABLE'`,
     [userId]
   );
   if (me.rows.length === 0) return { success: false, error: 'NOT_AN_ELIGIBLE_CONTRIBUTOR' };
+
+  // Ranking on nothing produces noise, so there is still a floor: some skills
+  // or a headline. That is a real requirement, unlike the missing row.
+  const hasSomething = (me.rows[0].skills || []).length > 0 || Boolean(me.rows[0].headline);
+  if (!hasSomething) return { success: false, error: 'NOTHING_TO_MATCH_ON' };
   const candidate = me.rows[0];
 
   const gaps = await pool.query(
