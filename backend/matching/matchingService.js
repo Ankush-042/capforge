@@ -443,10 +443,36 @@ function scoreCandidate(gap, startup, candidate, feedbackAdjustment = 0) {
   // So without either a real role fit or meaningful skill overlap, a match
   // is capped below the level where it reads as a genuine fit. It can still
   // appear, honestly, as a weak option. It cannot masquerade as a strong one.
+  // THE JUDGEMENT, when one exists.
+  //
+  // Every other component here is a hand-written string rule: literal token
+  // overlap, a table of job titles, a table of domain equivalences. Each one
+  // breaks when somebody writes something the table did not anticipate, which
+  // is every real person. Three rewrites of role matching in a single day is
+  // not three bugs, it is one approach reaching its ceiling. The seeded
+  // profiles pass because they were written to match the tables, which is why
+  // the quality suite stayed green while a real signup scored zero.
+  //
+  // The judgement reads the whole profile against the whole role and has no
+  // table to maintain. Where it exists it CARRIES the score, at 55%, with the
+  // deterministic components as the remaining 45%. They are not discarded:
+  // they are the guardrails, and the capability ceiling below still applies
+  // to the result regardless of what the model thought.
+  //
+  // Where it does not exist, for any reason at all, the deterministic score
+  // stands exactly as before. Better with it, never broken without it.
+  const judgement = typeof candidate.match_judgement === 'number' ? candidate.match_judgement : null;
+  let blended = baseScore;
+  if (judgement !== null) {
+    blended = judgement * 0.55 + baseScore * 0.45;
+    breakdown.matchJudgement = judgement;
+    if (candidate.match_judgement_reason) breakdown.matchJudgementReason = candidate.match_judgement_reason;
+  }
+
   const hasCapability = roleFit >= 0.5 || skillFit >= 0.30;
   const CAPABILITY_CEILING = 0.39;
 
-  let finalScore = Math.max(Math.min(baseScore + feedbackAdjustment, 1), 0);
+  let finalScore = Math.max(Math.min(blended + feedbackAdjustment, 1), 0);
   if (!hasCapability) finalScore = Math.min(finalScore, CAPABILITY_CEILING);
 
   // WANTING THE WORK IS NOT A TIEBREAKER.
@@ -511,6 +537,14 @@ function explainScore(gap, breakdown, overlap, domainOverlap) {
     limitations.push(`No directly matching skills listed for "${gap.role}", though the profile is broadly related.`);
   } else {
     limitations.push(`No overlapping skills found for the specific requirements of "${gap.role}".`);
+  }
+
+  // The judgement's own sentence, naming something real from this person's
+  // profile against something real in this role. More specific than any
+  // template, so it leads when present.
+  if (typeof breakdown.matchJudgement === 'number' && breakdown.matchJudgementReason) {
+    if (breakdown.matchJudgement >= 0.6) strengths.push(breakdown.matchJudgementReason);
+    else if (breakdown.matchJudgement <= 0.35) limitations.push(breakdown.matchJudgementReason);
   }
 
   // Role evidence now ADMITS people to a list, so it has to be able to explain
@@ -695,11 +729,35 @@ async function rankCandidatesForGap(gapId) {
     console.error('Alignment lookup failed (non-fatal, deterministic signals still apply):', err.message);
   }
 
+  // Cached judgements for every candidate against THIS role. Read-only, so
+  // ranking never calls the model and a rate limit can never slow or break it.
+  // A judgement is only used while the role it was made against is unchanged.
+  const judgementByUser = {};
+  try {
+    const { gapFingerprint } = require('../shared/matchJudgement');
+    const currentGapHash = gapFingerprint({ ...gap, startup_name: startup.name, problem: startup.problem, solution: startup.solution, domain: startup.domain, stage: startup.stage });
+    const jr = await pool.query(
+      `SELECT user_id, score, reason, gap_hash FROM match_judgements WHERE gap_id = $1`,
+      [gap.id]
+    );
+    for (const r of jr.rows) {
+      if (r.gap_hash !== currentGapHash) continue; // the role changed since
+      judgementByUser[r.user_id] = { score: parseFloat(r.score), reason: r.reason };
+    }
+  } catch (err) {
+    console.error('Judgement lookup failed (non-fatal, deterministic signals still apply):', err.message);
+  }
+
   const ranked = candidatesResult.rows
     .map(candidate => {
       if (visionMap[candidate.user_id] !== undefined) {
         candidate.vision_alignment = visionMap[candidate.user_id];
         candidate.alignment_reason = alignmentReasons[candidate.user_id];
+      }
+      const j = judgementByUser[candidate.user_id];
+      if (j) {
+        candidate.match_judgement = j.score;
+        candidate.match_judgement_reason = j.reason;
       }
       const { score, breakdown, overlap, domainOverlap } = scoreCandidate(gap, startup, candidate, feedbackAdjustment);
       const explanation = explainScore(gap, breakdown, overlap, domainOverlap);
@@ -739,6 +797,11 @@ async function rankCandidatesForGap(gapId) {
     // not admit people who do not.
     .filter(r => r.overlap.length > 0
       || (r.breakdown.roleFit !== null && r.breakdown.roleFit >= 0.8)
+      // A strong judgement is evidence in its own right. It read the whole
+      // profile against the whole role, which is strictly more information
+      // than a shared token, and it is the one signal that does not depend on
+      // a table anticipating how somebody phrased themselves.
+      || (r.breakdown.matchJudgement !== null && r.breakdown.matchJudgement !== undefined && r.breakdown.matchJudgement >= 0.6)
       || (r.breakdown.semanticSimilarity !== null && r.breakdown.semanticSimilarity >= 0.5))
     .sort((a, b) => b.score - a.score);
 
@@ -940,6 +1003,11 @@ async function refreshRankingsForContributor(userId) {
   const gaps = await pool.query(
     `SELECT g.*, s.id AS s_id, s.name AS s_name, s.domain AS s_domain, s.stage AS s_stage,
             s.founder_id AS s_founder_id,
+            -- Needed for the judgement fingerprint. Without these the hash
+            -- computed here would never equal the one computed when judging,
+            -- so every cached judgement would be silently discarded and the
+            -- layer would look like it simply never worked.
+            s.problem AS s_problem, s.solution AS s_solution,
             CASE WHEN g.embedding IS NOT NULL AND $1::vector IS NOT NULL
                  THEN 1 - (g.embedding <=> $1::vector) ELSE NULL END AS semantic_similarity
      FROM gaps g
@@ -968,11 +1036,34 @@ async function refreshRankingsForContributor(userId) {
   }
 
   let written = 0, expired = 0;
+  // This person's cached judgements across every open role, fetched once.
+  // Only used while both the profile and the role are unchanged: a stale
+  // judgement describes something that no longer exists and is worse than
+  // none at all.
+  const judgementByGap = {};
+  try {
+    const { getJudgements, profileFingerprint } = require('../shared/matchJudgement');
+    const myHash = profileFingerprint(candidate);
+    const found = await getJudgements(userId, gaps.rows.map(g => ({
+      id: g.id, role: g.role, required_skills: g.required_skills, reason: g.reason,
+      seeking_type: g.seeking_type, startup_name: g.s_name, problem: g.s_problem,
+      solution: g.s_solution, domain: g.s_domain, stage: g.s_stage,
+    })));
+    for (const [gapId, v] of Object.entries(found)) {
+      if (v.profileHash !== myHash) continue; // they changed since it was judged
+      judgementByGap[gapId] = v;
+    }
+  } catch (err) {
+    console.error('Judgement lookup failed (non-fatal):', err.message);
+  }
+
   for (const g of gaps.rows) {
     const startup = { id: g.s_id, name: g.s_name, domain: g.s_domain, stage: g.s_stage, founder_id: g.s_founder_id };
     const c = { ...candidate, semantic_similarity: g.semantic_similarity };
     const a = alignment[g.s_id];
     if (a) { c.vision_alignment = a.score; c.alignment_reason = a.reason; }
+    const j = judgementByGap[g.id];
+    if (j) { c.match_judgement = j.score; c.match_judgement_reason = j.reason; }
 
     const { score, breakdown, overlap, domainOverlap } = scoreCandidate(g, startup, c, 0);
 
@@ -990,6 +1081,7 @@ async function refreshRankingsForContributor(userId) {
     // the targeted refresh silently fell behind the full re-rank before.
     const hasRealEvidence = overlap.length > 0
       || (breakdown.roleFit !== null && breakdown.roleFit >= 0.8)
+      || (breakdown.matchJudgement !== null && breakdown.matchJudgement !== undefined && breakdown.matchJudgement >= 0.6)
       || (breakdown.semanticSimilarity !== null && breakdown.semanticSimilarity >= 0.5);
 
     if (score < 0.20 || !hasRealEvidence) {
