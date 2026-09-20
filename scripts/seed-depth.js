@@ -191,26 +191,52 @@ async function pickFounder(domain, used) {
   // Strong matches on ventures that will still have open roles afterwards.
   // Filling a venture completely removes it from the matching side of the
   // product, which is the thing the demonstration is actually about.
-  const candidates = (await pool.query(
+  // The threshold is deliberately the same bar the product itself uses to
+  // show a match at all. An earlier version required 0.50 and formed ZERO
+  // teams without saying why: the mismatch dampener had lowered real scores
+  // since that number was picked, and a hardcoded threshold silently stopped
+  // matching reality. A seeding script that does nothing and reports success
+  // is worse than one that fails loudly.
+  const MIN_FIT = 0.35;
+
+  const pool_all = (await pool.query(
     `SELECT DISTINCT ON (r.startup_id)
             r.target_user_id, r.startup_id, r.source_gap_id, r.score,
             s.founder_id, s.name AS startup_name, p.display_name AS who,
             (SELECT COUNT(*) FROM gaps g2
-             WHERE g2.startup_id = s.id AND g2.status NOT IN ('FILLED','DISMISSED')) AS open_roles
+             WHERE g2.startup_id = s.id AND g2.status NOT IN ('FILLED','DISMISSED')) AS open_roles,
+            EXISTS (SELECT 1 FROM conversations c
+                    WHERE c.startup_id = r.startup_id AND c.team_formed_at IS NOT NULL) AS already_formed
      FROM recommendations r
      JOIN startups s ON s.id = r.startup_id
      JOIN profiles p ON p.user_id = r.target_user_id
      JOIN gaps g ON g.id = r.source_gap_id
      WHERE r.recommendation_type = 'CONTRIBUTOR' AND r.status = 'ACTIVE'
-       AND g.status NOT IN ('FILLED','DISMISSED') AND r.score >= 0.50
-       AND NOT EXISTS (
-         SELECT 1 FROM conversations c
-         WHERE c.startup_id = r.startup_id AND c.team_formed_at IS NOT NULL
-       )
+       AND g.status NOT IN ('FILLED','DISMISSED')
      ORDER BY r.startup_id, r.score DESC`
-  )).rows.filter((c) => parseInt(c.open_roles) >= 2)  // leave something open
+  )).rows;
+
+  // Say what was rejected and why, so a zero result is explicable rather than
+  // mysterious.
+  const tooWeak = pool_all.filter(c => parseFloat(c.score) < MIN_FIT).length;
+  const alreadyDone = pool_all.filter(c => c.already_formed).length;
+  const tooFull = pool_all.filter(c => parseInt(c.open_roles) < 2).length;
+
+  const candidates = pool_all
+    .filter(c => parseFloat(c.score) >= MIN_FIT)
+    .filter(c => !c.already_formed)
+    .filter(c => parseInt(c.open_roles) >= 2)  // leave something open
     .sort((a, b) => parseFloat(b.score) - parseFloat(a.score))
     .slice(0, TEAMS_TO_FORM);
+
+  console.log(`  ${pool_all.length} venture(s) with a best match; ${candidates.length} eligible`);
+  if (candidates.length === 0) {
+    console.log(`    ${tooWeak} below ${Math.round(MIN_FIT * 100)}% fit`);
+    console.log(`    ${alreadyDone} already have a formed team`);
+    console.log(`    ${tooFull} would be left with fewer than 2 open roles`);
+    const best = pool_all.sort((a, b) => parseFloat(b.score) - parseFloat(a.score))[0];
+    if (best) console.log(`    best available anywhere: ${Math.round(parseFloat(best.score) * 100)}% (${best.who} at ${best.startup_name})`);
+  }
 
   let formed = 0;
   for (const c of candidates) {
