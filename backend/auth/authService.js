@@ -36,7 +36,7 @@ async function register({ email, password, primaryRole, displayName }) {
     client = await pool.connect();
     await client.query('BEGIN');
 
-    const existing = await client.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+    const existing = await client.query('SELECT id FROM users WHERE email = $1', [email.trim().toLowerCase()]);
     if (existing.rows.length > 0) {
       await client.query('ROLLBACK');
       return { success: false, error: 'EMAIL_ALREADY_EXISTS' };
@@ -46,7 +46,7 @@ async function register({ email, password, primaryRole, displayName }) {
 
     const userResult = await client.query(
       `INSERT INTO users (email, password_hash, primary_role) VALUES ($1, $2, $3) RETURNING id, email, primary_role, created_at`,
-      [email.toLowerCase(), passwordHash, primaryRole]
+      [email.trim().toLowerCase(), passwordHash, primaryRole]
     );
     const user = userResult.rows[0];
 
@@ -88,7 +88,7 @@ async function login({ email, password }) {
 
   const result = await pool.query(
     'SELECT id, email, password_hash, primary_role, is_admin FROM users WHERE email = $1',
-    [email.toLowerCase()]
+    [email.trim().toLowerCase()]
   );
 
   if (result.rows.length === 0) {
