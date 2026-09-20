@@ -163,7 +163,15 @@ async function refreshEverythingForUser(userId) {
       }
     }
 
-    // Only now, with fresh alignment in place, re-rank.
+    // WAIT FOR THE EMBEDDING before ranking. It is generated in the
+    // background on save, and this used to race it: the re-rank read a null
+    // embedding, semantic similarity came back null, and a contributor with a
+    // rich mission but few listed skills failed the evidence filter and got
+    // nothing. The embedding landed a second later and nothing re-ranked.
+    const { awaitEmbedding } = require('./profileService');
+    await awaitEmbedding(userId);
+
+    // Only now, with fresh alignment and a real embedding in place, re-rank.
     //
     // TARGETED, not platform-wide. refreshOpenGapRankings re-ranks every
     // candidate for all 62 gaps, which is minutes of work when exactly one

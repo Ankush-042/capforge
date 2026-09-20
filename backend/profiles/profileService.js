@@ -66,6 +66,19 @@ async function getMyProfile(userId, role) {
   return { success: true, profile: { ...profile, completion_score: completeness, primary_role: role, is_admin: isAdmin }, roleProfile };
 }
 
+/**
+ * In-flight embedding generation, so a re-rank can wait for it rather than
+ * racing it. Keyed by user: two saves from the same person replace, saves from
+ * different people do not interfere.
+ */
+const embeddingPromises = new Map();
+
+/** Wait for this user's embedding to finish, if one is being generated. */
+async function awaitEmbedding(userId) {
+  const p = embeddingPromises.get(userId);
+  if (p) { try { await p; } catch { /* already logged, and non-fatal */ } }
+}
+
 async function updateBaseProfile(userId, updates) {
   const allowed = ['display_name', 'headline', 'bio', 'location', 'profile_image', 'skills', 'visibility'];
 
@@ -113,8 +126,21 @@ async function updateBaseProfile(userId, updates) {
   // HeadersTimeoutError during ecosystem seeding). Embedding generation
   // now runs genuinely in the background — fire-and-forget, never
   // blocks the response the caller is waiting on.
+  // RACE CONDITION, confirmed from a real signup that matched nothing.
+  //
+  // This used to fire-and-forget while the route ALSO kicked off a re-rank
+  // immediately afterwards. The re-rank therefore read p.embedding while it
+  // was still null, so semantic similarity was null, and the evidence filter
+  // needs either real skill overlap or similarity of at least 0.5. A new
+  // contributor with a rich mission but one or two listed skills failed both,
+  // got zero recommendations, and nothing re-ranked once the embedding
+  // finally landed a second later.
+  //
+  // It is a promise now, stored so the refresh can await it. Still not awaited
+  // by the HTTP response, which is what the original fire-and-forget existed
+  // to protect: a full model inference must never block a profile save.
   if (fields.includes('headline') || fields.includes('skills') || fields.includes('bio')) {
-    (async () => {
+    embeddingPromises.set(userId, (async () => {
       try {
         const { generateEmbedding } = require('../shared/embeddings');
         const embeddingText = `${profile.headline || ''} ${(profile.skills || []).join(' ')} ${profile.bio || ''}`;
@@ -124,8 +150,10 @@ async function updateBaseProfile(userId, updates) {
         }
       } catch (embErr) {
         console.error('Profile embedding generation failed (non-fatal, background):', embErr.message);
+      } finally {
+        embeddingPromises.delete(userId);
       }
-    })();
+    })());
   }
 
   return { success: true, profile };
@@ -197,4 +225,4 @@ async function upsertInvestorProfile(userId, data) {
   return { success: true, investorProfile: result.rows[0] };
 }
 
-module.exports = { getMyProfile, updateBaseProfile, upsertContributorProfile, upsertInvestorProfile };
+module.exports = { awaitEmbedding, getMyProfile, updateBaseProfile, upsertContributorProfile, upsertInvestorProfile };
