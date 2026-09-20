@@ -312,3 +312,4 @@ router.post('/investor', requireAuth, requireRole('INVESTOR'), async (req, res) 
 });
 
 module.exports = router;
+module.exports.refreshEverythingForUser = refreshEverythingForUser;

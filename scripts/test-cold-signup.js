@@ -90,47 +90,30 @@ async function cleanup(userId) {
     });
     check('saving the contributor section succeeds', contrib.success, contrib.error || '');
 
-    // --- 3. The chain the routes fire. Awaited here because a test must not
-    //        race the thing it is testing. ---
-    console.log('  running the same refresh the save endpoint triggers...\n');
+    // --- 3. The REAL chain the save endpoint fires. ---
+    //
+    // This used to reimplement the chain step by step, and had already drifted
+    // from it: it skipped alignment scoring entirely, so the mismatch dampener
+    // never fired and the test measured a scoring path no real save ever
+    // takes. A test that rebuilds the thing it tests will always drift.
+    console.log('  running the actual refresh the save endpoint triggers...\n');
+    const { refreshEverythingForUser } = require('../backend/profiles/profileRoutes');
+    await refreshEverythingForUser(userId);
 
-    const { awaitEmbedding } = require('../backend/profiles/profileService');
-    await awaitEmbedding(userId);
     check('a profile embedding was generated',
       (await pool.query('SELECT embedding IS NOT NULL AS has FROM profiles WHERE user_id = $1', [userId])).rows[0]?.has === true,
       'without it, semantic similarity is null everywhere');
 
-    const { judgeCandidateAgainstGaps } = require('../backend/shared/matchJudgement');
-    const meFull = (await pool.query(
-      `SELECT u.id AS user_id, p.headline, p.skills, p.bio,
-              cp.looking_for, cp.preferred_domains, cp.preferred_stage,
-              cp.experience_years, cp.availability
-       FROM users u JOIN profiles p ON p.user_id = u.id
-       LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
-       WHERE u.id = $1`, [userId]
-    )).rows[0];
+    const judged = (await pool.query(
+      'SELECT COUNT(*)::int AS n FROM match_judgements WHERE user_id = $1', [userId]
+    )).rows[0].n;
+    check('the judgement layer ran for a new person', judged > 0, `${judged} roles judged`);
 
-    const openGaps = (await pool.query(
-      `SELECT g.id, g.role, g.required_skills, g.reason, g.seeking_type,
-              s.name AS startup_name, s.problem, s.solution, s.domain, s.stage
-       FROM gaps g JOIN startups s ON s.id = g.startup_id
-       JOIN users u2 ON u2.id = s.founder_id
-       WHERE g.status NOT IN ('FILLED','DISMISSED')
-         AND u2.email != 'system.import@capforge.internal'
-         AND s.verification_status != 'UNVERIFIED'`
-    )).rows;
-    check('there are open roles to match against', openGaps.length > 0, `${openGaps.length} roles`);
-
-    const jr = await judgeCandidateAgainstGaps(meFull, openGaps);
-    check('the judgement layer runs for a new person',
-      !jr?.failed && (jr?.judged?.length || 0) > 0,
-      jr?.failed ? jr.reason : `${jr?.judged?.length || 0} roles judged`);
-
-    const { refreshRankingsForContributor } = require('../backend/matching/matchingService');
-    const rr = await refreshRankingsForContributor(userId);
-    check('ranking accepts a new contributor',
-      rr.success !== false || rr.error !== 'NOT_AN_ELIGIBLE_CONTRIBUTOR',
-      rr.error || 'ranked');
+    const aligned = (await pool.query(
+      'SELECT COUNT(*)::int AS n FROM alignment_scores WHERE user_id = $1', [userId]
+    )).rows[0].n;
+    check('alignment was scored for a new person', aligned > 0,
+      aligned > 0 ? `${aligned} ventures` : 'none, so the mismatch dampener cannot fire');
 
     // --- 4. THE QUESTION THAT MATTERS ---
     const recs = (await pool.query(
