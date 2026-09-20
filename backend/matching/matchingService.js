@@ -120,23 +120,90 @@ const ROLE_ADJACENCY = [
   ['instructional designer', 'clinical content specialist', 'content strategist', 'ux writer'],
 ];
 
+/**
+ * Split a headline into the role phrases it actually contains.
+ *
+ * CONFIRMED BUG, and a severe one. This used to normalize the ENTIRE headline
+ * into a single string, so 'AI/ML Engineering, Data Analysis, Product
+ * Development' became 'aimlengineeringdataanalysisproductdevelopment', which
+ * matches nothing and appears in no adjacency group. Role fit was therefore
+ * 0 for that person against every one of the 62 open roles on the platform,
+ * including 'Machine Learning Engineer'.
+ *
+ * It is not an edge case. Almost nobody writes a headline that is exactly one
+ * canonical job title. People write 'Backend Engineer @ Acme', 'Senior
+ * Frontend Developer | React', 'ML Engineer and Data Scientist'. Every one of
+ * those scored zero, which silently removed the second-heaviest signal in the
+ * engine for most real profiles.
+ */
+function headlineRolePhrases(headline) {
+  return String(headline || '')
+    // The separators people actually use between roles.
+    .split(/[,|/·•]|\bat\b|\band\b|@|\bex-|\||–|—|\(|\)/i)
+    .map((part) => part
+      // Seniority and company noise are not part of the role itself.
+      .replace(/\b(senior|sr\.?|junior|jr\.?|lead|principal|staff|head of|chief|former|ex)\b/gi, ' ')
+      .trim())
+    .filter((part) => part.length >= 3);
+}
+
+/**
+ * Words that mean the same job.
+ *
+ * 'Frontend Developer' and 'Frontend Engineer' are the same role and scored 0
+ * against each other, because the adjacency table lists canonical titles and
+ * cannot enumerate every synonym of every one of them. Normalising the synonym
+ * away is the right level to fix it: it makes them an exact match everywhere
+ * rather than requiring a new adjacency entry per pair.
+ *
+ * Applied only inside role fitting, not in normalizeRole globally, so nothing
+ * that stores or compares normalized roles elsewhere changes meaning.
+ */
+function applyRoleSynonyms(text) {
+  return String(text || '')
+    .replace(/\bdevelopers?\b/gi, 'engineer')
+    .replace(/\bdevs?\b/gi, 'engineer')
+    .replace(/\bprogrammers?\b/gi, 'engineer')
+    .replace(/\bengineering\b/gi, 'engineer')
+    .replace(/\barchitects?\b/gi, 'engineer');
+}
+
 function computeRoleFit(headline, gapRole) {
   if (!headline || !gapRole) return 0.0;
-  const a = normalizeRole(headline);
-  const b = normalizeRole(gapRole);
-  if (a === b) return 1.0;
+  const b = normalizeRole(applyRoleSynonyms(gapRole));
+  if (!b) return 0.0;
 
-  // Adjacent roles earn partial credit, never full. Someone who actually
-  // holds the role must always outrank someone merely adjacent to it.
-  //
-  // NOTE: normalizeRole strips ALL non-alphanumerics, so 'full stack
-  // engineer' becomes 'fullstackengineer'. The groups below are written
-  // readably and normalized here, rather than stored pre-mangled.
-  for (const group of ROLE_ADJACENCY) {
-    const normalized = group.map(normalizeRole);
-    if (normalized.includes(a) && normalized.includes(b)) return 0.6;
+  // Every role phrase in the headline, plus the whole thing, so a headline
+  // that IS a single clean title still behaves exactly as before.
+  const candidates = [headline, ...headlineRolePhrases(headline)]
+    .map((c) => normalizeRole(applyRoleSynonyms(c)))
+    .filter(Boolean);
+
+  let best = 0.0;
+
+  for (const a of candidates) {
+    if (a === b) return 1.0;
+
+    // Containment, in either direction. 'aimlengineering' contains
+    // 'aimlengineer'; 'machinelearningengineer' contains 'mlengineer'. Guarded
+    // by length so a short fragment cannot match half the platform: both sides
+    // must be substantial role names, not stray words.
+    if (a.length >= 8 && b.length >= 8 && (a.includes(b) || b.includes(a))) {
+      best = Math.max(best, 0.85);
+      continue;
+    }
+
+    // Adjacent roles earn partial credit, never full. Someone who actually
+    // holds the role must always outrank someone merely adjacent to it.
+    for (const group of ROLE_ADJACENCY) {
+      const normalized = group.map((g) => normalizeRole(applyRoleSynonyms(g)));
+      const aIn = normalized.some((n) => n === a || (n.length >= 8 && a.length >= 8 && (a.includes(n) || n.includes(a))));
+      const bIn = normalized.includes(b);
+      if (aIn && bIn) best = Math.max(best, 0.6);
+    }
   }
-  return 0.0;
+
+  return best;
 }
 
 /**
@@ -1047,4 +1114,4 @@ async function whereToStart(userId) {
   return { success: true, options, startHere, onlyFitFor };
 }
 
-module.exports = { whereToStart, compareOpenRoles, domainsMatch, refreshRankingsForContributor, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
+module.exports = { computeRoleFitForTesting: computeRoleFit, whereToStart, compareOpenRoles, domainsMatch, refreshRankingsForContributor, skillsMatchForTesting: null, scoreCandidate, explainScore, buildCausalNarrative, rankCandidatesForGap, getRecommendationsForStartup, getMyRecommendationsAsContributor, getWeights };
