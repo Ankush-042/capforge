@@ -15,7 +15,7 @@ require('dotenv').config();
 const pool = require('../backend/shared/db');
 const { judgeCandidateAgainstGaps, profileFingerprint } = require('../backend/shared/matchJudgement');
 
-const DELAY_MS = 5000; // tokens per minute is the binding limit, not requests
+const DELAY_MS = 3000; // between people; the chunker paces its own calls
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 (async () => {
@@ -66,7 +66,8 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   console.log(`${gaps.length} open roles, ${todo.length} of ${people.length} people to judge.`);
   if (todo.length === 0) { console.log('Everyone is already judged against their current profile.'); await pool.end(); process.exit(0); }
-  console.log(`About ${Math.ceil(todo.length * 7 / 60)} minute(s).\n`);
+  const callsEach = Math.ceil(gaps.length / 15);
+  console.log(`${callsEach} call(s) each, roughly ${Math.ceil(todo.length * callsEach * 4 / 60)} minute(s).\n`);
 
   let ok = 0, failed = 0;
   for (const person of todo) {
@@ -77,7 +78,11 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     } else {
       ok++;
       const sorted = [...r.judged].sort((a, b) => b.score - a.score);
-      console.log(`  OK    ${person.headline || person.email} — ${r.judged.length} roles judged`);
+      // Say plainly when a run is incomplete rather than reporting OK for
+      // something that only half worked.
+      const label = r.partial ? 'PART' : 'OK  ';
+      console.log(`  ${label}  ${person.headline || person.email} — ${r.judged.length}/${r.expected ?? gaps.length} roles judged`);
+      if (r.partial) console.log(`        incomplete: ${r.failures[0]}`);
       if (sorted[0]) console.log(`        best:  ${Math.round(sorted[0].score * 100)}% ${sorted[0].startup} / ${sorted[0].role} — "${sorted[0].reason}"`);
       const worst = sorted[sorted.length - 1];
       if (worst) console.log(`        worst: ${Math.round(worst.score * 100)}% ${worst.startup} / ${worst.role}`);
@@ -87,7 +92,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   console.log(`\n${'='.repeat(60)}`);
   console.log(`Judged: ${ok}   Failed: ${failed}`);
-  if (failed > 0) console.log('Re-run to retry. Nothing already saved is lost.');
+  if (failed > 0) console.log('Re-run to retry. Nothing already saved is lost: each chunk writes its own rows.');
   if (ok > 0) console.log('\nNEXT: node scripts/rerank-everything.js');
   await pool.end();
   process.exit(0);

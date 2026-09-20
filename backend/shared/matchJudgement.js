@@ -29,6 +29,20 @@ const { callGroq } = require('./aiClient');
 
 const GROQ_MODEL = 'openai/gpt-oss-120b';
 
+/**
+ * Roles per call.
+ *
+ * Sending all 62 at once returned 413 Request too large: the prompt plus a
+ * 4000-token output allowance exceeded the per-request limit. It succeeded for
+ * short profiles and failed for longer ones, which is the worst kind of
+ * failure because it looks intermittent rather than structural.
+ *
+ * 15 keeps a call comfortably inside the limit with room for a long profile,
+ * while still being large enough that the model sees a real set and judges
+ * relatively rather than scoring each role blind.
+ */
+const ROLES_PER_CALL = 15;
+
 const hash = (t) => crypto.createHash('sha256').update(String(t || '')).digest('hex').slice(0, 16);
 
 /** What the judgement was made from. Change either side and it is stale. */
@@ -54,13 +68,13 @@ function gapFingerprint(g) {
  * of calls, and a model that sees the whole set produces better relative
  * judgements than one judging each role blind.
  */
-async function judgeCandidateAgainstGaps(profile, gaps) {
+async function judgeOneBatch(profile, gaps) {
   if (!gaps.length) return { judged: [] };
 
   const roleList = gaps.map((g, i) => `[${i}] ${g.role}${g.seeking_type === 'CO_FOUNDER' ? ' (co-founder)' : ''} at ${g.startup_name}
     Needs: ${(g.required_skills || []).join(', ') || 'not specified'}
-    Why the role exists: ${(g.reason || '').slice(0, 200)}
-    The venture: ${(g.problem || '').slice(0, 200)}
+    Why the role exists: ${(g.reason || '').slice(0, 140)}
+    The venture: ${(g.problem || '').slice(0, 140)}
     Field: ${(g.domain || []).join(', ') || 'not stated'} | Stage: ${g.stage || 'not stated'}`).join('\n\n');
 
   const ai = await callGroq(GROQ_MODEL, [
@@ -89,7 +103,7 @@ reason: one plain sentence naming something real from their profile against some
       content: `THE PERSON
 What they do: ${profile.headline || 'not stated'}
 Skills they listed: ${(profile.skills || []).join(', ') || 'none listed'}
-About them: ${(profile.bio || 'not stated').slice(0, 300)}
+About them: ${(profile.bio || 'not stated').slice(0, 220)}
 Years doing this work: ${profile.experience_years ?? 'not stated'}
 Time they can give: ${profile.availability || 'not stated'}
 Fields they care about: ${(profile.preferred_domains || []).join(', ') || 'none picked'}
@@ -101,7 +115,7 @@ ${roleList}
 
 Return the JSON array now, ${gaps.length} objects.`,
     },
-  ], { temperature: 0.1, max_tokens: 4000 });
+  ], { temperature: 0.1, max_tokens: 1200 });
 
   if (!ai.success) return { failed: true, reason: ai.error || 'AI_CALL_FAILED', detail: ai.detail };
 
@@ -177,6 +191,41 @@ async function getJudgements(userId, gaps) {
     byGap[r.gap_id] = { score: parseFloat(r.score), reason: r.reason, profileHash: r.profile_hash };
   }
   return byGap;
+}
+
+/**
+ * Judge one person against every role, in chunks that fit.
+ *
+ * A failed chunk does NOT discard the ones that succeeded: each writes its own
+ * rows as it completes, so a partial run leaves real judgements behind and
+ * re-running only redoes what is missing. Losing good work because a later
+ * call failed is the mistake the alignment layer already made once.
+ */
+async function judgeCandidateAgainstGaps(profile, gaps) {
+  if (!gaps.length) return { judged: [] };
+
+  const chunks = [];
+  for (let i = 0; i < gaps.length; i += ROLES_PER_CALL) {
+    chunks.push(gaps.slice(i, i + ROLES_PER_CALL));
+  }
+
+  const judged = [];
+  const failures = [];
+  for (const chunk of chunks) {
+    const r = await judgeOneBatch(profile, chunk);
+    if (r.failed) {
+      failures.push(`${r.reason}${r.detail ? `: ${String(r.detail).slice(0, 80)}` : ''}`);
+      continue;
+    }
+    judged.push(...r.judged);
+    // Between chunks, not after the last one.
+    if (chunk !== chunks[chunks.length - 1]) await new Promise((res) => setTimeout(res, 1500));
+  }
+
+  if (judged.length === 0 && failures.length > 0) {
+    return { failed: true, reason: 'ALL_CHUNKS_FAILED', detail: failures[0] };
+  }
+  return { judged, partial: failures.length > 0, failures, expected: gaps.length };
 }
 
 module.exports = {
