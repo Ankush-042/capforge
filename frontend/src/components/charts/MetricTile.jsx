@@ -31,6 +31,7 @@ export default function MetricTile({
   bg,
   fg,
   to,
+  onClick,
   progress,      // 0-100, renders a rail when present
   badge,         // short string, e.g. "3 critical"
   valueColor,    // override for the number, e.g. red when momentum is negative
@@ -92,8 +93,10 @@ export default function MetricTile({
 
   const className =
     'rounded-xl p-6 min-h-[148px] shadow-card flex flex-col justify-between transition-all duration-200 ' +
-    (to ? 'hover:shadow-elevated hover:-translate-y-0.5 cursor-pointer' : '');
+    (to || onClick ? 'hover:shadow-elevated hover:-translate-y-0.5 cursor-pointer' : '');
 
+  // A tile can scroll to a section on the same page rather than navigate away.
+  if (!to && onClick) return <button type="button" onClick={onClick} className={`${className} text-left w-full`} style={{ backgroundColor: bg }}>{body}</button>;
   if (!to) return <div className={className} style={{ backgroundColor: bg }}>{body}</div>;
   return <Link to={to} className={className} style={{ backgroundColor: bg }}>{body}</Link>;
 }

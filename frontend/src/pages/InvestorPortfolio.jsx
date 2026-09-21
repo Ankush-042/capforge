@@ -165,6 +165,7 @@ export default function InvestorPortfolio() {
           <div className="grid grid-cols-3 gap-4 mb-8">
             <MetricTile
               label="Watching" value={watching.length}
+              onClick={watching.length ? () => document.getElementById('watching')?.scrollIntoView({ behavior: 'smooth' }) : undefined}
               icon={Eye} {...TILE_PALETTE.lavender}
               caption={watching.length === 0 ? 'Nothing yet' : 'Ventures you are following'}
             />
@@ -176,13 +177,14 @@ export default function InvestorPortfolio() {
             />
             <MetricTile
               label="Passed" value={passed.length}
+              onClick={passed.length ? () => document.getElementById('passed')?.scrollIntoView({ behavior: 'smooth' }) : undefined}
               icon={X} {...TILE_PALETTE.cream}
               caption={passed.length === 0 ? 'None' : 'With your reasoning kept'}
             />
           </div>
 
           {watching.length > 0 && (
-            <div className="mb-8">
+            <div id="watching" className="mb-8 scroll-mt-6">
               <div className="flex items-baseline justify-between mb-3">
                 <h2 className="text-[15px] font-semibold text-ink-900">Watching</h2>
                 <Link to="/app/investor/deal-flow" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">Find more</Link>
@@ -194,7 +196,7 @@ export default function InvestorPortfolio() {
           )}
 
           {passed.length > 0 && (
-            <div>
+            <div id="passed" className="scroll-mt-6">
               <div className="flex items-baseline justify-between mb-3">
                 <div>
                   <h2 className="text-[15px] font-semibold text-ink-900">Passed on</h2>
