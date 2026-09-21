@@ -101,7 +101,13 @@ export default function ConversationThread() {
   const other = conversation?.other_display_name || 'them';
   const formed = !!conversation?.team_formed_at;
   const myConfirmed = conversation?.myConfirmed || false;
-  const canConfirm = conversation && conversation.startup_id && !formed;
+  // Team formation is between a founder and somebody joining to build. It was
+  // shown on every conversation with a venture attached, including a founder
+  // talking to an investor after a pitch, which offered the investor a button
+  // to join the founding team. The backend now refuses it too; this stops the
+  // interface offering something that cannot happen.
+  const canConfirm = conversation && conversation.startup_id && !formed
+    && conversation.other_role !== 'INVESTOR' && persona !== 'INVESTOR';
 
   return (
     <Shell

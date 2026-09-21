@@ -103,6 +103,7 @@ async function getMessages(conversationId, userId) {
             p.display_name AS other_display_name,
             p.headline AS other_headline,
             p.profile_image AS other_avatar,
+            (SELECT primary_role FROM users ou WHERE ou.id = CASE WHEN c.participant_a_id = $2 THEN c.participant_b_id ELSE c.participant_a_id END) AS other_role,
             s.name AS startup_name
      FROM conversations c
      JOIN profiles p ON p.user_id = (CASE WHEN c.participant_a_id = $2 THEN c.participant_b_id ELSE c.participant_a_id END)
@@ -151,6 +152,22 @@ async function confirmTeamFormation(conversationId, userId) {
   if (c.participant_a_id !== userId && c.participant_b_id !== userId) return { success: false, error: 'NOT_AUTHORIZED' };
   if (c.team_formed_at) return { success: false, error: 'ALREADY_FORMED' };
   if (!c.startup_id) return { success: false, error: 'NO_VENTURE_CONTEXT', detail: 'This conversation isn\'t tied to a specific venture — team formation needs that context.' };
+
+  // CONFIRMED BUG: nothing here checked WHO was forming a team. A founder and
+  // an investor talking about a venture share a conversation with a
+  // startup_id, exactly like a founder and a contributor, so an investor
+  // pressing 'I'm in' after a pitch would have been added to the founding
+  // team, filled a role, and recalculated readiness around a person who is
+  // there to fund the company, not build it. Team formation is between a
+  // founder and somebody joining to work; it is refused for investors on
+  // either side, here where it cannot be bypassed, not only in the interface.
+  const roles = await pool.query(
+    'SELECT primary_role FROM users WHERE id = ANY($1::uuid[])',
+    [[c.participant_a_id, c.participant_b_id]]
+  );
+  if (roles.rows.some((r) => r.primary_role === 'INVESTOR')) {
+    return { success: false, error: 'NOT_A_TEAM_CONVERSATION', detail: 'Investors fund ventures; they do not join the founding team through a conversation.' };
+  }
 
   // Determine which side of the conversation this user is on: the
   // founder (owns the startup) or the other party (the contributor).
