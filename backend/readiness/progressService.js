@@ -39,12 +39,15 @@ const DIMENSION_CAUSES = {
     fixPath: '/app/gaps',
     fixLabel: 'Find the people',
   },
-  market_positioning: {
-    label: 'Market',
+  // RENAMED from market_positioning. It never measured market fit: it awarded
+  // 0.7 for two fields the AI structuring step fills automatically. It
+  // measures how clearly the idea is described, so that is what it is called.
+  idea_clarity: {
+    label: 'Clarity',
     riskCategories: ['MARKET'],
     usesGaps: false,
     fixPath: '/app/competitors',
-    fixLabel: 'Work out your position',
+    fixLabel: 'Sharpen how this is described',
   },
   product_readiness: {
     label: 'Product',
@@ -124,6 +127,9 @@ async function getProgress(startupId, userId) {
   const dimensions = [];
   if (readiness?.dimensions) {
     for (const [key, value] of Object.entries(readiness.dimensions)) {
+      // Skip anything unmeasured. team_composition is null until roles are
+      // diagnosed, and Math.round(null * 100) would render it as a flat zero,
+      // which reads as "you scored nothing" rather than "not known yet".
       if (typeof value !== 'number') continue;
       const meta = DIMENSION_CAUSES[key];
       if (!meta) continue;

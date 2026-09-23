@@ -26,7 +26,8 @@ import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 const DIM_COLOR = {
   team_composition: '#7C5CFC',
-  market_positioning: '#4C86F9',
+  idea_clarity: '#4C86F9',
+  market_positioning: '#4C86F9',   // pre-rename rows
   product_readiness: '#3FB081',
   funding_readiness: '#F0A84E',
 };

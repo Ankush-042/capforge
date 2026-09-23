@@ -4,7 +4,8 @@ import Badge from './charts/Badge.jsx';
 
 const DIM_LABELS = {
   team_composition: 'Team Composition',
-  market_positioning: 'Market Positioning',
+  idea_clarity: 'Idea Clarity',
+  market_positioning: 'Idea Clarity',   // stored under the old name before the rename
   product_readiness: 'Product Readiness',
   funding_readiness: 'Funding Readiness'
 };
@@ -39,7 +40,11 @@ export default function VentureSummaryCard({ summary, framing }) {
 
       {readiness ? (
         <div className="space-y-4 mb-6">
-          {Object.entries(readiness.dimensions).map(([key, value]) => (
+          {/* A dimension can now be UNMEASURED rather than zero: team coverage
+              has nothing to measure until roles are diagnosed. Rendering null
+              here would print 0% and draw an empty bar, which reads as "you
+              scored nothing" instead of "this is not known yet". */}
+          {Object.entries(readiness.dimensions).filter(([, v]) => typeof v === 'number').map(([key, value]) => (
             <div key={key}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[13px] font-medium text-ink-700">{DIM_LABELS[key] || key}</span>

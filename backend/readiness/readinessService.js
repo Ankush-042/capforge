@@ -15,12 +15,61 @@ const pool = require('../shared/db');
  * matched what the project claims to measure, and funding readiness
  * had no dedicated signal at all until now.
  */
+/**
+ * WEIGHTS, AND WHERE THEY COME FROM.
+ *
+ * The previous set (30/20/25/25) was chosen by judgement with nothing behind
+ * it. If somebody asked why team was 30%, there was no answer.
+ *
+ * CB Insights analysed 431 VC-backed companies that shut down since 2023. The
+ * root causes, as distinct from "ran out of capital" at 70% which is almost
+ * always the final symptom rather than the reason:
+ *
+ *     poor product-market fit   43%
+ *     bad timing                29%
+ *     team problems             23%
+ *     unsustainable economics   19%
+ *
+ * The 43% figure has held across three separate runs of this analysis: 101
+ * companies in 2014, 353 in a 2020 academic replication, and 3,000 outcomes
+ * now. It is one of the most stable findings in startup research.
+ *
+ * WE CAN ONLY MEASURE TWO OF THOSE FOUR. Team problems map to team coverage,
+ * and unsustainable economics to funding readiness. Product-market fit and
+ * timing, the two largest causes by some distance, require evidence this
+ * platform does not hold about an idea-stage venture: real users, real usage,
+ * real revenue. Inventing a proxy for them would be worse than admitting the
+ * gap, so the gap is stated to the founder instead.
+ *
+ * So the two measurable causes share 70% of the score in the 23:19 ratio CB
+ * Insights observed. The remaining 30% goes to two descriptive dimensions
+ * that are not failure causes at all: how far the product has actually got,
+ * and how clearly the idea is defined. Those two splits are our judgement and
+ * are labelled as such wherever the score is explained.
+ *
+ * Source: https://www.cbinsights.com/research/report/startup-failure-reasons-top/
+ */
 const READINESS_WEIGHTS = {
-  team_composition: 0.30,
-  market_positioning: 0.20,
-  product_readiness: 0.25,
-  funding_readiness: 0.25
+  team_composition: 0.38,   // 70% x 23/42, from the observed failure frequency
+  funding_readiness: 0.32,  // 70% x 19/42, from the observed failure frequency
+  product_readiness: 0.20,  // our judgement: descriptive, not a failure cause
+  idea_clarity: 0.10        // our judgement: descriptive, not a failure cause
 };
+
+/** Shown with the score so the weighting can be checked rather than trusted. */
+const WEIGHT_BASIS = {
+  team_composition: { sourced: true, note: 'Team problems appear in 23% of startup post-mortems (CB Insights, 431 companies). Team and funding share 70% of the score in the 23:19 ratio observed.' },
+  funding_readiness: { sourced: true, note: 'Unsustainable unit economics appear in 19% of post-mortems (CB Insights).' },
+  product_readiness: { sourced: false, note: 'Our judgement. How far the product has got is descriptive rather than a measured failure cause.' },
+  idea_clarity: { sourced: false, note: 'Our judgement. Weighted lowest deliberately: a clearly described idea is not the same as a good one.' },
+};
+
+/**
+ * Stated openly rather than hidden, because it is the most important thing
+ * about this score: the two biggest reasons startups fail are the two this
+ * score does not measure.
+ */
+const UNMEASURED = 'The two largest causes of startup failure, product-market fit at 43% and timing at 29% (CB Insights), are not measured here. Doing so would need evidence of real users and real demand that an idea-stage venture does not have yet. A high score means a venture is well set up, not that anybody wants it.';
 
 const CONFIDENCE_TO_SCORE = { high: 0.9, medium: 0.6, low: 0.3 };
 const STAGE_TO_EXECUTION_SCORE = { 'Idea': 0.3, 'Prototype': 0.5, 'MVP': 0.7, 'Early Traction': 0.9, 'Unclear': 0.2 };
@@ -41,9 +90,9 @@ const FUNDING_STAGE_SCORE = { 'Bootstrapped': 0.3, 'Pre-seed': 0.5, 'Seed': 0.7,
 function buildJustifications(dimensions, factors) {
   return {
     team_composition: factors.gapsCount === 0
-      ? 'No gaps have been diagnosed yet, so team coverage is unscored — run gap diagnosis first.'
+      ? 'No roles have been diagnosed yet, so team coverage cannot be measured. Its weight is shared across the other dimensions rather than counted as a half mark.'
       : `Based on ${factors.gapsCount} diagnosed role${factors.gapsCount !== 1 ? 's' : ''}, ${Math.round(dimensions.team_composition * 100)}% average coverage across required roles.`,
-    market_positioning: `${factors.hasTargetUsers ? 'Target users are defined' : 'Target users are not yet defined'}; ${factors.hasDomain ? 'domain is specified' : 'domain is not yet specified'}; solution-fit confidence is ${factors.solutionConfidenceLevel}.`,
+    idea_clarity: `Problem clarity is ${factors.problemConfidenceLevel}; solution clarity is ${factors.solutionConfidenceLevel}; ${factors.hasTargetUsers && factors.hasDomain ? 'target users and a domain are both identified' : factors.hasTargetUsers || factors.hasDomain ? 'only one of target users or domain is identified' : 'neither target users nor a domain are identified'}.`,
     product_readiness: `Venture is at "${factors.stage}" stage; solution-fit confidence is ${factors.solutionConfidenceLevel}; ${factors.hasTechRequirements ? `technical role coverage is ${Math.round(dimensions.product_readiness * 100)}%` : 'no technical requirements have been specified yet'}.`,
     funding_readiness: `${factors.hasBusinessModel ? 'Business model is defined' : 'Business model is not yet defined'}; funding stage is "${factors.fundingStage || 'not specified'}"; ${factors.dpiitRecognized ? 'DPIIT-recognized' : 'not yet DPIIT-recognized'}; ${factors.hasTimeline ? 'a target timeline is stated' : 'no target timeline stated'}.`
   };
@@ -53,20 +102,41 @@ function computeReadiness(startup, gaps) {
   const confidence = startup.confidence || {};
 
   // --- TEAM COMPOSITION: average coverage across all diagnosed role requirements. ---
+  // UNMEASURED, not 0.5. With no roles diagnosed there is nothing to compute
+  // coverage against, and 0.5 was a fabricated half-mark worth 15 points of
+  // the old score for a venture that had done nothing. An unmeasured dimension
+  // is excluded from the weighted sum and the remaining weights are
+  // renormalised, so the score reflects only what is actually known.
   const teamCoverage = gaps.length > 0
     ? gaps.reduce((sum, g) => sum + parseFloat(g.coverage), 0) / gaps.length
-    : 0.5; // no gaps diagnosed yet — neutral, not fabricated confidence
+    : null;
 
-  // --- MARKET POSITIONING: target-user clarity + domain clarity + solution confidence. ---
+  // --- IDEA CLARITY: how clearly the venture is described. ---
+  //
+  // RENAMED, AND REBUILT. This was called "market positioning" and claimed to
+  // measure market fit. It did not. It awarded 0.4 for target users being
+  // defined and 0.3 for a domain being specified, and BOTH of those fields are
+  // filled automatically by the AI structuring step for every venture that
+  // exists. Seven tenths of the dimension was handed out for the product
+  // having run, not for anything the founder did or knew, and the label said
+  // "market" while the arithmetic said "did structuring finish".
+  //
+  // What it actually measures is how clearly the idea came across, so that is
+  // what it is called now, and the confidence the structuring step reported is
+  // the honest signal for it: a clearly written idea parses confidently, a
+  // vague one does not. Having target users and a domain still counts, but at
+  // 0.2 rather than 0.7, because it is close to automatic.
   const hasTargetUsers = (startup.target_users || []).length > 0;
   const hasDomain = (startup.domain || []).length > 0;
   const solutionScore = CONFIDENCE_TO_SCORE[confidence.solution] ?? 0.5;
-  const marketPositioning = (hasTargetUsers ? 0.4 : 0) + (hasDomain ? 0.3 : 0) + (solutionScore * 0.3);
+  const problemScore = CONFIDENCE_TO_SCORE[confidence.problem] ?? solutionScore;
+  const ideaClarity = (problemScore * 0.4) + (solutionScore * 0.4)
+    + ((hasTargetUsers && hasDomain) ? 0.2 : (hasTargetUsers || hasDomain) ? 0.1 : 0);
 
   // --- PRODUCT READINESS: stage progress + solution confidence + technical role coverage. ---
   const executionScore = STAGE_TO_EXECUTION_SCORE[startup.stage] ?? 0.3;
   const hasTechRequirements = (startup.technology_requirements || []).length > 0;
-  const technicalCoverage = hasTechRequirements ? teamCoverage : 0.6;
+  const technicalCoverage = hasTechRequirements ? (teamCoverage ?? 0.5) : 0.6;
   const productReadiness = (executionScore * 0.4) + (solutionScore * 0.3) + (technicalCoverage * 0.3);
 
   // --- FUNDING READINESS (real dimension, previously did not exist): ---
@@ -82,20 +152,25 @@ function computeReadiness(startup, gaps) {
   const fundingReadiness = (hasBusinessModel ? 0.3 : 0) + (fundingStageScore * 0.3) + dpiitBonus + (hasTimeline ? 0.2 : 0);
 
   const dimensions = {
-    team_composition: round2(teamCoverage),
-    market_positioning: round2(Math.min(marketPositioning, 1)),
+    team_composition: teamCoverage === null ? null : round2(teamCoverage),
+    idea_clarity: round2(Math.min(ideaClarity, 1)),
     product_readiness: round2(Math.min(productReadiness, 1)),
     funding_readiness: round2(Math.min(fundingReadiness, 1))
   };
 
-  const overall = Object.keys(READINESS_WEIGHTS).reduce(
-    (sum, dim) => sum + dimensions[dim] * READINESS_WEIGHTS[dim], 0
-  );
+  // Renormalise over what is actually measured. If team coverage is unknown,
+  // its weight is redistributed rather than silently counted as a half mark.
+  const measured = Object.keys(READINESS_WEIGHTS).filter((d) => dimensions[d] !== null);
+  const totalWeight = measured.reduce((sum, d) => sum + READINESS_WEIGHTS[d], 0);
+  const overall = totalWeight > 0
+    ? measured.reduce((sum, d) => sum + dimensions[d] * (READINESS_WEIGHTS[d] / totalWeight), 0)
+    : 0;
 
   const criticalIssues = [];
-  if (dimensions.team_composition < 0.4) criticalIssues.push('Team composition lacks coverage for one or more critical roles.');
+  // The 0.4 threshold is our judgement, not a measured cliff edge.
+  if (dimensions.team_composition !== null && dimensions.team_composition < 0.4) criticalIssues.push('Team composition lacks coverage for one or more critical roles.');
   if (dimensions.funding_readiness < 0.4) criticalIssues.push('Funding readiness is low — business model and funding plan need clarity.');
-  if (dimensions.market_positioning < 0.4) criticalIssues.push('Market positioning is unclear — target users or domain are not well-defined.');
+  if (dimensions.idea_clarity < 0.4) criticalIssues.push('The idea is not yet described clearly enough for the problem and solution to be understood.');
   if (dimensions.product_readiness < 0.4) criticalIssues.push('Product readiness is early-stage relative to the venture\'s other dimensions.');
 
   const topActions = gaps
@@ -107,6 +182,7 @@ function computeReadiness(startup, gaps) {
     gapsCount: gaps.length,
     hasTargetUsers, hasDomain,
     solutionConfidenceLevel: confidence.solution || 'unstated',
+    problemConfidenceLevel: confidence.problem || 'unstated',
     stage: startup.stage || 'Unclear',
     hasTechRequirements,
     hasBusinessModel,
@@ -115,12 +191,76 @@ function computeReadiness(startup, gaps) {
     hasTimeline
   });
 
+  /**
+   * THE ARITHMETIC, kept rather than discarded.
+   *
+   * The justifications above were computed and thrown away on every run: the
+   * insert saved only the four numbers. A founder could see a score and
+   * nothing about how it was reached. This is stored now, so "why is my score
+   * 42?" has an answer made of the same sub-factors that produced it.
+   */
+  const breakdown = {
+    weights: READINESS_WEIGHTS,
+    weight_basis: WEIGHT_BASIS,
+    unmeasured_note: UNMEASURED,
+    dimensions: {
+      team_composition: {
+        label: 'Team',
+        score: dimensions.team_composition,
+        weight: READINESS_WEIGHTS.team_composition,
+        contribution: dimensions.team_composition === null ? null
+          : round2(dimensions.team_composition * (READINESS_WEIGHTS.team_composition / totalWeight) * 100),
+        parts: gaps.length === 0
+          ? [{ step: 'No roles diagnosed yet', value: 'unmeasured', sourced: true }]
+          : [{ step: `Average coverage across ${gaps.length} diagnosed role${gaps.length === 1 ? '' : 's'}`, value: `${Math.round((teamCoverage ?? 0) * 100)}%`, sourced: true }],
+      },
+      funding_readiness: {
+        label: 'Funding',
+        score: dimensions.funding_readiness,
+        weight: READINESS_WEIGHTS.funding_readiness,
+        contribution: round2(dimensions.funding_readiness * (READINESS_WEIGHTS.funding_readiness / totalWeight) * 100),
+        parts: [
+          { step: 'Business model defined', value: hasBusinessModel ? '+0.30' : '0', sourced: false },
+          { step: `Funding stage: ${startup.funding_stage || 'not specified'}`, value: `+${round2(fundingStageScore * 0.3)}`, sourced: false },
+          { step: 'DPIIT recognition', value: startup.dpiit_recognized ? '+0.20' : '0', sourced: true },
+          { step: 'Target timeline stated', value: hasTimeline ? '+0.20' : '0', sourced: false },
+        ],
+      },
+      product_readiness: {
+        label: 'Product',
+        score: dimensions.product_readiness,
+        weight: READINESS_WEIGHTS.product_readiness,
+        contribution: round2(dimensions.product_readiness * (READINESS_WEIGHTS.product_readiness / totalWeight) * 100),
+        parts: [
+          { step: `Stage: ${startup.stage || 'unclear'}`, value: `${round2(executionScore * 0.4)}`, sourced: false },
+          { step: `Solution clarity: ${confidence.solution || 'unstated'}`, value: `${round2(solutionScore * 0.3)}`, sourced: false },
+          { step: 'Technical role coverage', value: `${round2(technicalCoverage * 0.3)}`, sourced: true },
+        ],
+      },
+      idea_clarity: {
+        label: 'Clarity',
+        score: dimensions.idea_clarity,
+        weight: READINESS_WEIGHTS.idea_clarity,
+        contribution: round2(dimensions.idea_clarity * (READINESS_WEIGHTS.idea_clarity / totalWeight) * 100),
+        parts: [
+          { step: `Problem clarity: ${confidence.problem || 'unstated'}`, value: `${round2(problemScore * 0.4)}`, sourced: false },
+          { step: `Solution clarity: ${confidence.solution || 'unstated'}`, value: `${round2(solutionScore * 0.4)}`, sourced: false },
+          { step: 'Target users and domain identified', value: `${(hasTargetUsers && hasDomain) ? '0.2' : (hasTargetUsers || hasDomain) ? '0.1' : '0'}`, sourced: false },
+        ],
+      },
+    },
+    sources: [
+      { label: 'CB Insights — the top reasons startups fail, 431 companies', url: 'https://www.cbinsights.com/research/report/startup-failure-reasons-top/' },
+    ],
+  };
+
   return {
     overall_score: Math.round(overall * 100),
     dimensions,
     dimension_justifications: justifications,
     critical_issues: criticalIssues,
-    top_actions: topActions
+    top_actions: topActions,
+    breakdown
   };
 }
 
@@ -194,9 +334,9 @@ async function runReadinessAndRiskAnalysis(startupId) {
     await client.query('BEGIN');
 
     const readinessResult = await client.query(
-      `INSERT INTO readiness_assessments (startup_id, overall_score, dimensions, critical_issues, top_actions)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [startupId, readiness.overall_score, JSON.stringify(readiness.dimensions), readiness.critical_issues, readiness.top_actions]
+      `INSERT INTO readiness_assessments (startup_id, overall_score, dimensions, critical_issues, top_actions, breakdown)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [startupId, readiness.overall_score, JSON.stringify(readiness.dimensions), readiness.critical_issues, readiness.top_actions, JSON.stringify(readiness.breakdown)]
     );
 
     await client.query('DELETE FROM risks WHERE startup_id = $1', [startupId]);

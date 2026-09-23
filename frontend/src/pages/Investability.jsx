@@ -26,7 +26,8 @@ const INVESTOR_BAR = 35;
 
 const DIM_META = {
   team_composition: { label: 'Team', color: '#7C5CFC' },
-  market_positioning: { label: 'Market', color: '#4C86F9' },
+  idea_clarity: { label: 'Clarity', color: '#4C86F9' },
+  market_positioning: { label: 'Clarity', color: '#4C86F9' },
   product_readiness: { label: 'Product', color: '#3FB081' },
   funding_readiness: { label: 'Funding', color: '#F0A84E' },
 };

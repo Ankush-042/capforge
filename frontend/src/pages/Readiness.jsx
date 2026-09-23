@@ -24,7 +24,8 @@ const INVESTOR_BAR = 35;
 
 const DIM_META = {
   team_composition: { label: 'Team', color: '#7C5CFC', fixes: 'Fill an open role. Every person who joins moves this most.', to: '/app/gaps' },
-  market_positioning: { label: 'Market', color: '#4C86F9', fixes: 'Sharpen who this is for and who else is doing it.', to: '/app/competitors' },
+  idea_clarity: { label: 'Clarity', color: '#4C86F9', fixes: 'Describe the problem and the solution more precisely.', to: '/app/competitors' },
+  market_positioning: { label: 'Clarity', color: '#4C86F9', fixes: 'Describe the problem and the solution more precisely.', to: '/app/competitors' },
   product_readiness: { label: 'Product', color: '#3FB081', fixes: 'Ship the next milestone. Evidence of building moves this.', to: '/app/milestones' },
   funding_readiness: { label: 'Funding', color: '#F0A84E', fixes: 'Write your ask and get the pitch ready.', to: '/app/pitch' },
 };
