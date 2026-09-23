@@ -151,7 +151,7 @@ export default function StartupDetail() {
               <div className="flex items-center gap-2">
                 {score >= INVESTOR_BAR
                   ? <><Check size={14} className="text-mint-500" /><span className="text-[12.5px] text-white/70">Visible to investors</span></>
-                  : <span className="text-[12.5px] text-white/50">{INVESTOR_BAR - score} from investor visibility</span>}
+                  : <span className="text-[12.5px] text-white/50">{INVESTOR_BAR - score} below what investors look for</span>}
               </div>
             </div>
           )}

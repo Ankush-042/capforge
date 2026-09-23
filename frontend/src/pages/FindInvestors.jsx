@@ -97,11 +97,13 @@ function InvestorCard({ inv, onMessage, visible, index }) {
         <Link to={`/app/profile/${inv.user_id}`} className="flex items-center gap-1 text-[13px] font-medium text-ink-500 hover:text-violet-700 transition-colors">
           Their full thesis <ArrowUpRight size={13} />
         </Link>
+        {/* No longer gated. The readiness bar used to disable this, which
+            meant the platform decided who a founder was allowed to write to,
+            on the strength of a number that had no derivation. Readiness is
+            shown as context on this page instead. */}
         <button
           onClick={() => onMessage(inv)}
-          disabled={!visible}
-          title={visible ? undefined : 'Reach out once your venture is past the readiness bar'}
-          className="flex items-center gap-1.5 text-[13px] font-medium bg-ink-900 hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-full transition-colors"
+          className="flex items-center gap-1.5 text-[13px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-4 py-2 rounded-full transition-colors"
         >
           <MessageSquare size={13} /> Reach out
         </button>
@@ -170,8 +172,11 @@ export default function FindInvestors() {
         </p>
       </div>
 
-      {/* Honest about the gate rather than hiding it. A founder below the bar
-          can see who they are working toward, and exactly how far off. */}
+      {/* Context, not a gate. This used to say a founder could not reach out
+          until they passed a readiness bar, which was never a rule anybody
+          could justify and is no longer one at all. What is true is that a
+          weak venture is a harder conversation, and saying so is more useful
+          than blocking the button. */}
       {!visible && investors.length > 0 && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
           <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
@@ -179,10 +184,10 @@ export default function FindInvestors() {
             <p className="text-[14px] font-semibold text-amber-800">
               {readiness === null
                 ? 'Your venture has not been assessed yet'
-                : `You are ${bar - readiness} point${bar - readiness === 1 ? '' : 's'} from being able to reach out`}
+                : `Your readiness is ${readiness}, below the ${bar} most investors look for`}
             </p>
             <p className="text-[13px] text-amber-700 mt-0.5 leading-relaxed">
-              Investors only take conversations from ventures past {bar} readiness. You can see who fits now, and reach out once you are there.{' '}
+              You can still reach out to anyone here. Expect a harder conversation, and know which parts are weakest before you start.{' '}
               <Link to="/app/readiness" className="underline hover:no-underline">See what moves it</Link>.
             </p>
           </div>

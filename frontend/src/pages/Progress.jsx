@@ -167,7 +167,7 @@ export default function Progress() {
       <div className="mb-7">
         <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-          {p.score === null ? 'Never assessed' : p.visibleToInvestors ? 'Investors can find you' : 'Not yet visible to investors'}
+          {p.score === null ? 'Never assessed' : p.visibleToInvestors ? 'At the level investors look for' : 'Below what investors typically look for'}
         </p>
         <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
           {p.score === null

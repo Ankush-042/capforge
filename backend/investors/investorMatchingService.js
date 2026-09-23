@@ -41,7 +41,10 @@ async function getAlignmentScoresForStartups(userId, startupIds) {
 // The readiness an investor requires before a venture is visible to them.
 // Was declared inside rankStartupsForInvestor, which meant the inverse
 // founder-facing ranking could not see it. One definition, both directions.
-const MIN_READINESS_FOR_INVESTOR_VISIBILITY = 35;
+// Kept only as a REFERENCE LINE shown to founders, not as a gate. Nothing is
+// hidden from investors on the strength of it. See the note in
+// rankStartupsForInvestor for why the gate was removed.
+const READINESS_REFERENCE_LINE = 35;
 
 const WEIGHTS = {
   // CONFIRMED WRONG ORDERING, from real data. Against a healthcare venture,
@@ -213,12 +216,29 @@ async function rankStartupsForInvestor(investorUserId) {
 
   const { getPreferenceAdjustment } = require('../feedback/feedbackService');
 
-  // Phase H — real curation/selectivity: readiness previously only
-  // affected SCORE (20% weight), meaning every venture regardless of
-  // quality still appeared in deal-flow, just ranked lower — genuine
-  // noise, not curation. A venture must cross a real readiness bar to
-  // be investor-facing at all, matching how real selective platforms
-  // actually work: not everyone gets shown, not just everyone ranked.
+  // THE VISIBILITY BAR IS GONE, deliberately.
+  //
+  // A venture below 35 used to be hidden from investors entirely. Three
+  // things were wrong with that.
+  //
+  // The number had no derivation. It was a bare constant with no comment
+  // explaining where 35 came from, because it came from nowhere, and it sat
+  // on top of a readiness score whose own weights were equally unfounded
+  // until they were rebuilt against published failure data.
+  //
+  // It overrode the investor's judgement with our arithmetic. Judging early
+  // companies, including messy ones, is the entire job. Hiding a venture
+  // because our unvalidated score said 34 rather than 35 is the platform
+  // deciding what a professional is allowed to consider.
+  //
+  // And it blocked the deals early-stage investors exist to do. Funding is
+  // frequently what FIXES readiness: a venture with no team coverage and no
+  // runway is often precisely the one worth backing early and cheaply.
+  //
+  // Readiness still matters, as a RANKING input rather than a wall. A weak
+  // venture sinks to the bottom of the list where it belongs, with the real
+  // reason stated, instead of silently not existing. Ordering carries the
+  // judgement; absence carried none.
 
   // One cached lookup for every venture at once, before the loop. Reading
   // cache only: ranking never calls the LLM, so a rate limit can never slow
@@ -239,9 +259,9 @@ async function rankStartupsForInvestor(investorUserId) {
     );
     const latestReadiness = readinessResult.rows[0];
 
-    // Real admission gate — an unassessed venture hasn't proven itself
-    // yet either, so it doesn't qualify until it has a real score.
-    if (!latestReadiness || latestReadiness.overall_score < MIN_READINESS_FOR_INVESTOR_VISIBILITY) continue;
+    // An unassessed venture is still shown. It simply carries no readiness
+    // signal, ranks lower for it, and says so rather than disappearing.
+    // Nothing is excluded here any more.
 
     const risksResult = await pool.query('SELECT * FROM risks WHERE startup_id = $1', [startup.id]);
 
@@ -280,7 +300,9 @@ async function rankStartupsForInvestor(investorUserId) {
     return {
       success: true,
       recommendations: inserted,
-      note: inserted.length === 0 ? `${startupsResult.rows.length} startups exist, but none have yet crossed the ${MIN_READINESS_FOR_INVESTOR_VISIBILITY}-point readiness bar for investor visibility.` : undefined
+      note: inserted.length === 0 && startupsResult.rows.length > 0
+        ? `${startupsResult.rows.length} venture${startupsResult.rows.length === 1 ? '' : 's'} exist, but none match your stated thesis closely enough to be worth showing yet.`
+        : undefined
     };
   } catch (err) {
     await client.query('ROLLBACK');
@@ -397,7 +419,7 @@ async function rankInvestorsForStartup(startupId, founderUserId) {
     success: true,
     investors: ranked,
     readiness: readiness ? Math.round(parseFloat(readiness.overall_score)) : null,
-    investorBar: MIN_READINESS_FOR_INVESTOR_VISIBILITY,
+    investorBar: READINESS_REFERENCE_LINE,
   };
 }
 

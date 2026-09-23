@@ -306,25 +306,43 @@ const RULES = [
     },
   },
   {
-    name: 'Investors only see ventures above the readiness bar',
+    // REPLACED. This used to assert that no venture below 35 readiness
+    // appeared in any investor's deal flow. That gate has been removed: the
+    // number had no derivation, it overrode an investor's own judgement with
+    // our arithmetic, and it blocked exactly the early messy deals that
+    // early-stage investors exist to do.
+    //
+    // What matters now is the opposite: readiness must still SHAPE the order
+    // rather than being ignored. If a low-readiness venture consistently
+    // outranked a strong one for the same investor, removing the gate would
+    // have turned curation into noise, which was the fair objection to
+    // removing it at all.
+    name: 'Readiness still shapes investor deal flow order',
     async check() {
       const r = await pool.query(
-        `SELECT s.name, ra.overall_score
-         FROM recommendations rec
-         JOIN startups s ON s.id = rec.startup_id
-         LEFT JOIN LATERAL (
-           SELECT overall_score FROM readiness_assessments
-           WHERE startup_id = s.id ORDER BY generated_at DESC LIMIT 1
-         ) ra ON true
-         WHERE rec.status = 'ACTIVE' AND rec.recommendation_type = 'INVESTOR'
-           AND (ra.overall_score IS NULL OR ra.overall_score < 35)
+        `WITH scored AS (
+           SELECT rec.target_user_id AS investor, rec.score, s.name,
+                  COALESCE(ra.overall_score, 50) AS readiness
+           FROM recommendations rec
+           JOIN startups s ON s.id = rec.startup_id
+           LEFT JOIN LATERAL (
+             SELECT overall_score FROM readiness_assessments
+             WHERE startup_id = s.id ORDER BY generated_at DESC LIMIT 1
+           ) ra ON true
+           WHERE rec.status = 'ACTIVE' AND rec.recommendation_type = 'INVESTOR'
+         )
+         SELECT a.investor, a.name AS weak, a.readiness AS weak_readiness,
+                b.name AS strong, b.readiness AS strong_readiness
+         FROM scored a JOIN scored b ON a.investor = b.investor
+         WHERE a.readiness < b.readiness - 20
+           AND a.score > b.score + 0.15
          LIMIT 5`
       );
       return {
         pass: r.rows.length === 0,
         detail: r.rows.length === 0
-          ? 'all investor-visible ventures are above the bar'
-          : r.rows.map(x => `${x.name} at ${x.overall_score ?? 'no readiness'}`).join('; '),
+          ? 'no venture badly outranks a much stronger one for the same investor'
+          : r.rows.map(x => `${x.weak} (${x.weak_readiness}) outranks ${x.strong} (${x.strong_readiness})`).join('; '),
       };
     },
   },

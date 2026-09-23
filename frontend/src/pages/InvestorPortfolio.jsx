@@ -63,7 +63,7 @@ function Entry({ e, onRemove, index }) {
           tell them apart. */}
       {e.crossedTheBar && (
         <p className="flex items-center gap-1.5 text-[13px] font-medium text-mint-500 mb-2">
-          <Check size={13} /> Crossed the readiness bar since you started watching
+          <Check size={13} /> Readiness has climbed past what investors look for since you marked it
         </p>
       )}
 
@@ -137,7 +137,7 @@ export default function InvestorPortfolio() {
         </p>
         <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
           {crossed.length > 0
-            ? `${crossed.length} ${crossed.length === 1 ? 'venture has' : 'ventures have'} crossed the bar since you marked ${crossed.length === 1 ? 'it' : 'them'}.`
+            ? `${crossed.length} ${crossed.length === 1 ? 'venture has' : 'ventures have'} climbed past ${crossed.length === 1 ? 'that level' : 'that level'} since you marked ${crossed.length === 1 ? 'it' : 'them'}.`
             : watching.length === 0
               ? 'You are not tracking anything yet.'
               : 'Nothing has crossed the bar yet.'}

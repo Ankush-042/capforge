@@ -91,7 +91,7 @@ export default function Readiness() {
   const strongest = sorted[sorted.length - 1] || null;
 
   return (
-    <Shell title={startup?.name || 'Readiness'} subtitle={visible ? 'Investors can find you' : 'Not yet visible to investors'}>
+    <Shell title={startup?.name || 'Readiness'} subtitle={visible ? 'At the level investors look for' : 'Below what investors typically look for'}>
       <div className="mb-7 flex items-start justify-between gap-6">
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">

@@ -56,7 +56,7 @@ function DegradedFacts({ facts, note, isContributor }) {
         {!isContributor && facts.score !== null && (
           <p className="text-[13.5px] text-amber-800">
             Readiness {facts.score}
-            {facts.visibleToInvestors ? ' — investors can see you.' : ` — ${facts.pointsFromVisibility} from investor visibility.`}
+            {facts.visibleToInvestors ? ' — at the level investors look for.' : ` — ${facts.pointsFromVisibility} below what investors typically look for.`}
           </p>
         )}
         {!isContributor && facts.openRoles?.length > 0 && (

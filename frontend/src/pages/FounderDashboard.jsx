@@ -118,7 +118,7 @@ export default function FounderDashboard() {
   } else if (score < INVESTOR_BAR) {
     const away = INVESTOR_BAR - score;
     stage = {
-      label: 'Not yet visible to investors',
+      label: 'Below what investors look for',
       next: `You are ${away} point${away === 1 ? '' : 's'} away from investors being able to find you. ${openCount > 0 ? `Filling ${openCount === 1 ? 'the open role' : `one of your ${openCount} open roles`} is the fastest way there.` : 'Closing your open risks is the fastest way there.'}`,
     };
   } else {
@@ -165,7 +165,7 @@ export default function FounderDashboard() {
           icon={Gauge} to="/app/readiness" {...TILE_PALETTE.lavender}
           progress={score !== null ? (score / INVESTOR_BAR) * 100 : 0}
           caption={score === null ? 'Not assessed yet'
-            : score < INVESTOR_BAR ? `${INVESTOR_BAR - score} from investor visibility`
+            : score < INVESTOR_BAR ? `${INVESTOR_BAR - score} below what investors look for`
             : 'Visible to investors'}
         />
         <MetricTile
