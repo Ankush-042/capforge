@@ -35,6 +35,11 @@ export default function EquityCalculator() {
   const [stage, setStage] = useState('Idea');
   const [commitment, setCommitment] = useState('full-time');
   const [priorityLevel, setPriorityLevel] = useState('CRITICAL');
+  // The role TYPE was never sent, which is why one formula served a
+  // co-founder, an early hire and an advisor alike. They are completely
+  // different bands.
+  const [seekingType, setSeekingType] = useState('CORE_HIRE');
+  const [teamSize, setTeamSize] = useState(1);
   const [cashComp, setCashComp] = useState(false);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -51,6 +56,7 @@ export default function EquityCalculator() {
         if (open.length > 0) {
           setRole(open[0].role);
           setPriorityLevel(open[0].priority_level || 'CRITICAL');
+          if (open[0].seeking_type) setSeekingType(open[0].seeking_type);
         }
       }
     }
@@ -63,7 +69,14 @@ export default function EquityCalculator() {
     const { ok, data } = await calculateEquity({
       calculationType: 'FOUNDER_SPLIT',
       startupId: startup?.id,
-      inputs: { role, stage, commitment, priorityLevel, cashCompensation: cashComp },
+      inputs: {
+        role, stage, commitment, priorityLevel, cashCompensation: cashComp,
+        seekingType,
+        // Carta's benchmark is by hire order, so the next hire's number is the
+        // team size as it stands.
+        hireOrder: Math.max(1, Number(teamSize) || 1),
+        existingFounders: Math.max(1, Number(teamSize) || 1),
+      },
     });
     setLoading(false);
     if (ok && data.success) setResult(data.calculation.result);
@@ -73,6 +86,7 @@ export default function EquityCalculator() {
   function pickRole(r) {
     setRole(r.role);
     setPriorityLevel(r.priority_level || 'CRITICAL');
+    if (r.seeking_type) setSeekingType(r.seeking_type);
     setResult(null);
   }
 
@@ -129,6 +143,28 @@ export default function EquityCalculator() {
               <p className="text-[12px] text-ink-500 mt-1.5">Earlier means more risk for them, and more equity.</p>
             </div>
             <div>
+              {/* Both bands depend on this. Carta's benchmark is by hire
+                  order, and a co-founder's share depends on how many founders
+                  are already splitting it. */}
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">
+                {seekingType === 'CO_FOUNDER' ? 'Founders already on board' : 'People already on the team'}
+              </label>
+              <select value={teamSize} onChange={(e) => setTeamSize(Number(e.target.value))} className={FIELD}>
+                {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">This role is</label>
+              <select value={seekingType} onChange={(e) => setSeekingType(e.target.value)} className={FIELD}>
+                <option value="CORE_HIRE">An early hire</option>
+                <option value="CO_FOUNDER">A co-founder</option>
+              </select>
+            </div>
+
+            <div>
               <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How much they would give it</label>
               <select value={commitment} onChange={(e) => setCommitment(e.target.value)} className={FIELD}>
                 <option value="full-time">Full-time</option>
@@ -182,6 +218,57 @@ export default function EquityCalculator() {
                 <p className="text-[14px] text-white/70 leading-relaxed mt-4">
                   For a {commitment === 'advisor' ? 'advising' : commitment} {role} joining at {String(stage).toLowerCase()} stage{cashComp ? ', with a salary' : ''}.
                 </p>
+
+                {result.basisLabel && (
+                  <p className="text-[12.5px] text-white/45 mt-1.5">Measured as: {result.basisLabel}</p>
+                )}
+
+                {/* THE ARITHMETIC, not a summary. Anybody can add this up
+                    themselves, which is the difference between a number and a
+                    verdict. Each line says whether it came from published data
+                    or from our own judgement, because the second kind should
+                    be arguable. */}
+                {(result.derivation || []).length > 0 && (
+                  <div className="mt-6 pt-5 border-t border-white/10">
+                    <p className="text-[11px] font-medium tracking-wide uppercase text-white/40 mb-3">How this number was reached</p>
+                    <div className="space-y-3">
+                      {result.derivation.map((d, i) => (
+                        <div key={i}>
+                          <div className="flex items-baseline justify-between gap-4">
+                            <span className="text-[13.5px] text-white/85">{d.step}</span>
+                            <span className="text-[13.5px] font-medium text-white tabular-nums shrink-0">{d.value}</span>
+                          </div>
+                          <p className="text-[12px] text-white/40 leading-relaxed mt-0.5">
+                            <span style={{ color: d.sourced ? '#5FD3A0' : '#D9A441' }}>
+                              {d.sourced ? 'Published data' : 'Our judgement'}
+                            </span>
+                            {' — '}{d.detail}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    {result.observedRange && (
+                      <p className="text-[12px] text-white/35 mt-3.5">
+                        Held within the observed range of {result.observedRange.low}% to {result.observedRange.high}%.
+                      </p>
+                    )}
+                    {result.context && <p className="text-[12.5px] text-white/50 mt-3 leading-relaxed">{result.context}</p>}
+                  </div>
+                )}
+
+                {(result.sources || []).length > 0 && (
+                  <div className="mt-5 pt-4 border-t border-white/10">
+                    <p className="text-[11px] font-medium tracking-wide uppercase text-white/40 mb-2">Where the numbers come from</p>
+                    <div className="space-y-1">
+                      {result.sources.map((src, i) => (
+                        <a key={i} href={src.url} target="_blank" rel="noopener noreferrer"
+                           className="block text-[12.5px] text-white/55 hover:text-white/85 transition-colors">
+                          {src.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* ALL the assumptions, not the first one. This list is the
                     difference between quoting a number and arguing for it. */}

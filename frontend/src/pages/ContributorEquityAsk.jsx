@@ -27,6 +27,7 @@ export default function ContributorEquityAsk() {
   const [stage, setStage] = useState('Idea');
   const [commitment, setCommitment] = useState('part-time');
   const [experienceYears, setExperienceYears] = useState('4');
+  const [seekingType, setSeekingType] = useState('CORE_HIRE');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +35,11 @@ export default function ContributorEquityAsk() {
     setLoading(true);
     const { ok, data } = await calculateEquity({
       calculationType: 'CONTRIBUTOR_ASK',
-      inputs: { role, stage, commitment, priorityLevel: 'CRITICAL', experienceYears: parseInt(experienceYears) || 0 },
+      inputs: {
+        role, stage, commitment, priorityLevel: 'CRITICAL',
+        experienceYears: parseInt(experienceYears) || 0,
+        seekingType, hireOrder: 1, existingFounders: 1,
+      },
     });
     setLoading(false);
     if (ok && data.success) setResult(data.calculation.result);
@@ -66,6 +71,17 @@ export default function ContributorEquityAsk() {
               <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">The role you would take</label>
               <input value={role} onChange={(e) => setRole(e.target.value)} className={FIELD} />
             </div>
+            <div>
+              {/* The single most important input, and the one that was
+                  missing. A co-founder seat and an early hire sit in
+                  completely different bands: roughly 34-50% against 1-3%. */}
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you would be joining as</label>
+              <select value={seekingType} onChange={(e) => setSeekingType(e.target.value)} className={FIELD}>
+                <option value="CORE_HIRE">An early hire</option>
+                <option value="CO_FOUNDER">A co-founder</option>
+              </select>
+            </div>
+
             <div>
               <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How far along they are</label>
               <select value={stage} onChange={(e) => setStage(e.target.value)} className={FIELD}>
@@ -114,6 +130,50 @@ export default function ContributorEquityAsk() {
                 <p className="text-[14px] text-white/70 leading-relaxed mt-4">
                   For a {commitment === 'advisor' ? 'advising' : commitment} {role} joining at {stage.toLowerCase()} stage.
                 </p>
+
+                {result.basisLabel && (
+                  <p className="text-[12.5px] text-white/45 mt-1.5">Measured as: {result.basisLabel}</p>
+                )}
+
+                {/* The working, shown. A contributor about to ask for a number
+                    should be able to see where it came from and argue with the
+                    parts that are only our judgement. */}
+                {(result.derivation || []).length > 0 && (
+                  <div className="mt-6 pt-5 border-t border-white/10">
+                    <p className="text-[11px] font-medium tracking-wide uppercase text-white/40 mb-3">How this number was reached</p>
+                    <div className="space-y-3">
+                      {result.derivation.map((d, i) => (
+                        <div key={i}>
+                          <div className="flex items-baseline justify-between gap-4">
+                            <span className="text-[13.5px] text-white/85">{d.step}</span>
+                            <span className="text-[13.5px] font-medium text-white tabular-nums shrink-0">{d.value}</span>
+                          </div>
+                          <p className="text-[12px] text-white/40 leading-relaxed mt-0.5">
+                            <span style={{ color: d.sourced ? '#5FD3A0' : '#D9A441' }}>
+                              {d.sourced ? 'Published data' : 'Our judgement'}
+                            </span>
+                            {' — '}{d.detail}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    {result.context && <p className="text-[12.5px] text-white/50 mt-3 leading-relaxed">{result.context}</p>}
+                  </div>
+                )}
+
+                {(result.sources || []).length > 0 && (
+                  <div className="mt-5 pt-4 border-t border-white/10">
+                    <p className="text-[11px] font-medium tracking-wide uppercase text-white/40 mb-2">Where the numbers come from</p>
+                    <div className="space-y-1">
+                      {result.sources.map((src, i) => (
+                        <a key={i} href={src.url} target="_blank" rel="noopener noreferrer"
+                           className="block text-[12.5px] text-white/55 hover:text-white/85 transition-colors">
+                          {src.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {(result.assumptions || []).length > 0 && (
                   <div className="mt-6 pt-5 border-t border-white/10">
