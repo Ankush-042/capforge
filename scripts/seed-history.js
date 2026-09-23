@@ -79,42 +79,12 @@ function layout(desiredStart, gaps, latestAllowed = NOW - HOUR) {
 // Content
 // ----------------------------------------------------------------------------
 
-/** A conversation that goes somewhere, including a week of silence. */
-const DEEP_EXCHANGE = [
-  ['C', "Following up properly now that I have had time to read everything on {venture}. I have questions before I say anything that sounds like a commitment."],
-  ['F', "Ask them. I would rather lose you now than six months in."],
-  ['C', "How many hours a week are you actually expecting? Not the pitch version."],
-  ['F', "Honestly, twenty to start. More once we know the thing works. I am not going to pretend it stays part-time forever."],
-  ['C', "That works for now. What I need clarity on is what happens if it does work and I am still on twenty."],
-  ['F', "Then we renegotiate, in writing, before it turns into resentment. I have watched exactly that end a company."],
-  ['C', "Sorry, went quiet. Had a week at my current job that ate everything. Still very interested."],
-  ['F', "No apology needed. Honestly it told me something useful, that you would say so rather than disappear."],
-  ['C', "Can we talk equity before going further? Not to haggle, just so neither of us is guessing."],
-  ['F', "Yes. I would rather it be awkward now than later. What were you thinking?"],
-  ['C', "I looked at the range the calculator here suggested and it seemed fair. Somewhere in there, with a normal vesting schedule."],
-  ['F', "That is close to what I had in mind. Let us get on a call this week and write it down."],
-];
-const QUIET_AFTER = 5; // the silence falls after the sixth message
-
-const INVESTOR_OPENER = "I have been following {venture} since it crossed the readiness bar. Before anything else: what is the part you are least sure about?";
-const FOUNDER_REPLY = "Distribution. The product question I think we can answer. Getting in front of the people who actually need it is the thing I lose sleep over.";
-const PITCH_NOTE = "Here is the full picture, including that.";
-const INVESTOR_AFTER = "That is a more honest answer than I usually get. I have read it. Can you walk me through the next ninety days on a call?";
-
-const EXTRA_RESONANCES = [
-  "I have been circling this exact problem for about a year without doing anything about it. Seeing someone else write it down properly made me want to stop circling.",
-  "I am not sure I am the right fit for what you described, but I have worked adjacent to this for four years and I would like to at least talk it through.",
-];
-
-const QUIET_SPARK = {
-  title: 'Small clinics throw away most of the data they collect',
-  theIdea: "Every small clinic I have worked with records far more than it ever looks at again. Appointment patterns, no-shows, the questions patients ask before booking. None of it is analysed because nobody there has the time or the tools. I suspect there is a simple product in just telling them what they already know.",
-  whyMe: "I spent three years building software for clinics and watched this happen in every one of them.",
-  lookingFor: 'Someone who has worked with healthcare data and understands what small clinics can realistically adopt.',
-  tags: ['healthcare', 'saas'],
-};
-
-const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the first version would be deliberately small, one problem, for one kind of customer, and I would rather prove that than describe the whole vision.`;
+// Every scripted line lives in one place, so this script and the repair can
+// never drift apart. See scripts/lib/seed-templates.js.
+const T = require('./lib/seed-templates');
+const { DEEP_EXCHANGE, QUIET_AFTER, INVESTOR_OPENER, FOUNDER_REPLY, PITCH_NOTE,
+        INVESTOR_AFTER, EXTRA_RESONANCES, REWRITE_SUFFIX, QUIET_SPARK, FIND } = T;
+const REWRITE = (idea) => `${idea}${REWRITE_SUFFIX}`;
 
 // ----------------------------------------------------------------------------
 
@@ -127,7 +97,14 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
   // ==========================================================================
 
   step('Phase 1a: conversations that go somewhere');
-  const shallow = (await pool.query(
+  // ALREADY DONE? This phase was not idempotent: a second run deepened three
+  // MORE conversations with the identical script, which is how six threads
+  // ended up word for word the same. It now counts what it already wrote.
+  const deepAlready = (await pool.query(
+    `SELECT COUNT(DISTINCT m.conversation_id)::int AS n FROM messages m WHERE m.content LIKE $1`,
+    [FIND.deepOpener]
+  )).rows[0].n;
+  const shallow = deepAlready >= 3 ? [] : (await pool.query(
     `SELECT c.id, c.startup_id, s.name AS venture, s.founder_id,
             CASE WHEN c.participant_a_id = s.founder_id THEN c.participant_b_id ELSE c.participant_a_id END AS contributor_id,
             (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id)::int AS n
@@ -143,8 +120,9 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
                      AND u3.primary_role = 'CONTRIBUTOR')
      ORDER BY c.created_at DESC`,
     [SEED]
-  )).rows.filter((c) => c.n <= 3).slice(0, 3);
+  )).rows.filter((c) => c.n <= 3).slice(0, 3 - deepAlready);
 
+  if (deepAlready >= 3) console.log(`  skip  ${deepAlready} conversation(s) already carry this exchange`);
   for (const c of shallow) {
     console.log(`  ${DRY ? 'would deepen' : 'deepening'}  ${c.venture} (${c.n} -> ${c.n + DEEP_EXCHANGE.length} messages)`);
     if (DRY) continue;
@@ -164,7 +142,11 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
   report.deepened = shallow.length;
 
   step('Phase 1b: founders pitching investors');
-  const pitchPairs = (await pool.query(
+  const pitchesAlready = (await pool.query(
+    `SELECT COUNT(DISTINCT m.conversation_id)::int AS n FROM messages m WHERE m.content LIKE $1`,
+    [FIND.investorOpener]
+  )).rows[0].n;
+  const pitchPairs = pitchesAlready >= 2 ? [] : (await pool.query(
     `WITH latest AS (
        SELECT DISTINCT ON (startup_id) startup_id, overall_score
        FROM readiness_assessments ORDER BY startup_id, generated_at DESC
@@ -185,8 +167,9 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
                          AND (c.participant_a_id = ip_p.user_id OR c.participant_b_id = ip_p.user_id))
      ORDER BY s.id, l.overall_score DESC`,
     [SEED]
-  )).rows.slice(0, 2);
+  )).rows.slice(0, 2 - pitchesAlready);
 
+  if (pitchesAlready >= 2) console.log(`  skip  ${pitchesAlready} pitch conversation(s) already exist`);
   for (const p of pitchPairs) {
     console.log(`  ${DRY ? 'would open' : 'opening'}  ${p.investor} -> ${p.venture}, with a pitch sent`);
     if (DRY) continue;
@@ -204,7 +187,11 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
   step('Phase 1c: sparks in different states');
 
   // One spark with several people wanting in.
-  const busy = (await pool.query(
+  const resonancesAlready = (await pool.query(
+    `SELECT COUNT(*)::int AS n FROM spark_resonances WHERE message = ANY($1::text[])`,
+    [EXTRA_RESONANCES]
+  )).rows[0].n;
+  const busy = resonancesAlready > 0 ? null : (await pool.query(
     `SELECT s.id, s.title, s.author_id,
             (SELECT COUNT(*) FROM spark_resonances r WHERE r.spark_id = s.id)::int AS n
      FROM sparks s JOIN users u ON u.id = s.author_id
@@ -213,6 +200,7 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
     [SEED]
   )).rows.find((s) => s.n === 1);
 
+  if (resonancesAlready > 0) console.log(`  skip  a spark already has these extra resonances`);
   if (busy) {
     console.log(`  ${DRY ? 'would add' : 'adding'}  ${EXTRA_RESONANCES.length} more people to "${busy.title.slice(0, 44)}..."`);
     if (!DRY) {
@@ -228,7 +216,7 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
         if (!r.success) console.log(`    resonance failed: ${r.error}`);
       }
     }
-  } else {
+  } else if (resonancesAlready === 0) {
     console.log('  skip  no single-resonance spark to build on');
   }
 
@@ -527,14 +515,19 @@ const REWRITE = (idea) => `${idea}\n\nTo be more specific about what I mean: the
   step('Phase 3d: an idea rewritten after it did not land');
   // After phase 2, so the spark is old enough that a rewrite genuinely lifts
   // it back into the feed, exactly as the real feature does.
-  const toRewrite = (await pool.query(
+  const rewriteAlready = (await pool.query(
+    `SELECT COUNT(*)::int AS n FROM sparks WHERE the_idea LIKE $1`, [FIND.rewriteSuffix]
+  )).rows[0].n;
+  const toRewrite = rewriteAlready > 0 ? null : (await pool.query(
     `SELECT s.id, s.author_id, s.the_idea, s.title FROM sparks s JOIN users u ON u.id = s.author_id
      WHERE u.email LIKE $1 AND s.status IN ('OPEN','FORMING') AND s.edit_count = 0
        AND s.created_at < now() - interval '2 days'
      ORDER BY s.created_at ASC LIMIT 1`,
     [SEED]
   )).rows[0];
-  if (!toRewrite && DRY) {
+  if (rewriteAlready > 0) {
+    console.log('  skip  an idea has already been rewritten this way');
+  } else if (!toRewrite && DRY) {
     // In a dry run nothing has been backdated yet, so no spark is old enough
     // to qualify. Saying 'nothing suitable' here would be false.
     console.log('  would rewrite  one spark, once phase 2 has given it some age');
