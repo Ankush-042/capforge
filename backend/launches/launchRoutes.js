@@ -8,8 +8,9 @@ const {
 } = require('./launchService');
 const { askAboutLaunch, SUGGESTED } = require('./launchAssistant');
 
+// ?mine=1 for a founder looking at their own. Everything otherwise.
 router.get('/launches', requireAuth, async (req, res) => {
-  res.json(await listLaunches(req.user.userId));
+  res.json(await listLaunches(req.user.userId, { mine: req.query.mine === '1' }));
 });
 
 router.get('/launches/:id', requireAuth, async (req, res) => {

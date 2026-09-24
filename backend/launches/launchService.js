@@ -193,8 +193,19 @@ async function deleteLaunch(userId, launchId) {
   return { success: true, deletedComments: existing.rows[0].comments };
 }
 
-/** The feed. What is live and being talked about, newest first. */
-async function listLaunches(viewerId) {
+/**
+ * Launches, scoped to who is asking.
+ *
+ * A FOUNDER OPENS THIS TO SEE THEIR OWN. They posted something and want to
+ * know who is talking about it. Showing them everybody else's launches makes
+ * this a browse feed, which is not what they came for and duplicates Sparks,
+ * which is already the place you browse what other people are putting out.
+ *
+ * A CONTRIBUTOR OPENS IT TO FIND SOMETHING TO TRY, so they get everything.
+ *
+ * mine=true returns only the viewer's own.
+ */
+async function listLaunches(viewerId, { mine = false } = {}) {
   const r = await pool.query(
     `SELECT l.id, l.title, l.summary, l.link, l.state, l.posted_at, l.closed_at,
             l.images[1] AS cover,
@@ -208,6 +219,7 @@ async function listLaunches(viewerId) {
      FROM launches l
      JOIN startups s ON s.id = l.startup_id
      JOIN profiles p ON p.user_id = l.founder_id
+     ${mine ? 'WHERE l.founder_id = $1' : ''}
      ORDER BY l.closed_at IS NOT NULL, l.posted_at DESC
      LIMIT 40`,
     [viewerId]

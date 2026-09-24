@@ -8,7 +8,15 @@ import Avatar from '../components/Avatar.jsx';
 import { listLaunches } from '../services/startups.js';
 
 /**
- * Things you can actually try.
+ * A founder's own launches, or everything there is to try.
+ *
+ * ONE PAGE, TWO PURPOSES, AND THEY WERE CONFLATED. A founder opened this and
+ * saw everybody else's launches, because both navs pointed at the same
+ * unscoped feed. That is not what they came for: they posted something and
+ * want to know who is talking about it. It also duplicated Sparks, which is
+ * already where you browse what other people are putting out.
+ *
+ * So a founder sees their own, and a contributor sees everything.
  *
  * Until now a venture could hire, pitch or post an idea, but could not ask
  * anybody to USE what it built, so every founder went off-platform for their
@@ -114,15 +122,21 @@ function LaunchCard({ l, index }) {
 
 export default function Launches() {
   const { persona } = useMyIdentity();
+  const isFounder = persona === 'FOUNDER';
   const [loading, setLoading] = useState(true);
   const [launches, setLaunches] = useState([]);
 
   useEffect(() => {
-    listLaunches().then(({ ok, data }) => {
+    // Wait for persona. Fetching before it resolves would ask for the wrong
+    // scope and quietly show a founder everybody else's launches, which is
+    // the bug this whole change exists to fix.
+    if (!persona) return;
+    setLoading(true);
+    listLaunches(isFounder).then(({ ok, data }) => {
       if (ok && data.success) setLaunches(data.launches);
       setLoading(false);
     });
-  }, []);
+  }, [persona, isFounder]);
 
   // Unanswered first. A launch nobody has tried is the one that needs
   // somebody, and recency ordering buries exactly those.
@@ -142,22 +156,31 @@ export default function Launches() {
   }
 
   return (
-    <Shell persona={persona} title="Try things" subtitle="Real products, asking for honest reactions">
+    <Shell persona={persona}
+        title={isFounder ? 'Your launches' : 'Try things'}
+        subtitle={isFounder ? 'What you have put up, and who is talking about it' : 'Real products, asking for honest reactions'}>
       <div className="mb-7">
         <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
           {launches.length === 0 ? 'Nothing yet' : `${open.length} open`}
         </p>
         <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
-          {needsPeople.length > 0
-            ? `${needsPeople.length} ${needsPeople.length === 1 ? 'venture is' : 'ventures are'} waiting for the first person to try ${needsPeople.length === 1 ? 'it' : 'them'}.`
-            : launches.length === 0
-              ? 'Nobody has put anything up yet.'
-              : 'Everything here has somebody looking at it.'}
+          {isFounder
+            ? launches.length === 0
+              ? 'You have not put anything up yet.'
+              : needsPeople.length > 0
+                ? `${needsPeople.length} of yours ${needsPeople.length === 1 ? 'has' : 'have'} nobody talking about ${needsPeople.length === 1 ? 'it' : 'them'} yet.`
+                : 'People are talking about everything you have put up.'
+            : needsPeople.length > 0
+              ? `${needsPeople.length} ${needsPeople.length === 1 ? 'venture is' : 'ventures are'} waiting for somebody to try ${needsPeople.length === 1 ? 'it' : 'them'} and say so.`
+              : launches.length === 0
+                ? 'Nobody has put anything up yet.'
+                : 'Everything here has somebody looking at it.'}
         </h1>
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
-          Open it, use it properly, and say what actually happened. What broke, what confused you,
-          whether you would come back. That is worth more to a founder than encouragement.
+          {isFounder
+            ? 'Put up what you have built and ask people to use it. A rough thing with eight honest reactions beats a polished one nobody has opened.'
+            : 'Open it, use it properly, and say what actually happened. What broke, what confused you, whether you would come back. That is worth more to a founder than encouragement.'}
         </p>
 
         {persona === 'FOUNDER' && (
@@ -172,17 +195,17 @@ export default function Launches() {
 
       {launches.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <p className="text-[15px] text-ink-700 mb-1">Nothing has been put up yet.</p>
+          <p className="text-[15px] text-ink-700 mb-1">{isFounder ? 'You have not put anything up yet.' : 'Nothing has been put up yet.'}</p>
           <p className="text-[13px] text-ink-500 max-w-sm mx-auto">
-            When a founder here has something to show, it appears on this page and you can try it.
+            {isFounder ? 'Put something up and people here can try it and tell you what happened.' : 'When a founder here has something to show, it appears on this page and you can try it.'}
           </p>
         </div>
       ) : (
         <>
           {needsPeople.length > 0 && (
             <div className="mb-9">
-              <h2 className="text-[15px] font-semibold text-ink-900 mb-1">Nobody has tried these</h2>
-              <p className="text-[13px] text-ink-500 mb-4">Being the first to open it and say what happened is the most useful you can be here.</p>
+              <h2 className="text-[15px] font-semibold text-ink-900 mb-1">{isFounder ? 'Nobody has said anything yet' : 'Nobody has tried these'}</h2>
+              <p className="text-[13px] text-ink-500 mb-4">{isFounder ? 'Worth telling people these are there.' : 'Being the first to open it and say what happened is the most useful you can be here.'}</p>
               <div className="grid grid-cols-2 gap-5">
                 {needsPeople.map((l, i) => <LaunchCard key={l.id} l={l} index={i} />)}
               </div>

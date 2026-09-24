@@ -152,7 +152,7 @@ export const toggleHelped = (postId) => apiFetch(`/rooms/posts/${postId}/helped`
 export const deleteRoomPost = (postId) => apiFetch(`/rooms/posts/${postId}`, { method: 'DELETE' });
 
 // Launches: a venture asks people to use what it built.
-export const listLaunches = () => apiFetch('/launches');
+export const listLaunches = (mine) => apiFetch(`/launches${mine ? '?mine=1' : ''}`);
 export const getLaunch = (id) => apiFetch(`/launches/${id}`);
 export const createLaunch = (startupId, payload) =>
   apiFetch(`/startups/${startupId}/launches`, { method: 'POST', body: JSON.stringify(payload) });

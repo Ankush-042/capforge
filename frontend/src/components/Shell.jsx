@@ -57,7 +57,7 @@ const NAV_BY_PERSONA = {
       group: 'Build',
       items: [
         { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
-        { label: 'Launch', icon: Rocket, path: '/app/launches' },
+        { label: 'Your launches', icon: Rocket, path: '/app/launches' },
         { label: 'Roles', icon: Target, path: '/app/gaps' },
         { label: 'Which first', icon: Scale, path: '/app/which-role' },
         { label: 'Team', icon: Users, path: '/app/team' },
