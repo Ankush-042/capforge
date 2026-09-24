@@ -166,12 +166,56 @@ function computeReadiness(startup, gaps) {
     ? measured.reduce((sum, d) => sum + dimensions[d] * (READINESS_WEIGHTS[d] / totalWeight), 0)
     : 0;
 
-  const criticalIssues = [];
-  // The 0.4 threshold is our judgement, not a measured cliff edge.
-  if (dimensions.team_composition !== null && dimensions.team_composition < 0.4) criticalIssues.push('Team composition lacks coverage for one or more critical roles.');
-  if (dimensions.funding_readiness < 0.4) criticalIssues.push('Funding readiness is low — business model and funding plan need clarity.');
-  if (dimensions.idea_clarity < 0.4) criticalIssues.push('The idea is not yet described clearly enough for the problem and solution to be understood.');
-  if (dimensions.product_readiness < 0.4) criticalIssues.push('Product readiness is early-stage relative to the venture\'s other dimensions.');
+  /**
+   * WHAT IS COSTING THE MOST, not what falls under an invented line.
+   *
+   * This used to flag any dimension scoring below 0.4. That number was ours,
+   * with nothing behind it, and it produced two bad outcomes: a venture weak
+   * everywhere got four identical warnings that said nothing about where to
+   * start, and a venture at 0.41 across the board got none at all while being
+   * in exactly the same position.
+   *
+   * A dimension is flagged now when it is genuinely costing points, measured
+   * as the points recoverable by bringing it to full: its remaining gap
+   * multiplied by its weight. That is computed from the same arithmetic that
+   * produced the score, so it needs no threshold to justify, and it sorts
+   * naturally, so the first thing listed is the first thing worth doing.
+   *
+   * The only judgement left is how many to show, and three is a list a person
+   * will read rather than an audit they will ignore.
+   */
+  const recoverable = Object.keys(READINESS_WEIGHTS)
+    .filter((d) => dimensions[d] !== null)
+    .map((d) => ({
+      dimension: d,
+      points: round2((1 - dimensions[d]) * (READINESS_WEIGHTS[d] / totalWeight) * 100),
+    }))
+    .sort((a, b) => b.points - a.points);
+
+  const ISSUE_TEXT = {
+    team_composition: 'No coverage for one or more of the roles this venture needs.',
+    funding_readiness: 'The funding picture is thin: business model, stage or timeline are missing.',
+    idea_clarity: 'The problem and solution are not yet described clearly enough to be understood quickly.',
+    product_readiness: 'The product has not moved far, and technical roles are uncovered.',
+  };
+
+  // TWO CONDITIONS, because points alone flagged the wrong things. A venture
+  // scoring 92 still has a few points recoverable in every dimension, and
+  // listing them as critical issues is nagging somebody who is doing well.
+  //
+  // So a dimension is a critical issue when it is BOTH materially incomplete
+  // in itself and worth real points to fix. The 0.6 completeness line is our
+  // judgement and is labelled as such wherever this is explained; unlike the
+  // 0.4 it replaces, it only decides what gets CALLED critical, while the
+  // ranking underneath is pure arithmetic and is exposed in full as
+  // most_recoverable regardless.
+  const CRITICAL_BELOW = 0.6;   // our judgement
+  const WORTH_SAYING = 3;       // points; below this it is noise
+
+  const criticalIssues = recoverable
+    .filter((r) => dimensions[r.dimension] < CRITICAL_BELOW && r.points >= WORTH_SAYING)
+    .slice(0, 3)
+    .map((r) => `${ISSUE_TEXT[r.dimension]} Worth ${Math.round(r.points)} point${Math.round(r.points) === 1 ? '' : 's'} if brought to full.`);
 
   const topActions = gaps
     .filter(g => g.priority_level === 'CRITICAL' || g.priority_level === 'HIGH')
@@ -200,6 +244,7 @@ function computeReadiness(startup, gaps) {
    * 42?" has an answer made of the same sub-factors that produced it.
    */
   const breakdown = {
+    most_recoverable: recoverable,
     weights: READINESS_WEIGHTS,
     weight_basis: WEIGHT_BASIS,
     unmeasured_note: UNMEASURED,

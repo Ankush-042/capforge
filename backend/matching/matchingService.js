@@ -1132,11 +1132,34 @@ async function refreshRankingsForContributor(userId) {
  * ranking, so the founder can disagree with the ordering and still use the
  * page. It suggests; it does not decide.
  */
-const PRIORITY_WEIGHT = { CRITICAL: 1.0, HIGH: 0.7, MEDIUM: 0.45, LOW: 0.25 };
+/**
+ * URGENCY COMES FROM THE DATA, not from a table.
+ *
+ * This used to be PRIORITY_WEIGHT = {CRITICAL: 1.0, HIGH: 0.7, MEDIUM: 0.45,
+ * LOW: 0.25}: four invented numbers with nothing behind them. Worse, they were
+ * a round trip through information we already had. Gap diagnosis computes
+ * priority_score as 1 minus the role's coverage, a real measured quantity,
+ * then buckets it into CRITICAL/HIGH/MEDIUM/LOW. This code took the bucket and
+ * invented a number back out of it, losing precision and adding a constant
+ * nobody could justify.
+ *
+ * So it uses priority_score directly. A role with 10% coverage is 0.9 urgent
+ * because 90% of it is uncovered, which is a fact rather than an opinion.
+ *
+ * The bucket map stays only as a fallback for rows written before
+ * priority_score existed, at the midpoint of each bucket's own range per the
+ * AI spec §17 thresholds, so the fallback at least describes the bucket
+ * honestly instead of being a fifth invented set.
+ */
+const PRIORITY_BUCKET_MIDPOINT = { CRITICAL: 0.875, HIGH: 0.625, MEDIUM: 0.375, LOW: 0.125 };
+const urgencyOf = (gap) =>
+  gap.priority_score !== null && gap.priority_score !== undefined
+    ? parseFloat(gap.priority_score)
+    : (PRIORITY_BUCKET_MIDPOINT[gap.priority_level] ?? 0.375);
 
 async function compareOpenRoles(startupId) {
   const gaps = await pool.query(
-    `SELECT id, role, priority_level, seeking_type, reason, required_skills, coverage
+    `SELECT id, role, priority_level, priority_score, seeking_type, reason, required_skills, coverage
      FROM gaps
      WHERE startup_id = $1 AND status NOT IN ('FILLED','DISMISSED')`,
     [startupId]
@@ -1164,7 +1187,7 @@ async function compareOpenRoles(startupId) {
     const candidates = byGap.get(g.id) || [];
     const best = candidates[0] || null;
     const bestScore = best ? parseFloat(best.score) || 0 : 0;
-    const urgency = PRIORITY_WEIGHT[g.priority_level] ?? 0.25;
+    const urgency = urgencyOf(g);
 
     return {
       gapId: g.id,
@@ -1238,7 +1261,7 @@ async function whereToStart(userId) {
   const recs = await pool.query(
     `SELECT r.id, r.score, r.explanation, r.source_gap_id, r.startup_id,
             s.name AS startup_name, s.domain, s.stage, s.founder_id,
-            g.role AS gap_role, g.priority_level, g.seeking_type,
+            g.role AS gap_role, g.priority_level, g.priority_score, g.seeking_type,
             (SELECT overall_score FROM readiness_assessments ra
              WHERE ra.startup_id = s.id ORDER BY ra.generated_at DESC LIMIT 1) AS readiness,
             (SELECT COUNT(*) FROM recommendations r2
@@ -1270,7 +1293,7 @@ async function whereToStart(userId) {
 
   const options = recs.rows.map((r) => {
     const fit = parseFloat(r.score) || 0;
-    const need = PRIORITY_WEIGHT[r.priority_level] ?? 0.25;
+    const need = urgencyOf(r);
     const rivals = Math.max(0, (parseInt(r.rival_count) || 1) - 1);
 
     // Scarcity: being the only fit is worth a lot, and the advantage falls
