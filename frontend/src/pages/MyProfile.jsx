@@ -248,21 +248,21 @@ export default function MyProfile() {
               <input value={base.displayName} onChange={(e) => setBase({ ...base, displayName: e.target.value })} className={FIELD} />
             </div>
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you do</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Headline</label>
               <input value={base.headline} onChange={(e) => setBase({ ...base, headline: e.target.value })} placeholder="Backend Engineer" className={FIELD} />
             </div>
           </div>
           <div className="mb-4">
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">A bit about you</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">About you</label>
             <textarea value={base.bio} onChange={(e) => setBase({ ...base, bio: e.target.value })} rows={3} className={`${FIELD} resize-none leading-relaxed`} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Where you are</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Location</label>
               <input value={base.location} onChange={(e) => setBase({ ...base, location: e.target.value })} placeholder="Bengaluru, India" className={FIELD} />
             </div>
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you can do</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Skills</label>
               <input value={base.skillsInput} onChange={(e) => setBase({ ...base, skillsInput: e.target.value })} placeholder="python, postgresql, aws" className={FIELD} />
               {/* Live preview of what will actually be saved. A profile once
                   stored 'user interviewsability testings' and the page showed
@@ -279,7 +279,7 @@ export default function MyProfile() {
             onSave={handleSaveContrib} saving={savingContrib} saveLabel="Save"
           >
             <div className="mb-5">
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">The kind of thing you want to work on</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Looking for</label>
               <textarea
                 value={contrib.lookingFor}
                 onChange={(e) => setContrib({ ...contrib, lookingFor: e.target.value })}
@@ -290,7 +290,7 @@ export default function MyProfile() {
             </div>
 
             <div className="mb-5">
-              <label className="text-[13px] font-medium text-ink-700 mb-2 block">Fields you care about</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-2 block">Fields</label>
               <TogglePills
                 options={DOMAINS}
                 selected={contrib.preferredDomains}
@@ -304,7 +304,7 @@ export default function MyProfile() {
             </div>
 
             <div className="mb-5">
-              <label className="text-[13px] font-medium text-ink-700 mb-2 block">How early you want to join</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-2 block">Stage</label>
               <TogglePills
                 options={STAGES}
                 selected={contrib.preferredStage}
@@ -319,7 +319,7 @@ export default function MyProfile() {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How much time</label>
+                <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Availability</label>
                 <select value={contrib.availability} onChange={(e) => setContrib({ ...contrib, availability: e.target.value })} className={FIELD}>
                   <option value="">Select…</option>
                   <option value="full-time">Full-time</option>
@@ -357,7 +357,7 @@ export default function MyProfile() {
             </div>
 
             <div className="mb-5">
-              <label className="text-[13px] font-medium text-ink-700 mb-2 block">Fields you invest in</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-2 block">Fields</label>
               <TogglePills
                 options={DOMAINS}
                 selected={investor.preferredDomains}

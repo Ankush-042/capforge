@@ -110,12 +110,12 @@ export default function PostLaunch() {
 
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7 space-y-6">
           <div>
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What is it called</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Name</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Adaptive maths practice for Class 9" className={FIELD} />
           </div>
 
           <div>
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What should somebody expect</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Description</label>
             <textarea
               value={summary} onChange={(e) => setSummary(e.target.value)} rows={4}
               placeholder="What it does, who it is for, and what you want somebody to try."
@@ -125,14 +125,14 @@ export default function PostLaunch() {
           </div>
 
           <div>
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Where can they try it</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Link</label>
             <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" className={FIELD} />
           </div>
 
           <div>
             {/* Said up front, so people give useful feedback rather than
                 reporting that nothing saves. */}
-            <label className="text-[13px] font-medium text-ink-700 mb-2 block">Be honest about what state it is in</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-2 block">State it is in</label>
             <div className="grid grid-cols-2 gap-2">
               {STATES.map(([v, label, detail]) => (
                 <button key={v} type="button" onClick={() => setState(v)}
@@ -147,7 +147,7 @@ export default function PostLaunch() {
           </div>
 
           <div>
-            <label className="text-[13px] font-medium text-ink-700 mb-2 block">Screenshots, up to four</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-2 block">Images</label>
             <div className="flex flex-wrap gap-2.5">
               {images.map((src, i) => (
                 <div key={i} className="relative">
@@ -172,7 +172,7 @@ export default function PostLaunch() {
           <div>
             {/* One line, not a form. It sits at the top of the discussion
                 saying what would help most, rather than gating entry to it. */}
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What would help you most</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Focus</label>
             <p className="text-[12px] text-ink-500 mb-2.5">
               Optional. People will talk about whatever they notice; this tells them where to look first.
             </p>

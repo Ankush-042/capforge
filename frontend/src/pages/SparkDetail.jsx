@@ -143,7 +143,7 @@ export default function SparkDetail() {
               />
             </div>
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">The idea</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Idea</label>
               <textarea
                 value={draft.the_idea}
                 onChange={(e) => setDraft({ ...draft, the_idea: e.target.value })}

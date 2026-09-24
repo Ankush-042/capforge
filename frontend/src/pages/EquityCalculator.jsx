@@ -132,11 +132,11 @@ export default function EquityCalculator() {
 
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">The role</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Role</label>
               <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Technical co-founder" className={FIELD} />
             </div>
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Where the venture is</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Stage</label>
               <select value={stage} onChange={(e) => setStage(e.target.value)} className={FIELD}>
                 {['Idea', 'Prototype', 'MVP', 'Early Traction'].map((s) => <option key={s}>{s}</option>)}
               </select>
@@ -157,7 +157,7 @@ export default function EquityCalculator() {
             </div>
 
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">This role is</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Role type</label>
               <select value={seekingType} onChange={(e) => setSeekingType(e.target.value)} className={FIELD}>
                 <option value="CORE_HIRE">An early hire</option>
                 <option value="CO_FOUNDER">A co-founder</option>
@@ -165,7 +165,7 @@ export default function EquityCalculator() {
             </div>
 
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How much they would give it</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Commitment</label>
               <select value={commitment} onChange={(e) => setCommitment(e.target.value)} className={FIELD}>
                 <option value="full-time">Full-time</option>
                 <option value="part-time">Part-time</option>
@@ -173,7 +173,7 @@ export default function EquityCalculator() {
               </select>
             </div>
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How badly you need it filled</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Priority</label>
               <select value={priorityLevel} onChange={(e) => setPriorityLevel(e.target.value)} className={FIELD}>
                 <option value="CRITICAL">Critical, blocking everything</option>
                 <option value="HIGH">Important</option>

@@ -68,14 +68,14 @@ export default function ContributorEquityAsk() {
 
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">The role you would take</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Role</label>
               <input value={role} onChange={(e) => setRole(e.target.value)} className={FIELD} />
             </div>
             <div>
               {/* The single most important input, and the one that was
                   missing. A co-founder seat and an early hire sit in
                   completely different bands: roughly 34-50% against 1-3%. */}
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you would be joining as</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Joining as</label>
               <select value={seekingType} onChange={(e) => setSeekingType(e.target.value)} className={FIELD}>
                 <option value="CORE_HIRE">An early hire</option>
                 <option value="CO_FOUNDER">A co-founder</option>
@@ -83,14 +83,14 @@ export default function ContributorEquityAsk() {
             </div>
 
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How far along they are</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Stage</label>
               <select value={stage} onChange={(e) => setStage(e.target.value)} className={FIELD}>
                 {['Idea', 'Prototype', 'MVP', 'Early Traction'].map((s) => <option key={s}>{s}</option>)}
               </select>
               <p className="text-[12px] text-ink-500 mt-1.5">Earlier means more risk, and more equity.</p>
             </div>
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How much you would give it</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Commitment</label>
               <select value={commitment} onChange={(e) => setCommitment(e.target.value)} className={FIELD}>
                 <option value="full-time">Full-time</option>
                 <option value="part-time">Part-time</option>

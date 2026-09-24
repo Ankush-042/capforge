@@ -118,12 +118,12 @@ export default function Onboarding() {
 
               <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
                 <div className="mb-5">
-                  <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What is it called?</label>
+                  <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Name</label>
                   <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Working name is fine" className={FIELD} />
                 </div>
 
                 <div className="mb-5">
-                  <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What are you building, and why?</label>
+                  <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Your idea</label>
                   <textarea value={rawIdea} onChange={(e) => setRawIdea(e.target.value)} rows={6} placeholder="I want to build…" className={`${FIELD} resize-none leading-relaxed`} />
                 </div>
 
@@ -144,11 +144,11 @@ export default function Onboarding() {
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-5 space-y-4 pt-5 border-t border-surface-border overflow-hidden">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">People on it now</label>
+                        <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Team size</label>
                         <input type="number" min="1" value={currentTeamSize} onChange={(e) => setCurrentTeamSize(e.target.value)} placeholder="1" className={FIELD} />
                       </div>
                       <div>
-                        <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Funding so far</label>
+                        <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Funding raised</label>
                         <select value={fundingStage} onChange={(e) => setFundingStage(e.target.value)} className={FIELD}>
                           <option value="">Not raised anything</option>
                           {FUNDING_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -161,16 +161,16 @@ export default function Onboarding() {
                         <input type="number" min="0" value={fundingRaised} onChange={(e) => setFundingRaised(e.target.value)} placeholder="0" className={FIELD} />
                       </div>
                       <div>
-                        <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you are aiming for</label>
+                        <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Target timeline</label>
                         <input value={targetTimeline} onChange={(e) => setTargetTimeline(e.target.value)} placeholder="MVP in 4 months" className={FIELD} />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Equity you would offer a co-founder</label>
+                      <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Equity offered</label>
                       <input value={equityOfferedRange} onChange={(e) => setEquityOfferedRange(e.target.value)} placeholder="5-10% for a technical co-founder" className={FIELD} />
                     </div>
                     <div>
-                      <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you bring to this</label>
+                      <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Your background</label>
                       <textarea value={founderPriorExperience} onChange={(e) => setFounderPriorExperience(e.target.value)} rows={2} placeholder="Five years in fintech product, ran a company before…" className={`${FIELD} resize-none`} />
                     </div>
                     <div className="grid grid-cols-2 gap-4 items-end">

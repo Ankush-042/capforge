@@ -136,12 +136,12 @@ export default function ContributorOnboarding() {
           <p className="text-[16px] font-semibold text-ink-950 mb-4">And what you bring</p>
 
           <div className="mb-4">
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you do</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Headline</label>
             <input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Backend Engineer" className={FIELD} />
           </div>
 
           <div className="mb-4">
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What you can do</label>
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Skills</label>
             <input value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} placeholder="python, postgresql, aws" className={FIELD} />
             {/* Shows exactly what gets saved. A real profile once stored
                 'user interviewsability testings' and nothing on screen
@@ -159,7 +159,7 @@ export default function ContributorOnboarding() {
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">How much time</label>
+              <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Availability</label>
               <select value={availability} onChange={(e) => setAvailability(e.target.value)} className={FIELD}>
                 <option value="full-time">Full-time</option>
                 <option value="part-time">Part-time</option>
