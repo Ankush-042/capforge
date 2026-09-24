@@ -505,9 +505,9 @@ export default function LaunchDetail() {
           {isFounder ? (
             <>
               <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-                <p className="text-[15px] font-semibold text-ink-950 mb-1">Ask about this</p>
+                <p className="text-[15px] font-semibold text-ink-950 mb-1">Ask about the feedback</p>
                 <p className="text-[12.5px] text-ink-500 mb-4">
-                  It has read everything said here. Only you see this.
+                  Answers from what people wrote here. Only you see this.
                 </p>
 
                 {counts.comments === 0 ? (
@@ -529,10 +529,11 @@ export default function LaunchDetail() {
                     </div>
 
                     {!answer && !asking && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
+                        <p className="text-[11.5px] text-ink-300">Or ask one of these</p>
                         {SUGGESTED.map((q) => (
                           <button key={q} onClick={() => ask(q)}
-                            className="block text-left text-[12.5px] text-ink-500 hover:text-violet-700 transition-colors leading-snug">
+                            className="block w-full text-left text-[12.5px] text-ink-700 hover:text-violet-700 bg-surface-muted hover:bg-violet-50 px-3 py-2 rounded-lg transition-colors leading-snug">
                             {q}
                           </button>
                         ))}
@@ -569,9 +570,9 @@ export default function LaunchDetail() {
               </div>
 
               <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-                <p className="text-[15px] font-semibold text-ink-950 mb-1">Tell them what changed</p>
+                <p className="text-[15px] font-semibold text-ink-950 mb-1">Post an update</p>
                 <p className="text-[12.5px] text-ink-500 mb-4">
-                  Everyone in the discussion gets told. Somebody who raised a problem hears that you fixed it.
+                  Everyone who commented gets notified, so somebody who raised a problem hears that you fixed it.
                 </p>
                 <textarea
                   value={updateText} onChange={(e) => setUpdateText(e.target.value)} rows={3}
@@ -584,7 +585,7 @@ export default function LaunchDetail() {
               </div>
 
               <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-                <p className="text-[15px] font-semibold text-ink-950 mb-4">This launch</p>
+                <p className="text-[15px] font-semibold text-ink-950 mb-4">Manage this launch</p>
 
                 <button onClick={startEditing} disabled={editing}
                   className="flex items-center gap-2 w-full text-left text-[13.5px] text-ink-700 hover:text-violet-700 transition-colors mb-3 disabled:opacity-40">
@@ -633,7 +634,7 @@ export default function LaunchDetail() {
             </>
           ) : (
             <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-              <p className="text-[15px] font-semibold text-ink-950 mb-2">What actually helps</p>
+              <p className="text-[15px] font-semibold text-ink-950 mb-2">How to give useful feedback</p>
               <p className="text-[13.5px] text-ink-700 leading-relaxed mb-3">
                 Open it, use it like you would if it were yours, and say exactly where you got stuck.
               </p>
