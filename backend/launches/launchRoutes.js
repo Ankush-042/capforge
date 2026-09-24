@@ -3,7 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { aiEndpointLimit } = require('../shared/rateLimiter');
 const {
-  createLaunch, listLaunches, getLaunch, comment,
+  createLaunch, updateLaunch, deleteLaunch, listLaunches, getLaunch, comment,
   markHelpful, postUpdate, closeLaunch,
 } = require('./launchService');
 const { askAboutLaunch, SUGGESTED } = require('./launchAssistant');
@@ -24,6 +24,18 @@ router.get('/launches/:id', requireAuth, async (req, res) => {
 router.post('/startups/:startupId/launches', requireAuth, async (req, res) => {
   const r = await createLaunch(req.user.userId, req.params.startupId, req.body || {});
   if (!r.success) return res.status(400).json(r);
+  res.json(r);
+});
+
+router.patch('/launches/:id', requireAuth, async (req, res) => {
+  const r = await updateLaunch(req.user.userId, req.params.id, req.body || {});
+  if (!r.success) return res.status(r.error === 'NOT_YOURS' ? 403 : 400).json(r);
+  res.json(r);
+});
+
+router.delete('/launches/:id', requireAuth, async (req, res) => {
+  const r = await deleteLaunch(req.user.userId, req.params.id);
+  if (!r.success) return res.status(r.error === 'NOT_YOURS' ? 403 : 404).json(r);
   res.json(r);
 });
 

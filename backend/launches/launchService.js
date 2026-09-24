@@ -114,6 +114,85 @@ async function notifyRelevantPeople(launch, startupId) {
   }
 }
 
+
+/**
+ * Fix a launch after posting it.
+ *
+ * A founder pastes the wrong link, uploads the wrong screenshots, or realises
+ * the description does not say what the thing is. Without this their only
+ * option is to delete and repost, which throws away every message people have
+ * already written underneath. That is a real cost for a typo.
+ *
+ * No edit history and no "edited" badge, for the same reason sparks have
+ * none: a badge implies suspicion about somebody correcting their own post,
+ * which is exactly the behaviour worth encouraging. What IS recorded is
+ * updated_at, so the feed can show when something changed.
+ */
+async function updateLaunch(userId, launchId, input = {}) {
+  const existing = await pool.query(`SELECT founder_id FROM launches WHERE id = $1`, [launchId]);
+  if (existing.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
+  if (existing.rows[0].founder_id !== userId) return { success: false, error: 'NOT_YOURS' };
+
+  const fields = [];
+  const values = [];
+  const add = (col, val) => { values.push(val); fields.push(`${col} = $${values.length + 1}`); };
+
+  if (input.title !== undefined) {
+    const t = String(input.title).trim();
+    if (!t) return { success: false, error: 'TITLE_REQUIRED' };
+    add('title', t);
+  }
+  if (input.summary !== undefined) {
+    const sm = String(input.summary).trim();
+    if (sm.length < 30) return { success: false, error: 'SUMMARY_TOO_SHORT' };
+    add('summary', sm);
+  }
+  if (input.link !== undefined) add('link', String(input.link).trim() || null);
+  if (input.state !== undefined) add('state', input.state);
+  if (input.askingAbout !== undefined) add('asking_about', String(input.askingAbout).trim() || null);
+
+  if (input.images !== undefined) {
+    // Checked here as well as in the browser. A size limit enforced only on
+    // the client is not a limit.
+    const images = (input.images || []).slice(0, MAX_IMAGES)
+      .filter((i) => typeof i === 'string' && i.length <= MAX_IMAGE_CHARS);
+    if ((input.images || []).length > images.length) return { success: false, error: 'IMAGE_TOO_LARGE' };
+    add('images', images);
+  }
+
+  if (fields.length === 0) return { success: false, error: 'NOTHING_TO_UPDATE' };
+
+  const r = await pool.query(
+    `UPDATE launches SET ${fields.join(', ')}, updated_at = now()
+     WHERE id = $1 RETURNING *`,
+    [launchId, ...values]
+  );
+  return { success: true, launch: r.rows[0] };
+}
+
+/**
+ * Remove a launch entirely.
+ *
+ * Everything under it goes: the discussion, the updates. That is why the
+ * interface asks first and says how many messages will be lost, because a
+ * founder deleting a typo should not silently destroy eleven people's
+ * written feedback. Closing it is usually what they actually want, and the
+ * interface offers that alongside.
+ */
+async function deleteLaunch(userId, launchId) {
+  const existing = await pool.query(
+    `SELECT l.founder_id,
+            (SELECT COUNT(*)::int FROM launch_comments c WHERE c.launch_id = l.id) AS comments
+     FROM launches l WHERE l.id = $1`,
+    [launchId]
+  );
+  if (existing.rows.length === 0) return { success: false, error: 'NOT_FOUND' };
+  if (existing.rows[0].founder_id !== userId) return { success: false, error: 'NOT_YOURS' };
+
+  await pool.query(`DELETE FROM launches WHERE id = $1`, [launchId]);
+  return { success: true, deletedComments: existing.rows[0].comments };
+}
+
 /** The feed. What is live and being talked about, newest first. */
 async function listLaunches(viewerId) {
   const r = await pool.query(
@@ -326,6 +405,6 @@ async function closeLaunch(userId, launchId) {
 }
 
 module.exports = {
-  createLaunch, listLaunches, getLaunch, comment,
+  createLaunch, updateLaunch, deleteLaunch, listLaunches, getLaunch, comment,
   markHelpful, postUpdate, closeLaunch,
 };

@@ -34,6 +34,10 @@ const app = express();
 // ceiling actually applies. Every other endpoint keeps the small one.
 app.use('/api/startups/:startupId/launches', express.json({ limit: '4mb' }));
 app.use('/api/profiles/me', express.json({ limit: '2mb' }));
+// Editing a launch replaces its images, so the PATCH carries them too. Bound
+// to the METHOD rather than the path prefix, so posting a comment or asking a
+// question on the same path keeps the small ceiling.
+app.patch('/api/launches/:id', express.json({ limit: '4mb' }));
 
 app.use(express.json({ limit: '100kb' }));
 

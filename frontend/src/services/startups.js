@@ -165,3 +165,8 @@ export const postLaunchUpdate = (id, body) =>
 export const closeLaunch = (id) => apiFetch(`/launches/${id}/close`, { method: 'POST' });
 export const askAboutLaunch = (id, question) =>
   apiFetch(`/launches/${id}/ask`, { method: 'POST', body: JSON.stringify({ question }) });
+
+// Fixing a launch after posting it.
+export const updateLaunch = (id, payload) =>
+  apiFetch(`/launches/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+export const deleteLaunch = (id) => apiFetch(`/launches/${id}`, { method: 'DELETE' });
