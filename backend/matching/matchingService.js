@@ -136,6 +136,10 @@ const ROLE_SYNONYMS = [
   // stripper removes 'lead' but nothing connected the remaining words.
   ['growth marketer', 'growth marketing', 'growth marketing lead', 'growth lead'],
   ['marketing manager', 'marketing specialist', 'marketing lead'],
+  // Also found by the variance run: one structuring pass asked for a 'Legal
+  // Domain Expert' where the others asked for a 'Legal Advisor'. Same job,
+  // and previously zero match.
+  ['legal advisor', 'legal domain expert', 'legal counsel'],
 ];
 
 const ROLE_ADJACENCY = [

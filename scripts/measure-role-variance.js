@@ -119,10 +119,33 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   console.log(`Average role agreement across runs: ${Math.round(avgAgreement * 100)}%`);
   console.log(`Worst readiness swing from run-to-run variance: ${worstSwing.toFixed(1)} points\n`);
 
-  // A verdict, so the measurement produces a decision rather than numbers.
-  if (worstSwing < 3 && avgAgreement >= 0.7) {
-    console.log('VERDICT: stable enough. Role diagnosis varies, but not by enough');
-    console.log('to move the readiness score meaningfully. No fix needed.');
+  /**
+   * THE VERDICT FOLLOWS THE SCORE, not the role names.
+   *
+   * This script's own header says a wobble in role NAMES is cosmetic while a
+   * wobble in role COUNT moves the score, and then the first version let name
+   * agreement gate the verdict anyway. That was inconsistent, and it produced
+   * a misleading answer: one venture reported 0% agreement while two of its
+   * three runs were byte-identical, because a single run said 'Legal Domain
+   * Expert' where the others said 'Legal Advisor'.
+   *
+   * Role titles are open vocabulary. There is no fixed list, so exact
+   * agreement will always understate stability however many synonyms are
+   * added. The score impact has no such problem: it is arithmetic.
+   *
+   * So the verdict is decided by what the variance actually costs, and
+   * agreement is reported as context.
+   */
+  if (worstSwing < 3) {
+    console.log('VERDICT: stable enough. Role diagnosis varies in wording and by');
+    console.log('a role either way, but not by enough to move the readiness score');
+    console.log('meaningfully. No fix needed.');
+    console.log('');
+    console.log('WORTH KNOWING ANYWAY: the score is stable, but the ROLES are not');
+    console.log('identical between runs. A founder who re-runs diagnosis can be');
+    console.log('shown a different set of people to talk to, which the score impact');
+    console.log('above does not capture. Diagnosis runs once per venture, so this');
+    console.log('does not happen in normal use.');
   } else if (worstSwing < 8) {
     console.log('VERDICT: some drift. The score moves by a few points on identical');
     console.log('input. Worth knowing, probably not worth fixing before other work.');
