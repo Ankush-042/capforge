@@ -156,11 +156,12 @@ export const listLaunches = () => apiFetch('/launches');
 export const getLaunch = (id) => apiFetch(`/launches/${id}`);
 export const createLaunch = (startupId, payload) =>
   apiFetch(`/startups/${startupId}/launches`, { method: 'POST', body: JSON.stringify(payload) });
-export const giveLaunchFeedback = (id, payload) =>
-  apiFetch(`/launches/${id}/feedback`, { method: 'POST', body: JSON.stringify(payload) });
-export const markFeedbackHelpful = (feedbackId) =>
-  apiFetch(`/launches/feedback/${feedbackId}/helpful`, { method: 'POST' });
+export const commentOnLaunch = (id, payload) =>
+  apiFetch(`/launches/${id}/comments`, { method: 'POST', body: JSON.stringify(payload) });
+export const markCommentHelpful = (commentId) =>
+  apiFetch(`/launches/comments/${commentId}/helpful`, { method: 'POST' });
 export const postLaunchUpdate = (id, body) =>
   apiFetch(`/launches/${id}/updates`, { method: 'POST', body: JSON.stringify({ body }) });
 export const closeLaunch = (id) => apiFetch(`/launches/${id}/close`, { method: 'POST' });
-export const getLaunchReading = (id) => apiFetch(`/launches/${id}/reading`);
+export const askAboutLaunch = (id, question) =>
+  apiFetch(`/launches/${id}/ask`, { method: 'POST', body: JSON.stringify({ question }) });

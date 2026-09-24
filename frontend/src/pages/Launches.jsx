@@ -44,7 +44,7 @@ function ago(iso) {
 
 function LaunchCard({ l, index }) {
   const tone = STATE_TONE[l.state] || '#8A8A99';
-  const needsPeople = l.feedback_count === 0 && !l.closed_at;
+  const needsPeople = l.people_count === 0 && !l.closed_at;
 
   return (
     <motion.div
@@ -96,12 +96,13 @@ function LaunchCard({ l, index }) {
               <span className="text-[12.5px] font-medium text-violet-700">Nobody has tried this yet</span>
             ) : (
               <span className="text-[12.5px] text-ink-500">
-                {l.tried_count} of {l.feedback_count} actually tried it
+                {l.people_count} {l.people_count === 1 ? 'person' : 'people'} talking
+                {l.tried_count > 0 && `, ${l.tried_count} actually opened it`}
               </span>
             )}
-            {l.you_responded && (
+            {l.you_joined && (
               <span className="flex items-center gap-1 text-[12.5px] text-mint-500 ml-auto">
-                <Check size={12} /> You responded
+                <Check size={12} /> You joined in
               </span>
             )}
           </div>
@@ -126,8 +127,8 @@ export default function Launches() {
   // Unanswered first. A launch nobody has tried is the one that needs
   // somebody, and recency ordering buries exactly those.
   const open = launches.filter((l) => !l.closed_at);
-  const needsPeople = open.filter((l) => l.feedback_count === 0);
-  const inProgress = open.filter((l) => l.feedback_count > 0);
+  const needsPeople = open.filter((l) => l.people_count === 0);
+  const inProgress = open.filter((l) => l.people_count > 0);
   const closed = launches.filter((l) => l.closed_at);
 
   if (loading) {
@@ -181,7 +182,7 @@ export default function Launches() {
           {needsPeople.length > 0 && (
             <div className="mb-9">
               <h2 className="text-[15px] font-semibold text-ink-900 mb-1">Nobody has tried these</h2>
-              <p className="text-[13px] text-ink-500 mb-4">Being first is the most useful you can be here.</p>
+              <p className="text-[13px] text-ink-500 mb-4">Being the first to open it and say what happened is the most useful you can be here.</p>
               <div className="grid grid-cols-2 gap-5">
                 {needsPeople.map((l, i) => <LaunchCard key={l.id} l={l} index={i} />)}
               </div>
@@ -190,7 +191,7 @@ export default function Launches() {
 
           {inProgress.length > 0 && (
             <div className="mb-9">
-              <h2 className="text-[15px] font-semibold text-ink-900 mb-4">Being tried</h2>
+              <h2 className="text-[15px] font-semibold text-ink-900 mb-4">Being talked about</h2>
               <div className="grid grid-cols-2 gap-5">
                 {inProgress.map((l, i) => <LaunchCard key={l.id} l={l} index={i} />)}
               </div>

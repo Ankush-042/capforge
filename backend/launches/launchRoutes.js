@@ -3,10 +3,10 @@ const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { aiEndpointLimit } = require('../shared/rateLimiter');
 const {
-  createLaunch, listLaunches, getLaunch, giveFeedback,
+  createLaunch, listLaunches, getLaunch, comment,
   markHelpful, postUpdate, closeLaunch,
 } = require('./launchService');
-const { readFeedback } = require('./feedbackReader');
+const { askAboutLaunch, SUGGESTED } = require('./launchAssistant');
 
 router.get('/launches', requireAuth, async (req, res) => {
   res.json(await listLaunches(req.user.userId));
@@ -28,13 +28,13 @@ router.post('/startups/:startupId/launches', requireAuth, bigBody, async (req, r
   res.json(r);
 });
 
-router.post('/launches/:id/feedback', requireAuth, async (req, res) => {
-  const r = await giveFeedback(req.user.userId, req.params.id, req.body || {});
+router.post('/launches/:id/comments', requireAuth, async (req, res) => {
+  const r = await comment(req.user.userId, req.params.id, req.body || {});
   if (!r.success) return res.status(400).json(r);
   res.json(r);
 });
 
-router.post('/launches/feedback/:id/helpful', requireAuth, async (req, res) => {
+router.post('/launches/comments/:id/helpful', requireAuth, async (req, res) => {
   const r = await markHelpful(req.user.userId, req.params.id);
   if (!r.success) return res.status(403).json(r);
   res.json(r);
@@ -52,12 +52,12 @@ router.post('/launches/:id/close', requireAuth, async (req, res) => {
   res.json(r);
 });
 
-// The founder's private reading of the feedback. Rate limited like every
-// other model-backed endpoint.
-router.get('/launches/:id/reading', requireAuth, aiEndpointLimit, async (req, res) => {
-  const r = await readFeedback(req.params.id, req.user.userId);
-  if (!r.success) return res.status(403).json(r);
-  res.json(r);
+// The founder asking about their own launch rather than reading all of it.
+// Rate limited like every other model-backed endpoint.
+router.post('/launches/:id/ask', requireAuth, aiEndpointLimit, async (req, res) => {
+  const r = await askAboutLaunch(req.params.id, req.user.userId, req.body?.question);
+  if (!r.success) return res.status(r.error === 'NOT_YOURS' ? 403 : 400).json(r);
+  res.json({ ...r, suggested: SUGGESTED });
 });
 
 module.exports = router;

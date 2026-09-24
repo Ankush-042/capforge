@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, X, Plus } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import { createLaunch } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
@@ -58,7 +58,7 @@ export default function PostLaunch() {
   const [link, setLink] = useState('');
   const [state, setState] = useState('INTERFACE');
   const [images, setImages] = useState([]);
-  const [questions, setQuestions] = useState(['']);
+  const [askingAbout, setAskingAbout] = useState('');
   const [saving, setSaving] = useState(false);
 
   async function addImage(e) {
@@ -85,7 +85,7 @@ export default function PostLaunch() {
     setSaving(true);
     const { ok, data } = await createLaunch(activeStartup.id, {
       title, summary, link, state, images,
-      questions: questions.map((q) => q.trim()).filter(Boolean),
+      askingAbout,
     });
     setSaving(false);
     if (!ok || !data?.success) {
@@ -170,24 +170,18 @@ export default function PostLaunch() {
           </div>
 
           <div>
-            {/* Generic feedback is weak feedback. Asking for something
-                specific is what turns vague praise into an answer. */}
-            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">Anything specific you want answered</label>
-            <p className="text-[12px] text-ink-500 mb-2.5">Optional, and the most useful part. Up to three.</p>
-            {questions.map((q, i) => (
-              <input
-                key={i} value={q}
-                onChange={(e) => { const n = [...questions]; n[i] = e.target.value; setQuestions(n); }}
-                placeholder={i === 0 ? 'Does the first screen make it obvious what this is for?' : 'Another question'}
-                className={`${FIELD} mb-2`}
-              />
-            ))}
-            {questions.length < 3 && (
-              <button type="button" onClick={() => setQuestions([...questions, ''])}
-                className="flex items-center gap-1.5 text-[13px] text-ink-500 hover:text-violet-700 transition-colors">
-                <Plus size={13} /> Another question
-              </button>
-            )}
+            {/* One line, not a form. It sits at the top of the discussion
+                saying what would help most, rather than gating entry to it. */}
+            <label className="text-[13px] font-medium text-ink-700 mb-1.5 block">What would help you most</label>
+            <p className="text-[12px] text-ink-500 mb-2.5">
+              Optional. People will talk about whatever they notice; this tells them where to look first.
+            </p>
+            <input
+              value={askingAbout}
+              onChange={(e) => setAskingAbout(e.target.value)}
+              placeholder="Does the first screen make it obvious what this is for?"
+              className={FIELD}
+            />
           </div>
 
           <button onClick={submit} disabled={saving}

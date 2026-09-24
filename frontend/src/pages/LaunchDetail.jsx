@@ -1,26 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, ExternalLink, Check, X, Sparkles, Megaphone } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Sparkles, Megaphone, CornerDownRight, Send, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import { useMyIdentity } from '../context/MyIdentityContext.jsx';
 import Avatar from '../components/Avatar.jsx';
+import { useMyIdentity } from '../context/MyIdentityContext.jsx';
 import {
-  getLaunch, giveLaunchFeedback, markFeedbackHelpful,
-  postLaunchUpdate, closeLaunch, getLaunchReading,
+  getLaunch, commentOnLaunch, markCommentHelpful,
+  postLaunchUpdate, closeLaunch, askAboutLaunch,
 } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 /**
- * One launch: try it, then say what happened.
+ * A launch, and the room that opens under it.
  *
- * THE FEEDBACK IS THREE FIXED QUESTIONS, not a comment box. An open box
- * produces "cool idea, congrats", which is pleasant and useless. Did you
- * actually open it, would you come back, and what broke are answerable,
- * honest, and they aggregate into a number that means something.
+ * THIS WAS A FEEDBACK FORM AND THAT WAS WRONG. Three fixed questions collected
+ * tidy, aggregatable statements and could not produce the thing that actually
+ * helps a founder: people arguing with each other. Two testers hitting the
+ * same wall never found out. Nobody could ask "which browser?".
  *
- * THE FOUNDER'S READING IS LOADED SEPARATELY AND LAST. Every response renders
- * without it, so a rate limit or an outage costs a summary, never the page.
+ * So it is a conversation. Flat replies, like a circle thread, because nesting
+ * makes a room tidy and kills its momentum.
+ *
+ * AND THE FOUNDER DOES NOT READ ALL OF IT. Forty messages is a job. They ask
+ * the assistant, which has read every one. The room renders first and the
+ * assistant is asked afterwards, so a rate limit costs an answer and never
+ * the page.
  */
 
 const STATE_LABEL = {
@@ -30,66 +35,119 @@ const STATE_LABEL = {
   LIVE: 'Live and usable',
 };
 
+function ago(iso) {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? 'yesterday' : `${d}d ago`;
+}
+
+function Message({ c, isFounder, founderId, onReply, onHelpful, isReply }) {
+  const fromFounder = c.author_id === founderId;
+  return (
+    <div className={isReply ? 'ml-11 mt-4 pl-5 border-l-2 border-surface-border' : ''}>
+      <div className="flex items-start gap-3">
+        <Avatar name={c.display_name} src={c.profile_image} size={isReply ? 26 : 32} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="text-[13.5px] font-medium text-ink-950">{c.display_name}</span>
+            {fromFounder && (
+              <span className="text-[11px] font-medium text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">founder</span>
+            )}
+            {/* One fact that changes how every other word is read. */}
+            {c.tried_it === true && (
+              <span className="text-[11px] font-medium text-mint-500">opened it</span>
+            )}
+            {c.tried_it === false && (
+              <span className="text-[11px] text-ink-300">has not opened it</span>
+            )}
+            <span className="text-[11.5px] text-ink-300">{ago(c.created_at)}</span>
+          </div>
+
+          <p className="text-[14.5px] text-ink-800 leading-[1.65] whitespace-pre-wrap break-words">{c.body}</p>
+
+          <div className="flex items-center gap-4 mt-2">
+            {!isReply && (
+              <button onClick={() => onReply(c)} className="flex items-center gap-1.5 text-[12.5px] text-ink-300 hover:text-ink-700 transition-colors">
+                <CornerDownRight size={12.5} /> Reply
+              </button>
+            )}
+            {isFounder && (
+              <button
+                onClick={() => onHelpful(c)}
+                className={`flex items-center gap-1.5 text-[12.5px] transition-colors ${
+                  c.marked_helpful ? 'text-mint-500' : 'text-ink-300 hover:text-ink-700'
+                }`}
+              >
+                <Sparkles size={12.5} /> {c.marked_helpful ? 'You found this useful' : 'Mark as useful'}
+              </button>
+            )}
+            {!isFounder && c.marked_helpful && (
+              <span className="flex items-center gap-1.5 text-[12px] text-mint-500">
+                <Sparkles size={12} /> The founder found this useful
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LaunchDetail() {
   const { persona } = useMyIdentity();
   const { id } = useParams();
   const showToast = useToast();
+  const boxRef = useRef(null);
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
-  // Feedback form
-  const [tried, setTried] = useState(null);
-  const [wouldUse, setWouldUse] = useState(null);
-  const [what, setWhat] = useState('');
-  const [answers, setAnswers] = useState([]);
-  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [triedIt, setTriedIt] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const [posting, setPosting] = useState(false);
 
-  // Founder-only
-  const [reading, setReading] = useState(null);
-  const [readingLoading, setReadingLoading] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [asking, setAsking] = useState(false);
+  const [answer, setAnswer] = useState(null);
   const [updateText, setUpdateText] = useState('');
 
   async function load() {
     const { ok, data: d } = await getLaunch(id);
-    if (ok && d.success) {
-      setData(d);
-      if (d.yourFeedback) {
-        setTried(d.yourFeedback.tried);
-        setWouldUse(d.yourFeedback.would_use_again);
-        setWhat(d.yourFeedback.what_happened);
-        setAnswers(d.yourFeedback.answers || []);
-      }
-    }
+    if (ok && d.success) setData(d);
   }
   useEffect(() => { load().then(() => setLoading(false)); }, [id]);
 
-  // Only after the page exists. The reading is an addition, never a dependency.
-  useEffect(() => {
-    if (!data?.isFounder || data.feedback.length === 0) return;
-    setReadingLoading(true);
-    getLaunchReading(id).then(({ ok, data: r }) => {
-      if (ok && r.success) setReading(r);
-      setReadingLoading(false);
-    });
-  }, [data?.isFounder, data?.feedback?.length, id]);
-
-  async function submit() {
-    if (tried === null) { showToast('Say whether you actually opened it.', 'error'); return; }
-    if (what.trim().length < 10) { showToast('Say a bit more about what happened.', 'error'); return; }
-    setSaving(true);
-    const { ok, data: r } = await giveLaunchFeedback(id, {
-      tried, wouldUseAgain: wouldUse, whatHappened: what, answers,
-    });
-    setSaving(false);
-    if (!ok || !r?.success) { showToast('Could not save that.', 'error'); return; }
-    showToast('Sent. The founder will see it.');
+  async function send() {
+    const body = draft.trim();
+    if (body.length < 3) return;
+    setPosting(true);
+    const { ok } = await commentOnLaunch(id, { body, parentId: replyTo?.id, triedIt });
+    setPosting(false);
+    if (!ok) { showToast('Could not post that.', 'error'); return; }
+    setDraft(''); setReplyTo(null);
     await load();
   }
 
-  async function handleHelpful(f) {
-    const { ok } = await markFeedbackHelpful(f.id);
+  async function handleHelpful(c) {
+    const { ok } = await markCommentHelpful(c.id);
     if (!ok) { showToast('Could not save that.', 'error'); return; }
     await load();
+  }
+
+  async function ask(q) {
+    const text = (q || question).trim();
+    if (text.length < 3) return;
+    setAsking(true); setAnswer(null);
+    const { ok, data: r } = await askAboutLaunch(id, text);
+    setAsking(false);
+    if (!ok || !r?.success) { showToast('Could not ask that.', 'error'); return; }
+    setAnswer({ ...r, question: text });
+    setQuestion('');
   }
 
   async function handleUpdate() {
@@ -97,7 +155,7 @@ export default function LaunchDetail() {
     const { ok } = await postLaunchUpdate(id, updateText);
     if (!ok) { showToast('Could not post that.', 'error'); return; }
     setUpdateText('');
-    showToast('Posted. Everyone who responded has been told.');
+    showToast('Posted. Everyone in the discussion has been told.');
     await load();
   }
 
@@ -121,15 +179,20 @@ export default function LaunchDetail() {
     return (
       <Shell persona={persona} title="Launch">
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <p className="text-[15px] text-ink-700">This launch does not exist.</p>
-          <Link to="/app/launches" className="text-[13px] text-violet-700 hover:text-violet-600 transition-colors">Back to everything else</Link>
+          <p className="text-[15px] text-ink-700 mb-1">This launch does not exist.</p>
+          <Link to="/app/launches" className="text-[13px] text-violet-700 hover:text-violet-600 transition-colors">Back to the rest</Link>
         </div>
       </Shell>
     );
   }
 
-  const { launch, feedback, updates, isFounder, yourFeedback, summary } = data;
-  const questions = launch.questions || [];
+  const { launch, thread, updates, isFounder, counts } = data;
+
+  const SUGGESTED = [
+    'What is the main thing stopping people?',
+    'Did anyone say they would pay for this?',
+    'What did the people who actually opened it say?',
+  ];
 
   return (
     <Shell persona={persona} title={launch.title} subtitle={launch.startup_name}>
@@ -137,14 +200,14 @@ export default function LaunchDetail() {
         <ArrowLeft size={15} /> All launches
       </Link>
 
-      <div className="grid grid-cols-[1fr_360px] gap-7 items-start">
+      <div className="grid grid-cols-[1fr_340px] gap-7 items-start">
         <div>
           {/* The thing itself. */}
           <div className="bg-surface rounded-xl border border-surface-border shadow-card overflow-hidden mb-6">
             {launch.images?.length > 0 && (
               <div className={`grid gap-1 ${launch.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 {launch.images.map((src, i) => (
-                  <img key={i} src={src} alt="" className="w-full object-cover" style={{ maxHeight: launch.images.length === 1 ? 380 : 220 }} />
+                  <img key={i} src={src} alt="" className="w-full object-cover" style={{ maxHeight: launch.images.length === 1 ? 400 : 230 }} />
                 ))}
               </div>
             )}
@@ -154,17 +217,22 @@ export default function LaunchDetail() {
                 <Avatar name={launch.founder_name} src={launch.founder_avatar} size={30} />
                 <div>
                   <p className="text-[13.5px] font-medium text-ink-950">{launch.founder_name}</p>
-                  <p className="text-[12px] text-ink-500">{launch.startup_name}</p>
+                  <p className="text-[12px] text-ink-500">{launch.startup_name} · {ago(launch.posted_at)}</p>
                 </div>
               </div>
 
               <p className="text-[15.5px] text-ink-800 leading-relaxed whitespace-pre-wrap">{launch.summary}</p>
 
-              {/* Said plainly, so people give useful feedback instead of
-                  reporting that the buttons do not save. */}
               <p className="text-[13px] text-ink-500 mt-4 pt-4 border-t border-surface-border">
                 {STATE_LABEL[launch.state]}
               </p>
+
+              {launch.asking_about && (
+                <div className="mt-4 bg-violet-50 border border-violet-500/20 rounded-lg p-4">
+                  <p className="text-[12px] font-medium text-violet-700 mb-0.5">What would help most</p>
+                  <p className="text-[13.5px] text-ink-800 leading-relaxed">{launch.asking_about}</p>
+                </div>
+              )}
 
               {launch.link && (
                 <a
@@ -177,7 +245,6 @@ export default function LaunchDetail() {
             </div>
           </div>
 
-          {/* What the founder changed. */}
           {updates.length > 0 && (
             <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6 mb-6">
               <p className="flex items-center gap-2 text-[13px] font-semibold text-ink-900 mb-3">
@@ -185,181 +252,174 @@ export default function LaunchDetail() {
               </p>
               <div className="space-y-3">
                 {updates.map((u) => (
-                  <p key={u.id} className="text-[13.5px] text-ink-700 leading-relaxed pl-3 border-l-2 border-violet-500/30">
-                    {u.body}
-                  </p>
+                  <div key={u.id} className="pl-3 border-l-2 border-violet-500/30">
+                    <p className="text-[13.5px] text-ink-700 leading-relaxed">{u.body}</p>
+                    <p className="text-[11.5px] text-ink-300 mt-0.5">{ago(u.created_at)}</p>
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Everything people said. Renders with or without the summary. */}
-          <div className="flex items-baseline justify-between mb-3">
+          {/* Say something. At the top, because reading should not be the
+              default and posting an effort. */}
+          {!launch.closed_at && (
+            <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6 mb-6">
+              {replyTo && (
+                <div className="flex items-center justify-between gap-3 mb-2.5">
+                  <p className="text-[12.5px] text-ink-500 truncate">Replying to {replyTo.display_name}</p>
+                  <button onClick={() => setReplyTo(null)} className="text-[12.5px] text-ink-300 hover:text-ink-700 transition-colors shrink-0">Cancel</button>
+                </div>
+              )}
+
+              <textarea
+                ref={boxRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send(); }}
+                rows={3}
+                placeholder={replyTo ? 'Say something back…' : 'What happened when you opened it?'}
+                className="w-full px-4 py-3 rounded-lg border border-surface-border bg-surface-muted text-[14.5px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors resize-none leading-relaxed"
+              />
+
+              <div className="flex items-center justify-between gap-3 mt-3">
+                {!replyTo && !isFounder ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12.5px] text-ink-500">Did you open it?</span>
+                    {[[true, 'Yes'], [false, 'Not yet']].map(([v, label]) => (
+                      <button
+                        key={String(v)} onClick={() => setTriedIt(triedIt === v ? null : v)}
+                        className={`text-[12.5px] px-2.5 py-1 rounded-full border transition-colors ${
+                          triedIt === v ? 'bg-ink-900 text-white border-ink-900' : 'border-surface-border text-ink-500 hover:border-ink-300'
+                        }`}
+                      >{label}</button>
+                    ))}
+                  </div>
+                ) : <span />}
+
+                <button
+                  onClick={send} disabled={posting || draft.trim().length < 3}
+                  className="flex items-center gap-1.5 bg-ink-900 hover:bg-ink-700 text-white px-4 py-2 rounded-full text-[13.5px] font-medium transition-colors disabled:opacity-30"
+                >
+                  {posting ? 'Posting…' : 'Post'} <Send size={13} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-[15px] font-semibold text-ink-900">
-              {feedback.length === 0 ? 'Nobody has responded yet' : `${feedback.length} ${feedback.length === 1 ? 'response' : 'responses'}`}
+              {counts.comments === 0 ? 'Nobody has said anything yet' : `${counts.comments} ${counts.comments === 1 ? 'message' : 'messages'}`}
             </h2>
-            {summary.tried > 0 && (
+            {counts.people > 0 && (
               <span className="text-[13px] text-ink-500">
-                {summary.wouldUseAgain} of {summary.wouldUseAgainOf} who tried it would use it again
+                {counts.people} {counts.people === 1 ? 'person' : 'people'}
+                {counts.tried > 0 && `, ${counts.tried} opened it`}
               </span>
             )}
           </div>
 
-          <div className="space-y-3">
-            {feedback.map((f, i) => (
-              <motion.div
-                key={f.id}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: Math.min(i * 0.04, 0.2) }}
-                className="relative overflow-hidden bg-surface rounded-xl border border-surface-border shadow-card p-6 pl-7"
-              >
-                <span className="absolute left-0 top-0 bottom-0 w-[3px]"
-                      style={{ backgroundColor: !f.tried ? '#E4E3EC' : f.would_use_again ? '#3FB081' : '#E15C4D' }} />
-
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Avatar name={f.display_name} src={f.profile_image} size={26} />
-                    <div className="min-w-0">
-                      <p className="text-[13.5px] font-medium text-ink-950 truncate">{f.display_name}</p>
-                      <p className="text-[11.5px] text-ink-500 truncate">{f.headline}</p>
-                    </div>
-                  </div>
-                  <span className="text-[11.5px] font-medium shrink-0"
-                        style={{ color: !f.tried ? '#8A8A99' : f.would_use_again ? '#1F5D52' : '#E15C4D' }}>
-                    {!f.tried ? 'Did not try it' : f.would_use_again ? 'Would use again' : 'Would not use again'}
-                  </span>
-                </div>
-
-                <p className="text-[14px] text-ink-800 leading-relaxed whitespace-pre-wrap">{f.what_happened}</p>
-
-                {(f.answers || []).length > 0 && (
-                  <div className="mt-3.5 pt-3.5 border-t border-surface-border space-y-2">
-                    {(f.answers || []).map((a, qi) => a ? (
-                      <div key={qi}>
-                        <p className="text-[12px] text-ink-500">{questions[qi]}</p>
-                        <p className="text-[13.5px] text-ink-800">{a}</p>
-                      </div>
-                    ) : null)}
-                  </div>
-                )}
-
-                {isFounder && (
-                  <button
-                    onClick={() => handleHelpful(f)}
-                    className={`flex items-center gap-1.5 text-[12.5px] mt-3 transition-colors ${
-                      f.marked_helpful ? 'text-mint-500' : 'text-ink-300 hover:text-ink-700'
-                    }`}
-                  >
-                    <Sparkles size={12.5} /> {f.marked_helpful ? 'You found this useful' : 'Mark as useful'}
-                  </button>
-                )}
-                {!isFounder && f.marked_helpful && (
-                  <p className="flex items-center gap-1.5 text-[12px] text-mint-500 mt-3">
-                    <Sparkles size={12} /> The founder found this useful
-                  </p>
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right column: respond, or read it as the founder. */}
-        <div className="sticky top-6 space-y-5">
-          {!isFounder && !launch.closed_at && (
-            <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-              <p className="text-[15px] font-semibold text-ink-950 mb-1">
-                {yourFeedback ? 'Change what you said' : 'Say what happened'}
+          {counts.comments === 0 ? (
+            <div className="bg-surface rounded-xl border border-surface-border shadow-card py-14 text-center">
+              <p className="text-[15px] text-ink-700 mb-1">Nothing said here yet.</p>
+              <p className="text-[13px] text-ink-500 max-w-sm mx-auto">
+                Open it, use it properly, and say what actually happened. Being first is the most useful you can be.
               </p>
-              <p className="text-[12.5px] text-ink-500 mb-5">
-                Open it first. Honest beats kind here.
-              </p>
-
-              <p className="text-[13px] font-medium text-ink-700 mb-2">Did you actually open it?</p>
-              <div className="flex gap-2 mb-5">
-                {[[true, 'Yes, I tried it'], [false, 'No, not yet']].map(([v, label]) => (
-                  <button key={String(v)} onClick={() => setTried(v)}
-                    className={`flex-1 text-[13px] px-3 py-2.5 rounded-lg border transition-colors ${
-                      tried === v ? 'bg-ink-900 text-white border-ink-900' : 'border-surface-border text-ink-700 hover:border-ink-300'
-                    }`}>{label}</button>
-                ))}
-              </div>
-
-              {tried && (
-                <>
-                  <p className="text-[13px] font-medium text-ink-700 mb-2">Would you use it again?</p>
-                  <div className="flex gap-2 mb-5">
-                    {[[true, 'Yes'], [false, 'No']].map(([v, label]) => (
-                      <button key={String(v)} onClick={() => setWouldUse(v)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 text-[13px] px-3 py-2.5 rounded-lg border transition-colors ${
-                          wouldUse === v ? 'bg-ink-900 text-white border-ink-900' : 'border-surface-border text-ink-700 hover:border-ink-300'
-                        }`}>
-                        {v ? <Check size={13} /> : <X size={13} />} {label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              <p className="text-[13px] font-medium text-ink-700 mb-2">What broke or confused you?</p>
-              <textarea
-                value={what} onChange={(e) => setWhat(e.target.value)} rows={4}
-                placeholder="I got as far as… then…"
-                className="w-full px-3.5 py-3 rounded-lg border border-surface-border bg-surface-muted text-[13.5px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors resize-none leading-relaxed mb-5"
-              />
-
-              {questions.map((q, qi) => (
-                <div key={qi} className="mb-4">
-                  <p className="text-[13px] font-medium text-ink-700 mb-2">{q}</p>
-                  <input
-                    value={answers[qi] || ''}
-                    onChange={(e) => { const a = [...answers]; a[qi] = e.target.value; setAnswers(a); }}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[13.5px] text-ink-900 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors"
-                  />
-                </div>
+            </div>
+          ) : (
+            <div className="space-y-7">
+              {thread.map((c, i) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: Math.min(i * 0.04, 0.2) }}
+                  className={`bg-surface rounded-xl border border-surface-border shadow-card p-6 ${c.marked_helpful ? 'border-mint-500/40' : ''}`}
+                >
+                  <Message c={c} isFounder={isFounder} founderId={launch.founder_id}
+                           onReply={(x) => { setReplyTo(x); boxRef.current?.focus(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                           onHelpful={handleHelpful} />
+                  {(c.replies || []).map((r) => (
+                    <Message key={r.id} c={r} isFounder={isFounder} founderId={launch.founder_id}
+                             onReply={() => {}} onHelpful={handleHelpful} isReply />
+                  ))}
+                </motion.div>
               ))}
-
-              <button
-                onClick={submit} disabled={saving}
-                className="w-full bg-ink-900 hover:bg-ink-700 text-white py-3 rounded-full text-[14px] font-medium transition-colors disabled:opacity-50"
-              >
-                {saving ? 'Sending…' : yourFeedback ? 'Update what you said' : 'Send it'}
-              </button>
             </div>
           )}
+        </div>
 
-          {isFounder && (
+        {/* Right: the founder asks rather than reads. */}
+        <div className="sticky top-6 space-y-5">
+          {isFounder ? (
             <>
-              {/* The reading. Appears when it appears; the page never waited. */}
               <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-                <p className="text-[15px] font-semibold text-ink-950 mb-1">What this is telling you</p>
-                <p className="text-[12.5px] text-ink-500 mb-4">Only you see this.</p>
+                <p className="text-[15px] font-semibold text-ink-950 mb-1">Ask about this</p>
+                <p className="text-[12.5px] text-ink-500 mb-4">
+                  It has read everything said here. Only you see this.
+                </p>
 
-                {feedback.length === 0 ? (
+                {counts.comments === 0 ? (
                   <p className="text-[13.5px] text-ink-500 leading-relaxed">Nothing to read yet.</p>
-                ) : readingLoading ? (
-                  <div className="flex items-center gap-2 text-[13px] text-ink-500">
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-                    Reading what people said…
-                  </div>
-                ) : reading?.tooEarly ? (
-                  <p className="text-[13.5px] text-ink-700 leading-relaxed">{reading.note}</p>
-                ) : reading?.degraded ? (
-                  <div>
-                    <p className="text-[13px] text-amber-700 leading-relaxed mb-3">{reading.note}</p>
-                    <p className="text-[13.5px] text-ink-800">
-                      {reading.facts.tried} of {reading.facts.responded} tried it.
-                      {' '}{reading.facts.wouldUseAgain} would use it again, {reading.facts.wouldNot} would not.
-                    </p>
-                  </div>
-                ) : reading?.reading ? (
-                  <p className="text-[13.5px] text-ink-800 leading-relaxed whitespace-pre-wrap">{reading.reading}</p>
-                ) : null}
+                ) : (
+                  <>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && ask()}
+                        placeholder="What is stopping people?"
+                        className="flex-1 px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[13.5px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors"
+                      />
+                      <button onClick={() => ask()} disabled={asking}
+                        className="bg-ink-900 hover:bg-ink-700 text-white px-3.5 rounded-lg transition-colors disabled:opacity-40">
+                        <Send size={14} />
+                      </button>
+                    </div>
+
+                    {!answer && !asking && (
+                      <div className="space-y-1.5">
+                        {SUGGESTED.map((q) => (
+                          <button key={q} onClick={() => ask(q)}
+                            className="block text-left text-[12.5px] text-ink-500 hover:text-violet-700 transition-colors leading-snug">
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {asking && (
+                      <div className="flex items-center gap-2 text-[13px] text-ink-500">
+                        <div className="w-3.5 h-3.5 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
+                        Reading what people said…
+                      </div>
+                    )}
+
+                    {answer && (
+                      <div className="pt-3 border-t border-surface-border">
+                        <p className="text-[12px] text-ink-500 mb-1.5">{answer.question}</p>
+                        {answer.degraded ? (
+                          <>
+                            <p className="text-[13px] text-amber-700 leading-relaxed mb-2">{answer.note}</p>
+                            <p className="text-[13.5px] text-ink-800">
+                              {answer.facts.comments} messages from {answer.facts.people} people, {answer.facts.tried} of whom opened it.
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[13.5px] text-ink-800 leading-relaxed whitespace-pre-wrap">{answer.answer}</p>
+                        )}
+                        <button onClick={() => setAnswer(null)} className="text-[12.5px] text-ink-300 hover:text-ink-700 transition-colors mt-2.5">
+                          Ask something else
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
                 <p className="text-[15px] font-semibold text-ink-950 mb-1">Tell them what changed</p>
                 <p className="text-[12.5px] text-ink-500 mb-4">
-                  Everyone who responded gets told. Somebody who reported a problem hears that you fixed it.
+                  Everyone in the discussion gets told. Somebody who raised a problem hears that you fixed it.
                 </p>
                 <textarea
                   value={updateText} onChange={(e) => setUpdateText(e.target.value)} rows={3}
@@ -372,14 +432,24 @@ export default function LaunchDetail() {
               </div>
 
               <button onClick={handleClose} className="w-full text-[13px] text-ink-500 hover:text-ink-900 transition-colors">
-                {launch.closed_at ? 'Start collecting feedback again' : 'Stop collecting feedback'}
+                {launch.closed_at ? 'Open it back up' : 'Stop collecting feedback'}
               </button>
             </>
-          )}
-
-          {launch.closed_at && !isFounder && (
+          ) : (
             <div className="bg-surface rounded-xl border border-surface-border shadow-card p-6">
-              <p className="text-[13.5px] text-ink-700">This founder has stopped collecting feedback.</p>
+              <p className="text-[15px] font-semibold text-ink-950 mb-2">What actually helps</p>
+              <p className="text-[13.5px] text-ink-700 leading-relaxed mb-3">
+                Open it, use it like you would if it were yours, and say exactly where you got stuck.
+              </p>
+              <p className="text-[13px] text-ink-500 leading-relaxed">
+                "I did not understand what this was for" is worth more than "looks good". So is disagreeing
+                with somebody else here.
+              </p>
+              {launch.closed_at && (
+                <p className="flex items-center gap-1.5 text-[13px] text-ink-500 mt-4 pt-4 border-t border-surface-border">
+                  <Check size={13} /> This founder has stopped collecting feedback.
+                </p>
+              )}
             </div>
           )}
         </div>
