@@ -29,6 +29,12 @@ require('dotenv').config();
  */
 const pool = require('../backend/shared/db');
 const { structureIdea } = require('../backend/ai/ideaStructuring');
+// The same role matcher the engine uses. Comparing role NAMES with string
+// equality counts 'AI/ML Engineer' and 'Machine Learning Engineer' as
+// disagreement, which is exactly the mistake the synonym table was built to
+// stop, and it made the model look four times less stable than it is.
+const { computeRoleFitForTesting: roleFit } = require('../backend/matching/matchingService');
+const SAME_JOB = 0.8;   // the same threshold the engine uses to call it evidence
 
 const RUNS = Math.max(2, parseInt(process.argv[2], 10) || 3);
 const TEAM_WEIGHT = 0.38;   // must match READINESS_WEIGHTS.team_composition
@@ -79,11 +85,15 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const counts = runs.map((r) => r.length);
     const minCount = Math.min(...counts), maxCount = Math.max(...counts);
 
-    // A role counts as stable only if it appeared in every single run.
-    const sets = runs.map((r) => new Set(r.map(norm)));
-    const everywhere = [...sets[0]].filter((role) => sets.every((s) => s.has(role)));
-    const union = new Set(runs.flat().map(norm));
-    const agreement = union.size === 0 ? 1 : everywhere.length / union.size;
+    // A role is stable if EVERY run asked for that job, by any name. Two runs
+    // wanting an 'AI/ML Engineer' and a 'Machine Learning Engineer' agree.
+    const sameJob = (a, b) => norm(a) === norm(b) || roleFit(a, b) >= SAME_JOB;
+    const distinct = [];
+    for (const role of runs.flat()) {
+      if (!distinct.some((d) => sameJob(d, role))) distinct.push(role);
+    }
+    const everywhere = distinct.filter((role) => runs.every((r) => r.some((x) => sameJob(x, role))));
+    const agreement = distinct.length === 0 ? 1 : everywhere.length / distinct.length;
 
     // What the count spread does to a solo founder's score. With no roles
     // covered, team coverage is 0 either way, so the honest test is a founder
@@ -93,7 +103,8 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const pointSwing = (bestCase - worstCase) * TEAM_WEIGHT * 100;
 
     console.log(`  role count: ${minCount} to ${maxCount}`);
-    console.log(`  agreement:  ${Math.round(agreement * 100)}% of roles appeared in every run`);
+    console.log(`  agreement:  ${Math.round(agreement * 100)}% of roles were asked for in every run`);
+    if (everywhere.length) console.log(`              stable: ${everywhere.join(', ')}`);
     console.log(`  score impact: ${pointSwing.toFixed(1)} points of final readiness, for a founder covering one role\n`);
 
     summary.push({ name: idea.name, minCount, maxCount, agreement, pointSwing });

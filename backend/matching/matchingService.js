@@ -130,6 +130,12 @@ const ROLE_SYNONYMS = [
   ['security engineer', 'cloud security engineer'],
   ['data engineer', 'analytics engineer'],
   ['full stack engineer', 'software engineer'],
+  // Found by the role-variance measurement: 'Growth Marketing Lead' and
+  // 'Growth Marketer' scored 0 against each other, so a contributor with the
+  // first headline could never match a role titled the second. The seniority
+  // stripper removes 'lead' but nothing connected the remaining words.
+  ['growth marketer', 'growth marketing', 'growth marketing lead', 'growth lead'],
+  ['marketing manager', 'marketing specialist', 'marketing lead'],
 ];
 
 const ROLE_ADJACENCY = [
