@@ -150,3 +150,17 @@ export const postToRoom = (room, body, parentId) =>
   apiFetch(`/rooms/${encodeURIComponent(room)}/posts`, { method: 'POST', body: JSON.stringify({ body, parentId }) });
 export const toggleHelped = (postId) => apiFetch(`/rooms/posts/${postId}/helped`, { method: 'POST' });
 export const deleteRoomPost = (postId) => apiFetch(`/rooms/posts/${postId}`, { method: 'DELETE' });
+
+// Launches: a venture asks people to use what it built.
+export const listLaunches = () => apiFetch('/launches');
+export const getLaunch = (id) => apiFetch(`/launches/${id}`);
+export const createLaunch = (startupId, payload) =>
+  apiFetch(`/startups/${startupId}/launches`, { method: 'POST', body: JSON.stringify(payload) });
+export const giveLaunchFeedback = (id, payload) =>
+  apiFetch(`/launches/${id}/feedback`, { method: 'POST', body: JSON.stringify(payload) });
+export const markFeedbackHelpful = (feedbackId) =>
+  apiFetch(`/launches/feedback/${feedbackId}/helpful`, { method: 'POST' });
+export const postLaunchUpdate = (id, body) =>
+  apiFetch(`/launches/${id}/updates`, { method: 'POST', body: JSON.stringify({ body }) });
+export const closeLaunch = (id) => apiFetch(`/launches/${id}/close`, { method: 'POST' });
+export const getLaunchReading = (id) => apiFetch(`/launches/${id}/reading`);

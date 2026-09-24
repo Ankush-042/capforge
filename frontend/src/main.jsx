@@ -11,6 +11,9 @@ import Onboarding from './pages/Onboarding.jsx';
 import ContributorOnboarding from './pages/ContributorOnboarding.jsx';
 import SparkFeed from './pages/SparkFeed.jsx';
 import Circles from './pages/Circles.jsx';
+import Launches from './pages/Launches.jsx';
+import LaunchDetail from './pages/LaunchDetail.jsx';
+import PostLaunch from './pages/PostLaunch.jsx';
 import Circle from './pages/Circle.jsx';
 import SparkCompose from './pages/SparkCompose.jsx';
 import SparkDetail from './pages/SparkDetail.jsx';
@@ -119,6 +122,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         {/* Authenticated app — Contributor */}
         <Route path="/app/contributor" element={<ProtectedRoute><ContributorDashboard /></ProtectedRoute>} />
         <Route path="/app/contributor/onboarding" element={<ProtectedRoute><ContributorOnboarding /></ProtectedRoute>} />
+        <Route path="/app/launches" element={<ProtectedRoute><Launches /></ProtectedRoute>} />
+        <Route path="/app/launches/new" element={<ProtectedRoute><PostLaunch /></ProtectedRoute>} />
+        <Route path="/app/launches/:id" element={<ProtectedRoute><LaunchDetail /></ProtectedRoute>} />
         <Route path="/app/circles" element={<ProtectedRoute><Circles /></ProtectedRoute>} />
         <Route path="/app/circles/:room" element={<ProtectedRoute><Circle /></ProtectedRoute>} />
         <Route path="/app/sparks" element={<ProtectedRoute><SparkFeed /></ProtectedRoute>} />

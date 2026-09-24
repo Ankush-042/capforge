@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Home, MessageSquare, Sparkles, Target, Users, PieChart, Flag, ShieldAlert,
+  Home, MessageSquare, Sparkles, Target, Users, Rocket, PieChart, Flag, ShieldAlert,
   Crosshair, BarChart3, LayoutGrid, Gauge, Eye, Presentation, Search,
   Bookmark, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity,
 } from 'lucide-react';
@@ -57,6 +57,7 @@ const NAV_BY_PERSONA = {
       group: 'Build',
       items: [
         { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
+        { label: 'Launch', icon: Rocket, path: '/app/launches' },
         { label: 'Roles', icon: Target, path: '/app/gaps' },
         { label: 'Which first', icon: Scale, path: '/app/which-role' },
         { label: 'Team', icon: Users, path: '/app/team' },
@@ -97,6 +98,7 @@ const NAV_BY_PERSONA = {
       group: 'Discover',
       items: [
         { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
+        { label: 'Try things', icon: Rocket, path: '/app/launches' },
         { label: 'Opportunities', icon: Target, path: '/app/contributor/opportunities' },
         { label: 'Where to start', icon: Scale, path: '/app/contributor/where-to-start' },
         { label: 'Compare', icon: Scale, path: '/app/contributor/offers' },
