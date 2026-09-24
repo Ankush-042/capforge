@@ -22,6 +22,19 @@ const app = express();
 // decision rather than an accident. Profile updates carry an inline avatar and
 // need more, but they ask for it on their own route rather than widening this
 // one for every endpoint.
+// ROUTES THAT CARRY IMAGES NEED THEIR PARSER FIRST.
+//
+// A body parser mounted inside a router cannot rescue a request the GLOBAL
+// parser has already rejected: express.json runs in mount order, so a 2mb
+// limit declared on a route never ran, and every image upload died with
+// "request entity too large" before reaching it. That affected launches and,
+// silently, profile avatars too.
+//
+// These two paths are declared here, ahead of the global limit, so the larger
+// ceiling actually applies. Every other endpoint keeps the small one.
+app.use('/api/startups/:startupId/launches', express.json({ limit: '4mb' }));
+app.use('/api/profiles/me', express.json({ limit: '2mb' }));
+
 app.use(express.json({ limit: '100kb' }));
 
 // Real fix for a confirmed identity-leak symptom: no response from this

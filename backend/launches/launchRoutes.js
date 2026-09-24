@@ -18,11 +18,10 @@ router.get('/launches/:id', requireAuth, async (req, res) => {
   res.json(r);
 });
 
-// Carries inline images, so it needs more than the 100KB global body limit.
-// Scoped here rather than raised for every endpoint, same as profile updates.
-const bigBody = express.json({ limit: '2mb' });
-
-router.post('/startups/:startupId/launches', requireAuth, bigBody, async (req, res) => {
+// The larger body limit for this path is mounted in server.js, BEFORE the
+// global parser. Declaring it here did nothing: express.json runs in mount
+// order and the global limit had already rejected the request.
+router.post('/startups/:startupId/launches', requireAuth, async (req, res) => {
   const r = await createLaunch(req.user.userId, req.params.startupId, req.body || {});
   if (!r.success) return res.status(400).json(r);
   res.json(r);

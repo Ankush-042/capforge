@@ -68,11 +68,10 @@ router.get('/me/views', requireAuth, async (req, res) => {
   res.json({ success: true, views: result.rows, totalCount: parseInt(countResult.rows[0].count) });
 });
 
-// This route carries an inline profile image, so it needs more than the 100KB
-// global limit. Scoped here rather than raised globally: every other endpoint
-// keeps the smaller ceiling.
-const express2 = require('express');
-router.patch('/me', requireAuth, express2.json({ limit: '1mb' }), async (req, res) => {
+// The larger body limit for this path is mounted in server.js, BEFORE the
+// global parser, because a router-level parser cannot rescue a request the
+// global one has already rejected.
+router.patch('/me', requireAuth, async (req, res) => {
   const result = await updateBaseProfile(req.user.userId, req.body);
   if (!result.success) return res.status(400).json(result);
 

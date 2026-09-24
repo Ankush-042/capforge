@@ -86,9 +86,9 @@ async function notifyRelevantPeople(launch, startupId) {
      FROM contributor_profiles cp
      JOIN profiles p ON p.id = cp.profile_id
      JOIN users u ON u.id = p.user_id
-     JOIN startups s ON s.id = $2
+     JOIN startups s ON s.id = $1
      WHERE u.primary_role = 'CONTRIBUTOR' AND p.visibility = 'DISCOVERABLE'
-       AND p.user_id != $3
+       AND p.user_id != $2
        AND EXISTS (
          SELECT 1 FROM unnest(COALESCE(cp.preferred_domains, ARRAY[]::text[])) d
          JOIN unnest(COALESCE(s.domain, ARRAY[]::text[])) sd
@@ -100,7 +100,7 @@ async function notifyRelevantPeople(launch, startupId) {
            AND n.created_at > now() - interval '${QUIET_DAYS} days'
        )
      ORDER BY random() LIMIT ${PUSH_LIMIT}`,
-    [launch.id, startupId, launch.founder_id]
+    [startupId, launch.founder_id]
   );
 
   for (const person of people.rows) {
