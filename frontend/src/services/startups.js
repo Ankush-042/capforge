@@ -170,3 +170,8 @@ export const askAboutLaunch = (id, question) =>
 export const updateLaunch = (id, payload) =>
   apiFetch(`/launches/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
 export const deleteLaunch = (id) => apiFetch(`/launches/${id}`, { method: 'DELETE' });
+
+// Government schemes a venture qualifies for.
+export const getSchemes = (startupId) => apiFetch(`/startups/${startupId}/schemes`);
+export const updateSchemeFacts = (startupId, payload) =>
+  apiFetch(`/startups/${startupId}/scheme-facts`, { method: 'PATCH', body: JSON.stringify(payload) });

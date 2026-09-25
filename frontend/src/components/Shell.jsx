@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Home, MessageSquare, Sparkles, Target, Users, Rocket, PieChart, Flag, ShieldAlert,
+  Home, MessageSquare, Sparkles, Target, Users, Rocket, BadgeIndianRupee, PieChart, Flag, ShieldAlert,
   Crosshair, BarChart3, LayoutGrid, Gauge, Eye, Presentation, Search,
   Bookmark, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity,
 } from 'lucide-react';
@@ -81,6 +81,7 @@ const NAV_BY_PERSONA = {
         { label: 'History', icon: BarChart3, path: '/app/analytics' },
         { label: 'Investor view', icon: Eye, path: '/app/investability' },
         { label: 'Find investors', icon: Landmark, path: '/app/find-investors' },
+        { label: 'Gov schemes', icon: BadgeIndianRupee, path: '/app/schemes' },
         { label: 'Pitch', icon: Presentation, path: '/app/pitch' },
       ],
     },
