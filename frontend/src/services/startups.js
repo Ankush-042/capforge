@@ -175,3 +175,6 @@ export const deleteLaunch = (id) => apiFetch(`/launches/${id}`, { method: 'DELET
 export const getSchemes = (startupId) => apiFetch(`/startups/${startupId}/schemes`);
 export const updateSchemeFacts = (startupId, payload) =>
   apiFetch(`/startups/${startupId}/scheme-facts`, { method: 'PATCH', body: JSON.stringify(payload) });
+
+// How a venture got where it is.
+export const getTrajectory = (startupId) => apiFetch(`/startups/${startupId}/trajectory`);

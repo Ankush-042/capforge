@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ArrowUpRight, AlertTriangle, Users, Flag, TrendingUp, TrendingDown, Eye } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Trajectory from '../components/Trajectory.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import { getProgress } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
@@ -237,6 +238,12 @@ export default function Progress() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* The founder's own chart shows the line. This shows what caused
+              each move, which is the part they can act on. */}
+          <div className="mb-6">
+            <Trajectory startupId={activeStartup?.id} compact />
           </div>
 
           <div className="mb-6">
