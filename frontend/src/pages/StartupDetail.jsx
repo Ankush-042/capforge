@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { MessageSquare, Presentation, Users, Target, AlertTriangle, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Avatar from '../components/Avatar.jsx';
 import Trajectory from '../components/Trajectory.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
-import { getStartup, getVentureSummary, startConversation, getMyProfile } from '../services/startups.js';
+import { getStartup, getVentureSummary, startConversation, getMyProfile , getTeamMembers } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 /**
@@ -30,6 +31,9 @@ const SEVERITY = {
 
 export default function StartupDetail() {
   const { id } = useParams();
+  // Who is actually building this. An investor saw a coverage bar and a count,
+  // and could not see a single person, which is the thing they weigh first.
+  const [team, setTeam] = useState([]);
   const navigate = useNavigate();
   const showToast = useToast();
   const { persona, displayName } = useMyPersona();
@@ -40,9 +44,12 @@ export default function StartupDetail() {
 
   useEffect(() => {
     async function load() {
-      const [startupRes, summaryRes] = await Promise.all([getStartup(id), getVentureSummary(id)]);
+      const [startupRes, summaryRes, teamRes] = await Promise.all([
+        getStartup(id), getVentureSummary(id), getTeamMembers(id),
+      ]);
       if (startupRes.ok && startupRes.data.success) setStartup(startupRes.data.startup);
       if (summaryRes.ok && summaryRes.data.success) setSummary(summaryRes.data.summary);
+      if (teamRes.ok && teamRes.data.success) setTeam(teamRes.data.members || teamRes.data.team || []);
       setLoading(false);
     }
     load();
@@ -220,6 +227,31 @@ export default function StartupDetail() {
                   ? 'Every role they need is covered.'
                   : `${coverage.roles_open} role${coverage.roles_open === 1 ? '' : 's'} still open. ${isOwn ? '' : 'One of them might be yours.'}`}
               </p>
+
+              {/* THE PEOPLE, not a count. An investor saw a coverage bar and a
+                  number and could not see a single person, which is the thing
+                  they weigh before anything else. Every name links through to
+                  a real profile. */}
+              {team.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-surface-border space-y-3">
+                  {team.map((m) => (
+                    <Link
+                      key={m.id || m.user_id}
+                      to={`/app/profile/${m.user_id}`}
+                      className="group flex items-center gap-2.5"
+                    >
+                      <Avatar name={m.display_name} src={m.profile_image} size={28} />
+                      <div className="min-w-0">
+                        <p className="text-[13.5px] font-medium text-ink-950 group-hover:text-violet-700 transition-colors truncate">
+                          {m.display_name}
+                          {m.is_founder && <span className="ml-1.5 text-[11px] font-normal text-violet-700">founder</span>}
+                        </p>
+                        <p className="text-[12px] text-ink-500 truncate">{m.role || m.headline}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
               {!isOwn && coverage.roles_open > 0 && persona === 'CONTRIBUTOR' && (
                 <Link to="/app/contributor/opportunities" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-violet-700 hover:text-violet-600 transition-colors mt-3">
                   <Target size={13} /> See if you fit

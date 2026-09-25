@@ -178,3 +178,6 @@ export const updateSchemeFacts = (startupId, payload) =>
 
 // How a venture got where it is.
 export const getTrajectory = (startupId) => apiFetch(`/startups/${startupId}/trajectory`);
+
+// What somebody has actually done here, as opposed to what they say.
+export const getRecord = (userId) => apiFetch(`/profiles/${userId}/record`);

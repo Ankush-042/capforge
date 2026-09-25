@@ -310,5 +310,47 @@ router.post('/investor', requireAuth, requireRole('INVESTOR'), async (req, res) 
   res.json(result);
 });
 
+/**
+ * What this person has actually done here, as opposed to what they say.
+ *
+ * Every other thing on a profile is self-declared. This is not: a founder had
+ * to mark their feedback as useful, somebody else had to form a team with
+ * them. It was already being recorded and shown nowhere, which made
+ * marked_helpful a button that did nothing outside the launch it was on.
+ *
+ * Deliberately small and deliberately countable. No badges, no score, no
+ * levels: three facts with real numbers behind them, and nothing shown when
+ * the number is zero rather than an empty state implying they should have
+ * some.
+ */
+router.get('/:userId/record', requireAuth, async (req, res) => {
+  const pool = require('../shared/db');
+  const { userId } = req.params;
+
+  const [helpful, teams, launches] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*)::int AS n FROM launch_comments
+       WHERE author_id = $1 AND marked_helpful = true`, [userId]
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS n FROM startup_team_members
+       WHERE user_id = $1 AND is_founder = false`, [userId]
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT launch_id)::int AS n FROM launch_comments
+       WHERE author_id = $1`, [userId]
+    ),
+  ]);
+
+  res.json({
+    success: true,
+    record: {
+      feedbackFoundUseful: helpful.rows[0].n,
+      launchesRespondedTo: launches.rows[0].n,
+      teamsJoined: teams.rows[0].n,
+    },
+  });
+});
+
 module.exports = router;
 module.exports.refreshEverythingForUser = refreshEverythingForUser;

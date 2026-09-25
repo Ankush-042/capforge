@@ -5,7 +5,7 @@ import { ExternalLink, MessageSquare, Briefcase, MapPin, Clock, Target } from 'l
 import Shell from '../components/Shell.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
-import { getUserProfile, startConversation } from '../services/startups.js';
+import { getUserProfile, startConversation , getRecord } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 /**
@@ -29,6 +29,8 @@ export default function ProfileView() {
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  // Earned rather than declared: things somebody else had to confirm.
+  const [record, setRecord] = useState(null);
   const [roleProfile, setRoleProfile] = useState(null);
   const [error, setError] = useState(null);
 
@@ -38,6 +40,7 @@ export default function ProfileView() {
       else setError(data.error || 'PROFILE_NOT_FOUND');
       setLoading(false);
     });
+    getRecord(userId).then(({ ok, data }) => { if (ok && data.success) setRecord(data.record); });
   }, [userId]);
 
   async function handleMessage() {
@@ -141,6 +144,42 @@ export default function ProfileView() {
             <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
               <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-300 mb-2.5">About</p>
               <p className="text-[15.5px] text-ink-900 leading-relaxed">{profile.bio}</p>
+            </div>
+          )}
+
+          {/* EARNED, NOT DECLARED. Everything else on this page is what the
+              person says about themselves. These three are things somebody
+              else had to confirm: a founder marking their feedback useful, a
+              team actually forming. It was recorded and shown nowhere, which
+              made "mark as useful" a button with no consequence.
+
+              Nothing renders when every number is zero. An empty record
+              implies somebody should have one, and most people here have not
+              had the chance yet. */}
+          {record && (record.feedbackFoundUseful > 0 || record.teamsJoined > 0 || record.launchesRespondedTo > 0) && (
+            <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
+              <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-300 mb-1">What they have actually done here</p>
+              <p className="text-[12.5px] text-ink-500 mb-4">Not self-reported. Each of these needed somebody else.</p>
+              <div className="space-y-2.5">
+                {record.feedbackFoundUseful > 0 && (
+                  <p className="flex items-baseline gap-2.5 text-[14px] text-ink-800">
+                    <span className="text-[17px] font-semibold text-ink-950 tabular-nums">{record.feedbackFoundUseful}</span>
+                    {record.feedbackFoundUseful === 1 ? 'piece of feedback a founder marked useful' : 'pieces of feedback founders marked useful'}
+                  </p>
+                )}
+                {record.launchesRespondedTo > 0 && (
+                  <p className="flex items-baseline gap-2.5 text-[14px] text-ink-800">
+                    <span className="text-[17px] font-semibold text-ink-950 tabular-nums">{record.launchesRespondedTo}</span>
+                    {record.launchesRespondedTo === 1 ? 'product they tried and wrote about' : 'products they tried and wrote about'}
+                  </p>
+                )}
+                {record.teamsJoined > 0 && (
+                  <p className="flex items-baseline gap-2.5 text-[14px] text-ink-800">
+                    <span className="text-[17px] font-semibold text-ink-950 tabular-nums">{record.teamsJoined}</span>
+                    {record.teamsJoined === 1 ? 'venture they joined' : 'ventures they joined'}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
