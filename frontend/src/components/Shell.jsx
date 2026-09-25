@@ -57,7 +57,7 @@ const NAV_BY_PERSONA = {
       group: 'Build',
       items: [
         { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
-        { label: 'Your launches', icon: Rocket, path: '/app/launches' },
+        { label: 'Launches', icon: Rocket, path: '/app/launches' },
         { label: 'Roles', icon: Target, path: '/app/gaps' },
         { label: 'Which first', icon: Scale, path: '/app/which-role' },
         { label: 'Team', icon: Users, path: '/app/team' },
@@ -99,7 +99,7 @@ const NAV_BY_PERSONA = {
       group: 'Discover',
       items: [
         { label: 'Sparks', icon: Sparkles, path: '/app/sparks' },
-        { label: 'Try things', icon: Rocket, path: '/app/launches' },
+        { label: 'Launches', icon: Rocket, path: '/app/launches' },
         { label: 'Opportunities', icon: Target, path: '/app/contributor/opportunities' },
         { label: 'Where to start', icon: Scale, path: '/app/contributor/where-to-start' },
         { label: 'Compare', icon: Scale, path: '/app/contributor/offers' },
@@ -128,7 +128,7 @@ const NAV_BY_PERSONA = {
       group: 'Discover',
       items: [
         { label: 'Deal flow', icon: Search, path: '/app/investor/deal-flow' },
-        { label: 'What people built', icon: Rocket, path: '/app/launches' },
+        { label: 'Launches', icon: Rocket, path: '/app/launches' },
         { label: 'Saved searches', icon: Bookmark, path: '/app/investor/saved-searches' },
       ],
     },
