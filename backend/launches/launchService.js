@@ -99,15 +99,35 @@ async function notifyRelevantPeople(launch, startupId) {
          WHERE n.user_id = p.user_id AND n.type = 'LAUNCH_POSTED'
            AND n.created_at > now() - interval '${QUIET_DAYS} days'
        )
-     ORDER BY random() LIMIT ${PUSH_LIMIT}`,
+     UNION
+     -- Investors too. The person most interested in whether anybody actually
+     -- wants the thing was excluded from this entirely, which is part of why
+     -- their side of the platform felt empty.
+     SELECT p.user_id
+     FROM investor_profiles ip
+     JOIN profiles p ON p.id = ip.profile_id
+     JOIN users u ON u.id = p.user_id
+     JOIN startups s ON s.id = $1
+     WHERE u.primary_role = 'INVESTOR' AND p.user_id != $2
+       AND EXISTS (
+         SELECT 1 FROM unnest(COALESCE(ip.preferred_domains, ARRAY[]::text[])) d
+         JOIN unnest(COALESCE(s.domain, ARRAY[]::text[])) sd
+           ON lower(sd) LIKE '%' || lower(d) || '%' OR lower(d) LIKE '%' || lower(sd) || '%'
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM notifications n
+         WHERE n.user_id = p.user_id AND n.type = 'LAUNCH_POSTED'
+           AND n.created_at > now() - interval '${QUIET_DAYS} days'
+       )
+     LIMIT ${PUSH_LIMIT}`,
     [startupId, launch.founder_id]
   );
 
   for (const person of people.rows) {
     await createNotification(person.user_id, {
       type: 'LAUNCH_POSTED',
-      title: 'Something new to try',
-      message: `${launch.title} is asking for people to try it and say what happened.`,
+      title: 'Something new to look at',
+      message: `${launch.title} is up, and the founder is asking what people make of it.`,
       referenceType: 'LAUNCH',
       referenceId: launch.id,
     });

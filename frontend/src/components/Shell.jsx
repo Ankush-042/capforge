@@ -128,6 +128,7 @@ const NAV_BY_PERSONA = {
       group: 'Discover',
       items: [
         { label: 'Deal flow', icon: Search, path: '/app/investor/deal-flow' },
+        { label: 'What people built', icon: Rocket, path: '/app/launches' },
         { label: 'Saved searches', icon: Bookmark, path: '/app/investor/saved-searches' },
       ],
     },

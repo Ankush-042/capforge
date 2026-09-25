@@ -123,6 +123,7 @@ function LaunchCard({ l, index }) {
 export default function Launches() {
   const { persona } = useMyIdentity();
   const isFounder = persona === 'FOUNDER';
+  const isInvestor = persona === 'INVESTOR';
   const [loading, setLoading] = useState(true);
   const [launches, setLaunches] = useState([]);
 
@@ -157,8 +158,8 @@ export default function Launches() {
 
   return (
     <Shell persona={persona}
-        title={isFounder ? 'Your launches' : 'Try things'}
-        subtitle={isFounder ? 'What you have put up, and who is talking about it' : 'Real products, asking for honest reactions'}>
+        title={isFounder ? 'Your launches' : isInvestor ? 'What people built' : 'Try things'}
+        subtitle={isFounder ? 'What you have put up, and who is talking about it' : isInvestor ? 'Products from ventures here, and what people said about them' : 'Real products, asking for honest reactions'}>
       <div className="mb-7">
         <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
@@ -180,7 +181,9 @@ export default function Launches() {
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
           {isFounder
             ? 'Put up what you have built and ask people to use it. A rough thing with eight honest reactions beats a polished one nobody has opened.'
-            : 'Open it, use it properly, and say what actually happened. What broke, what confused you, whether you would come back. That is worth more to a founder than encouragement.'}
+            : isInvestor
+              ? 'A deck describes a product. This is the product, and underneath it is what people said after using it. Your own reaction is worth posting: founders here rarely hear from somebody thinking about who pays.'
+              : 'Open it, use it properly, and say what actually happened. What broke, what confused you, whether you would come back. That is worth more to a founder than encouragement.'}
         </p>
 
         {persona === 'FOUNDER' && (
