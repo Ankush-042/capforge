@@ -48,6 +48,15 @@ router.get('/startups/:id/progress', requireAuth, async (req, res) => {
   res.json(result);
 });
 
+// How a venture got where it is. Readable by anybody who can already see the
+// venture: an investor evaluating it needs the movement, not just the number.
+router.get('/startups/:id/trajectory', requireAuth, async (req, res) => {
+  const { getTrajectory } = require('./trajectoryService');
+  const r = await getTrajectory(req.params.id);
+  if (!r.success) return res.status(404).json(r);
+  res.json(r);
+});
+
 module.exports = router;
 
 router.get('/startups/:id/venture-summary', requireAuth, async (req, res) => {
