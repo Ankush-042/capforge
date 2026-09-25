@@ -60,6 +60,28 @@ const HUMAN = (detail) => ({ state: 'HUMAN', detail });
 const MET = (detail) => ({ state: 'MET', detail });
 const NOT_MET = (detail) => ({ state: 'NOT_MET', detail });
 
+
+/**
+ * Does this venture work in one of a scheme's sectors?
+ *
+ * EXACT MATCHING, DELIBERATELY. The first version compared substrings in both
+ * directions, and 'medtech'.includes('edtech') is true, so an edtech venture
+ * was told it qualified for a biotechnology grant. Substring matching on
+ * short domain names produces exactly this class of silent wrong answer, and
+ * on a page a founder will act on it is not acceptable.
+ *
+ * The sector lists are curated, so they carry their own variants rather than
+ * relying on fuzzy matching to find them.
+ */
+function sectorMatch(domains, sectors) {
+  const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const wanted = new Set(sectors.map(norm));
+  for (const d of domains || []) {
+    if (wanted.has(norm(d))) return String(d);
+  }
+  return null;
+}
+
 const DPIIT_RECOGNITION = {
   id: 'DPIIT',
   name: 'DPIIT Startup Recognition',
@@ -221,13 +243,12 @@ const NIDHI_PRAYAS = {
   applyAt: 'https://nidhi.dst.gov.in/',
   source: 'https://www.startupgrantsindia.com/type/grant',
   verifiedOn: VERIFIED_ON,
-  sectors: ['hardware', 'deeptech', 'manufacturing', 'energy', 'climate', 'robotics', 'iot', 'electric vehicles', 'agritech'],
+  sectors: ['hardware', 'deeptech', 'deep tech', 'manufacturing', 'energy', 'clean energy', 'cleantech', 'climate', 'robotics', 'iot', 'internet of things', 'electric vehicles', 'ev', 'smart grid', 'agritech', 'space', 'semiconductors'],
   criteria: [
     {
       label: 'A hardware or deep-technology product needing a physical prototype',
       check: (v) => {
-        const domains = (v.domain || []).map((d) => String(d).toLowerCase());
-        const hit = domains.find((d) => NIDHI_PRAYAS.sectors.some((s) => d.includes(s) || s.includes(d)));
+        const hit = sectorMatch(v.domain, NIDHI_PRAYAS.sectors);
         if (hit) return MET(`This venture works in ${hit}, which fits the scheme's focus.`);
         return HUMAN('This looks like a software venture. PRAYAS is aimed at physical prototypes, so judge whether yours qualifies.');
       },
@@ -255,13 +276,12 @@ const BIRAC_BIG = {
   applyAt: 'https://birac.nic.in/',
   source: 'https://companyavenueadvisory.com/startup-schemes',
   verifiedOn: VERIFIED_ON,
-  sectors: ['biotech', 'healthcare', 'health', 'medtech', 'life sciences', 'pharma', 'diagnostics', 'agritech'],
+  sectors: ['biotech', 'biotechnology', 'healthcare', 'health', 'healthtech', 'medtech', 'medical devices', 'life sciences', 'lifesciences', 'pharma', 'pharmaceuticals', 'diagnostics', 'telemedicine', 'agritech', 'genomics'],
   criteria: [
     {
       label: 'Working in biotechnology, life sciences or medical technology',
       check: (v) => {
-        const domains = (v.domain || []).map((d) => String(d).toLowerCase());
-        const hit = domains.find((d) => BIRAC_BIG.sectors.some((s) => d.includes(s) || s.includes(d)));
+        const hit = sectorMatch(v.domain, BIRAC_BIG.sectors);
         return hit
           ? MET(`This venture works in ${hit}, which is within the scheme's remit.`)
           : NOT_MET('This venture is outside biotechnology and life sciences, which is what BIG funds.');
@@ -276,4 +296,4 @@ const BIRAC_BIG = {
 
 const SCHEMES = [DPIIT_RECOGNITION, SISFS, SECTION_80IAC, NIDHI_PRAYAS, BIRAC_BIG];
 
-module.exports = { SCHEMES, ENTITY_LABEL, VERIFIED_ON, yearsSince };
+module.exports = { SCHEMES, ENTITY_LABEL, VERIFIED_ON, yearsSince, sectorMatch };
