@@ -146,6 +146,9 @@ async function rankVenturesForContributor(userId, { field = null } = {}) {
       problem: v.problem,
       domain: v.domain,
       stage: v.stage,
+      // Needed to open a conversation. Without it the "write to the founder"
+      // button on every card calls startConversation(undefined).
+      founderId: v.founder_id,
       founderName: v.founder_name,
       founderAvatar: v.founder_avatar,
       readiness: v.readiness !== null ? Math.round(parseFloat(v.readiness)) : null,

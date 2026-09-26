@@ -1,186 +1,133 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { MessageSquare, Check, AlertTriangle, Scale, ArrowUpRight, X } from 'lucide-react';
+import { ArrowUpRight, MessageSquare, Users } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
-import VentureAssistant from '../components/VentureAssistant.jsx';
-import { getMyRecommendationsAsContributor, startConversation, recordRecommendationFeedback } from '../services/startups.js';
+import Avatar from '../components/Avatar.jsx';
+import { getRankedVentures, startConversation } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
+import { useNavigate } from 'react-router-dom';
 
 /**
- * Ventures that need what you do.
+ * Ventures worth your attention, ranked.
  *
- * A venture with several open roles you partially fit used to render as
- * several separate rows with the same name, reading as spam. Grouping fixed
- * that, but the card was still a name, a percentage and a paragraph.
+ * THIS PAGE USED TO SHOW ROLES, and that was the root mistake in the whole
+ * engine. It read the recommendations table, one row per open role you fit,
+ * so a venture with nothing matching simply did not exist to you. A
+ * full-stack builder who chose healthtech saw one result, because the other
+ * healthtech venture needed a Clinical Advisor, a Mobile App Developer and a
+ * designer. That is a correct judgement about the roles and a wrong
+ * conclusion about the venture.
  *
- * Someone reading this is deciding where to spend years. So the reason comes
- * first, the caution is shown as plainly as the pitch, and the role you fit
- * best is named rather than left implicit.
+ * Now every venture in your fields appears, ranked by how well it suits you,
+ * and each one states its real role situation instead of vanishing because
+ * of it. You can write to any founder here. Nothing is hidden; the order
+ * carries the judgement.
  */
 
-function groupByStartup(recs) {
-  const groups = new Map();
-  for (const r of recs) {
-    if (!groups.has(r.startup_id)) {
-      groups.set(r.startup_id, {
-        startup_id: r.startup_id,
-        startup_name: r.startup_name,
-        domain: r.domain,
-        stage: r.stage,
-        founder_id: r.founder_id,
-        roles: [],
-      });
-    }
-    groups.get(r.startup_id).roles.push(r);
-  }
-  return [...groups.values()]
-    .map((g) => ({ ...g, roles: g.roles.sort((a, b) => parseFloat(b.score) - parseFloat(a.score)) }))
-    .sort((a, b) => parseFloat(b.roles[0].score) - parseFloat(a.roles[0].score));
+const ROLE_STATE = {
+  ROLE_FITS: { tone: '#1F5D52', bg: '#EAF7F0' },
+  NO_ROLE_FITS: { tone: '#C58A00', bg: '#FFF6E0' },
+  NO_OPEN_ROLES: { tone: '#8A8A99', bg: '#F3F3F6' },
+};
+
+function roleLine(role) {
+  if (role.state === 'ROLE_FITS') return `${role.best} — ${role.fit}% fit`;
+  if (role.state === 'NO_OPEN_ROLES') return 'Every role here is filled';
+  if (role.closest) return `No open role fits you. Closest is ${role.closest}`;
+  return 'No open role fits you';
 }
 
-function fitTone(score) {
-  if (score >= 0.7) return { fg: '#1F5D52', bg: '#EAF7F0', label: 'Strong fit' };
-  if (score >= 0.45) return { fg: '#6845F0', bg: '#F1EEFE', label: 'Real fit' };
-  return { fg: '#6E7079', bg: '#F4F4F7', label: 'Worth a look' };
-}
-
-function VentureCard({ g, onMessage, onDismiss, index }) {
-  const top = g.roles[0];
-  const score = parseFloat(top.score) || 0;
-  const pct = Math.round(score * 100);
-  const tone = fitTone(score);
-  const strengths = top.explanation?.strengths || [];
-  const limitations = top.explanation?.limitations || [];
+function VentureCard({ v, index, onMessage }) {
+  const st = ROLE_STATE[v.role.state] || ROLE_STATE.NO_OPEN_ROLES;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.3), ease: [0.16, 1, 0.3, 1] }}
-      className="bg-surface rounded-xl border border-surface-border shadow-card p-6 hover:shadow-elevated transition-shadow duration-200"
+      transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.25) }}
+      className="bg-surface rounded-xl border border-surface-border shadow-card p-6 hover:shadow-elevated transition-shadow"
     >
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="min-w-0">
-          <Link
-            to={`/app/startups/${g.startup_id}`}
-            className="text-[17px] font-semibold text-ink-950 hover:text-violet-700 transition-colors"
-          >
-            {g.startup_name}
-          </Link>
-          <p className="text-[12.5px] text-ink-500 mt-0.5 truncate">
-            {(g.domain || []).slice(0, 3).join(' · ')}{g.stage ? ` · ${g.stage}` : ''}
-          </p>
+      <div className="flex items-start justify-between gap-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+            <Link to={`/app/startups/${v.id}`} className="text-[16.5px] font-semibold text-ink-950 hover:text-violet-700 transition-colors">
+              {v.name}
+            </Link>
+            {v.matchedField && (
+              <span className="text-[11px] font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded">
+                {v.matchedField}
+              </span>
+            )}
+          </div>
+
+          <p className="text-[13.5px] text-ink-700 leading-relaxed line-clamp-2">{v.problem}</p>
+
+          {/* Why it is where it is, in the order it was weighted. */}
+          <div className="flex items-center gap-4 mt-3 flex-wrap">
+            <span className="text-[12.5px] font-medium px-2 py-1 rounded"
+                  style={{ color: st.tone, backgroundColor: st.bg }}>
+              {roleLine(v.role)}
+            </span>
+            <span className="flex items-center gap-1.5 text-[12.5px] text-ink-500">
+              <Users size={12} /> {v.teamSize} on the team
+            </span>
+            {v.stage && <span className="text-[12.5px] text-ink-500">{v.stage}</span>}
+            {v.readiness !== null && <span className="text-[12.5px] text-ink-500">readiness {v.readiness}</span>}
+          </div>
+
+          {v.alignmentReason && (
+            <p className="text-[13px] text-ink-600 leading-relaxed mt-2.5 pl-3 border-l-2 border-violet-500/25">
+              {v.alignmentReason}
+            </p>
+          )}
         </div>
-        <div className="shrink-0 text-right">
-          <span className="text-[26px] font-bold leading-none tabular-nums" style={{ color: tone.fg }}>{pct}</span>
-          <span className="text-[13px] font-medium ml-0.5" style={{ color: tone.fg }}>%</span>
-          <p className="text-[11px] font-medium mt-1 px-2 py-0.5 rounded-md inline-block" style={{ backgroundColor: tone.bg, color: tone.fg }}>
-            {tone.label}
-          </p>
+
+        <div className="text-right shrink-0">
+          <p className="text-[24px] font-semibold text-ink-950 tabular-nums leading-none">{v.score}<span className="text-[15px]">%</span></p>
+          <p className="text-[11px] text-ink-300 mt-1">suits you</p>
         </div>
       </div>
 
-      {/* Name the role. 'A venture wants you' is useless without knowing for
-          what, and it was only implied by the score before. */}
-      <p className="text-[13.5px] font-medium text-ink-900 mb-3">
-        Wants a {top.gap_role}
-        {g.roles.length > 1 && <span className="text-ink-500 font-normal"> · and {g.roles.length - 1} other role{g.roles.length > 2 ? 's' : ''} you fit</span>}
-      </p>
-
-      {top.causal_narrative ? (
-        <p className="text-[14px] text-ink-700 leading-relaxed mb-4">{top.causal_narrative}</p>
-      ) : (
-        <div className="space-y-1.5 mb-4">
-          {strengths.map((s) => (
-            <p key={s} className="text-[13.5px] text-ink-700 flex gap-2 leading-relaxed">
-              <Check size={14} className="text-mint-500 shrink-0 mt-0.5" />{s}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {limitations.length > 0 && (
-        <div className="space-y-1.5 mb-4">
-          {limitations.slice(0, 2).map((l) => (
-            <p key={l} className="text-[13.5px] text-ink-500 flex gap-2 leading-relaxed">
-              <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />{l}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {g.roles.length > 1 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {g.roles.slice(1).map((r) => (
-            <span key={r.id} className="text-[11px] px-2 py-1 rounded-md bg-surface-muted text-ink-700">
-              {r.gap_role} · {Math.round(parseFloat(r.score) * 100)}%
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
-        <div className="flex items-center gap-4 min-w-0">
-          <Link
-            to={`/app/startups/${g.startup_id}`}
-            className="flex items-center gap-1 text-[13px] font-medium text-ink-500 hover:text-violet-700 transition-colors shrink-0"
-          >
-            See the venture <ArrowUpRight size={13} />
-          </Link>
-          {/* Tells the engine this kind of thing is not for you. It hides this
-              one and nudges the whole category down in future rankings. */}
-          <button
-            onClick={() => onDismiss(top)}
-            title="Hides this and shows you less like it"
-            className="flex items-center gap-1 text-[13px] text-ink-300 hover:text-ink-700 transition-colors shrink-0"
-          >
-            <X size={13} /> Not for me
-          </button>
-        </div>
+      <div className="flex items-center gap-4 mt-5 pt-4 border-t border-surface-border">
+        {/* Available whatever the role situation. Somebody who cares about a
+            venture should be able to say so, which is how it works in life. */}
         <button
-          onClick={() => onMessage(top)}
-          className="flex items-center gap-1.5 text-[13px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-4 py-2 rounded-full transition-colors"
+          onClick={() => onMessage(v)}
+          className="flex items-center gap-1.5 text-[13.5px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-4 py-2 rounded-full transition-colors"
         >
-          <MessageSquare size={13} /> Message the founder
+          <MessageSquare size={13} /> Write to {v.founderName?.split(' ')[0] || 'the founder'}
         </button>
+        <Link to={`/app/startups/${v.id}`} className="flex items-center gap-1 text-[13.5px] text-ink-500 hover:text-violet-700 transition-colors">
+          Look properly <ArrowUpRight size={13} />
+        </Link>
+        <div className="ml-auto flex items-center gap-2">
+          <Avatar name={v.founderName} src={v.founderAvatar} size={22} />
+          <span className="text-[12.5px] text-ink-500">{v.founderName}</span>
+        </div>
       </div>
     </motion.div>
   );
 }
 
 export default function ContributorOpportunities() {
-  const navigate = useNavigate();
   const showToast = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [recs, setRecs] = useState([]);
+  const [data, setData] = useState(null);
+  const [showElsewhere, setShowElsewhere] = useState(false);
 
   useEffect(() => {
-    getMyRecommendationsAsContributor().then(({ ok, data }) => {
-      if (ok && data.success) setRecs(data.recommendations);
+    getRankedVentures().then(({ ok, data: d }) => {
+      if (ok && d.success) setData(d);
       setLoading(false);
     });
   }, []);
 
-  async function handleDismiss(r) {
-    // Optimistic: remove it immediately, because leaving a card you just
-    // dismissed sitting on screen makes the button feel broken. Restored if
-    // the write actually fails.
-    const before = recs;
-    setRecs(recs.filter((x) => x.startup_id !== r.startup_id));
-    const { ok, data } = await recordRecommendationFeedback(r.id, 'DISMISS');
-    if (!ok || !data.success) {
-      setRecs(before);
-      showToast(data?.error === 'NOT_AUTHORIZED' ? 'That is not yours to dismiss.' : 'Could not save that.', 'error');
-    } else {
-      showToast('Noted. You will see less like this.');
-    }
-  }
-
-  async function handleMessage(r) {
-    const { ok, data } = await startConversation(r.founder_id, { startupId: r.startup_id, gapId: r.source_gap_id });
-    if (ok && data.success) navigate(`/app/inbox/${data.conversation.id}`);
-    else showToast(data.error || 'Could not start a conversation.', 'error');
+  async function message(v) {
+    const { ok, data: r } = await startConversation(v.founderId || v.founder_id, { startupId: v.id });
+    if (ok && r?.success) { navigate(`/app/inbox?c=${r.conversation.id}`); return; }
+    showToast('Could not open that conversation.', 'error');
   }
 
   if (loading) {
@@ -193,63 +140,74 @@ export default function ContributorOpportunities() {
     );
   }
 
-  const grouped = groupByStartup(recs);
-  const best = grouped[0] || null;
-  const strong = grouped.filter((g) => parseFloat(g.roles[0].score) >= 0.45);
+  if (!data) {
+    return (
+      <Shell persona="CONTRIBUTOR" title="Opportunities">
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
+          <p className="text-[15px] text-ink-700 mb-1">Finish your profile first.</p>
+          <Link to="/app/profile" className="text-[13px] text-violet-700 hover:text-violet-600 transition-colors">Go to your profile</Link>
+        </div>
+      </Shell>
+    );
+  }
+
+  const { inYourFields, elsewhere, facts, you } = data;
 
   return (
-    <Shell persona="CONTRIBUTOR" title="Opportunities" subtitle="Ventures that need what you do">
+    <Shell persona="CONTRIBUTOR" title="Opportunities" subtitle="Ventures worth your attention, closest fit first">
       <div className="mb-7">
         <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-          {grouped.length === 0 ? 'Nothing yet' : `${grouped.length} venture${grouped.length === 1 ? '' : 's'} need you`}
+          {(you.fields || []).join(' · ') || 'no fields chosen'}
         </p>
         <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
-          {best
-            ? `${best.startup_name} needs a ${best.roles[0].gap_role}, and you fit.`
-            : 'Nothing matches you yet.'}
+          {facts.venturesInYourFields === 0
+            ? 'Nothing here is in the fields you chose yet.'
+            : facts.venturesWithARoleForYou === 0
+              ? `${facts.venturesInYourFields} ${facts.venturesInYourFields === 1 ? 'venture is' : 'ventures are'} in your fields, and none of them has an open role that fits you.`
+              : `${facts.venturesWithARoleForYou} of ${facts.venturesInYourFields} in your fields ${facts.venturesWithARoleForYou === 1 ? 'has' : 'have'} a role that fits you.`}
         </h1>
+
+        {/* Real numbers, so a thin list reads as a thin market rather than a
+            broken product. That confusion was the actual failure here. */}
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
-          {grouped.length === 0
-            ? 'Founders are matched to you on your skills, the fields you care about, and what you said you are looking for. Fill those in and ventures will start appearing here.'
-            : 'Every one of these tells you why it fits, and where it does not. Nothing is ranked by who paid or who posted most recently.'}
+          {facts.venturesInYourFields > 0
+            ? `${facts.openRolesInYourFields} open role${facts.openRolesInYourFields === 1 ? '' : 's'} across them. Every venture in your fields is listed whether or not one of those roles is yours, because a founder will talk to somebody who cares about the problem.`
+            : 'Widen your fields on your profile, or look at everything else below.'}
         </p>
+        {!you.hasMission && (
+          <p className="text-[13.5px] text-amber-700 mt-3">
+            You have not said what you are looking for.{' '}
+            <Link to="/app/profile" className="underline hover:no-underline">Write two sentences</Link>
+            {' '}and this ordering gets considerably better.
+          </p>
+        )}
       </div>
 
-      {grouped.length === 0 ? (
-        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <p className="text-[15px] text-ink-700 mb-1">No ventures need you yet.</p>
-          <p className="text-[13px] text-ink-500 mb-6 max-w-sm mx-auto">
-            The more honest your profile is about what you want, the better this gets.
-          </p>
-          <Link
-            to="/app/my-profile"
-            className="inline-flex items-center gap-2 text-[13px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-full transition-colors"
-          >
-            Complete your profile <ArrowUpRight size={14} />
-          </Link>
+      {inYourFields.length > 0 && (
+        <div className="space-y-4 mb-9">
+          {inYourFields.map((v, i) => <VentureCard key={v.id} v={v} index={i} onMessage={message} />)}
         </div>
-      ) : (
-        <>
-          <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-[15px] font-semibold text-ink-900">
-              {strong.length > 0 ? `${strong.length} worth a real look` : 'Ranked by fit'}
-            </h2>
-            {grouped.length > 1 && (
-              <Link
-                to="/app/contributor/offers"
-                className="flex items-center gap-1.5 text-[13px] font-medium text-ink-500 hover:text-violet-700 transition-colors"
-              >
-                <Scale size={13} /> Weigh them up side by side
-              </Link>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {grouped.map((g, i) => <VentureCard key={g.startup_id} g={g} onMessage={handleMessage} onDismiss={handleDismiss} index={i} />)}
-          </div>
-        </>
       )}
-      <VentureAssistant mode="contributor" />
+
+      {elsewhere.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowElsewhere(!showElsewhere)}
+            className="text-[14px] font-medium text-ink-700 hover:text-violet-700 transition-colors mb-1"
+          >
+            {showElsewhere ? 'Hide' : 'Show'} {elsewhere.length} venture{elsewhere.length === 1 ? '' : 's'} outside your fields
+          </button>
+          <p className="text-[13px] text-ink-500 mb-4">
+            Ranked the same way, minus the field match. Some of these may still suit you.
+          </p>
+          {showElsewhere && (
+            <div className="space-y-4">
+              {elsewhere.map((v, i) => <VentureCard key={v.id} v={v} index={i} onMessage={message} />)}
+            </div>
+          )}
+        </div>
+      )}
     </Shell>
   );
 }

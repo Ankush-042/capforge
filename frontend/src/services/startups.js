@@ -181,3 +181,6 @@ export const getTrajectory = (startupId) => apiFetch(`/startups/${startupId}/tra
 
 // What somebody has actually done here, as opposed to what they say.
 export const getRecord = (userId) => apiFetch(`/profiles/${userId}/record`);
+
+// Ventures ranked for a contributor, venture-first rather than role-first.
+export const getRankedVentures = () => apiFetch('/opportunities/ventures');
