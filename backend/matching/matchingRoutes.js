@@ -80,4 +80,19 @@ router.get('/where-to-start', requireAuth, async (req, res) => {
   res.json(await whereToStart(req.user.userId));
 });
 
+/**
+ * Ventures ranked for a contributor, venture-first.
+ *
+ * The existing /recommendations endpoint is role-first and stays, because the
+ * founder's candidate ranking is a different question and works. This one
+ * answers "which ventures should I look at", which is what a contributor
+ * choosing a field is actually asking.
+ */
+router.get('/opportunities/ventures', requireAuth, async (req, res) => {
+  const { rankVenturesForContributor } = require('./ventureRanking');
+  const r = await rankVenturesForContributor(req.user.userId);
+  if (!r.success) return res.status(400).json(r);
+  res.json(r);
+});
+
 module.exports = router;
