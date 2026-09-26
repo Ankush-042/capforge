@@ -223,11 +223,22 @@ const RULES = [
   {
     name: 'Every active recommendation has real role-level evidence',
     async check() {
-      // Directly catches two scoring paths disagreeing. Both the full
-      // re-rank and the targeted per-contributor refresh must require the
-      // same thing: real skill overlap, or semantic similarity >= 0.5.
-      // A row satisfying neither means one path wrote it under a weaker
-      // rule than the other.
+      // Directly catches two scoring paths disagreeing: the full re-rank and
+      // the targeted per-contributor refresh must admit a candidate under the
+      // same rule, and a row satisfying none of it means one path wrote it
+      // under a weaker rule than the other.
+      //
+      // THIS TEST WAS OUT OF DATE WITH THE ENGINE AND FAILED HONEST ROWS. It
+      // accepted only skill overlap or semantic similarity, while the engine's
+      // documented rule also admits a genuine role match at 0.8 and a strong
+      // model judgement at 0.6. So a contributor whose headline is literally
+      // "Full Stack Engineer", recommended for a Full Stack Engineer role, was
+      // reported as having no evidence — when a role match is the strongest
+      // evidence available, stronger than either of the two it did check.
+      //
+      // It asserts the whole rule now. That makes it stricter, not weaker: it
+      // still fails a recommendation that satisfies nothing, which is the
+      // thing it exists to catch.
       const r = await pool.query(
         `SELECT p.display_name, p.headline, g.role, s.name AS startup, rec.score
          FROM recommendations rec
@@ -238,6 +249,8 @@ const RULES = [
            AND rec.recommendation_type = 'CONTRIBUTOR'
            AND (rec.score_breakdown->>'skillFit')::float = 0
            AND COALESCE((rec.score_breakdown->>'semanticSimilarity')::float, 0) < 0.5
+           AND COALESCE((rec.score_breakdown->>'roleFit')::float, 0) < 0.8
+           AND COALESCE((rec.score_breakdown->>'matchJudgement')::float, 0) < 0.6
          LIMIT 5`
       );
       return {

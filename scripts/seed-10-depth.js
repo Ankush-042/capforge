@@ -150,6 +150,15 @@ async function findHire(startupId, takenIds) {
       // The role they took is genuinely filled now, which is what makes the
       // readiness climb below real rather than invented.
       await pool.query(`UPDATE gaps SET status = 'FILLED' WHERE id = $1`, [hire.gap_id]);
+      // And expire what pointed at it. Filling a gap without doing this leaves
+      // live recommendations for a role nobody can take, which is exactly what
+      // the quality suite calls a stale recommendation. The same repair exists
+      // in the admin service; it belongs here too.
+      await pool.query(
+        `UPDATE recommendations SET status = 'EXPIRED'
+         WHERE source_gap_id = $1 AND status = 'ACTIVE'`,
+        [hire.gap_id]
+      );
       taken.push(hire.user_id);
       hired++;
     }
