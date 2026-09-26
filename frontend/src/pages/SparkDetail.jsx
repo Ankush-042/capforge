@@ -6,6 +6,7 @@ import Shell from '../components/Shell.jsx';
 import { updateSpark } from '../services/startups.js';
 import { getSpark, resonateWithSpark, commitToSpark } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 /**
  * Spark detail. Phase 2, The First Act.
@@ -19,6 +20,7 @@ import { useToast } from '../components/Toast.jsx';
  *    side, only a conversation that starts immediately.
  */
 export default function SparkDetail() {
+  const { refresh: refreshStartups } = useActiveStartup();
   const { id } = useParams();
   const navigate = useNavigate();
   const showToast = useToast();
@@ -60,6 +62,10 @@ export default function SparkDetail() {
         // The founding moment actually happened: take them straight into
         // the venture that now exists, rather than leaving them on a page
         // that just says it does.
+        // A venture now exists that the app has never heard of. Without this
+        // every founder surface keeps showing the empty state until a full
+        // page reload, which is the same bug onboarding had.
+        await refreshStartups();
         showToast(res.structured === false ? 'It is real. Structuring did not finish, you can re-run it.' : 'It is real now. Welcome to your venture.');
         navigate(`/app/startups/${res.startupId}`);
         return;

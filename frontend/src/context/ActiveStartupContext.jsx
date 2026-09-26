@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getMyStartups } from '../services/startups.js';
 
 /**
@@ -16,22 +16,36 @@ export function ActiveStartupProvider({ children }) {
   const [activeId, setActiveIdState] = useState(() => localStorage.getItem('capforge_active_startup_id'));
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getMyStartups().then(({ ok, data }) => {
-      if (ok && data.success) {
-        setStartups(data.startups);
-        // If nothing selected yet, or the previously-selected one no
-        // longer exists in this list, default to the first real one.
-        const stillValid = data.startups.some(s => s.id === activeId);
-        if (!activeId || !stillValid) {
-          const first = data.startups[0]?.id || null;
-          setActiveIdState(first);
-          if (first) localStorage.setItem('capforge_active_startup_id', first);
-        }
-      }
-      setLoading(false);
-    });
+  /**
+   * CONFIRMED BUG, reported from a real signup. This ran once on mount with
+   * no way to run again, and finishing onboarding does a client-side
+   * navigate() rather than a page load. So the provider never remounted, the
+   * list stayed empty, and a founder who had JUST created their venture
+   * landed on a dashboard telling them they had not created one. The venture
+   * existed the whole time; pressing F5 would have shown it, which is exactly
+   * why it looked like a glitch rather than a bug.
+   *
+   * Pulled out so anything that creates or changes a venture can say so.
+   */
+  const refresh = useCallback(async () => {
+    const { ok, data } = await getMyStartups();
+    if (ok && data.success) {
+      setStartups(data.startups);
+      // If nothing is selected yet, or the previously-selected one no longer
+      // exists in this list, default to the first real one.
+      setActiveIdState((current) => {
+        const stillValid = data.startups.some((s) => s.id === current);
+        if (current && stillValid) return current;
+        const first = data.startups[0]?.id || null;
+        if (first) localStorage.setItem('capforge_active_startup_id', first);
+        return first;
+      });
+    }
+    setLoading(false);
+    return ok && data.success ? data.startups : [];
   }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
 
   function setActiveId(id) {
     setActiveIdState(id);
@@ -41,7 +55,7 @@ export function ActiveStartupProvider({ children }) {
   const activeStartup = startups.find(s => s.id === activeId) || null;
 
   return (
-    <ActiveStartupContext.Provider value={{ startups, activeStartup, activeId, setActiveId, loading, hasMultiple: startups.length > 1 }}>
+    <ActiveStartupContext.Provider value={{ startups, activeStartup, activeId, setActiveId, loading, refresh, hasMultiple: startups.length > 1 }}>
       {children}
     </ActiveStartupContext.Provider>
   );

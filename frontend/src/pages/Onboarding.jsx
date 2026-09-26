@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, ChevronUp, ArrowUpRight, AlertTriangle, Check } from 'lucide-react';
 import { createStartup, confirmStartup } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 /**
  * Where a venture comes into existence.
@@ -30,6 +31,8 @@ const FUNDING_STAGES = ['Bootstrapped', 'Pre-seed', 'Seed', 'Series A+'];
 const FIELD = 'w-full px-4 py-3 rounded-lg border border-surface-border bg-surface-muted text-[15px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors';
 
 export default function Onboarding() {
+  // So the dashboard knows the venture exists the moment it does.
+  const { refresh } = useActiveStartup();
   const navigate = useNavigate();
   const showToast = useToast();
   const [phase, setPhase] = useState('input');
@@ -89,7 +92,14 @@ export default function Onboarding() {
     setConfirming(true);
     const { ok, data } = await confirmStartup(startup.id, {});
     setConfirming(false);
-    if (ok && data.success) { showToast('Your venture exists. Here is what it needs.'); navigate('/app'); }
+    if (ok && data.success) {
+      // Refetch BEFORE navigating. The dashboard reads this context, and
+      // without this it renders the empty state for a venture that was
+      // created two seconds ago.
+      await refresh();
+      showToast('Your venture exists. Here is what it needs.');
+      navigate('/app');
+    }
     else showToast(data.detail || data.error || 'Could not confirm. Try again.', 'error');
   }
 
