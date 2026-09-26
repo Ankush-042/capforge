@@ -6,7 +6,7 @@ import WhatsNew from '../components/WhatsNew.jsx';
 import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
-import { getMyProfile, getMyRecommendationsAsContributor, getMyConversations } from '../services/startups.js';
+import { getMyProfile, getMyRecommendationsAsContributor, getMyConversations, getRankedVentures } from '../services/startups.js';
 
 /** Real fix applied consistently now, everywhere this data is shown: group by startup, don't count/list raw gap-matches as if each were a separate opportunity. */
 function groupByStartup(recs) {
@@ -23,11 +23,20 @@ export default function ContributorDashboard() {
   const [profile, setProfile] = useState(null);
   const [recs, setRecs] = useState([]);
   const [connections, setConnections] = useState([]);
+  const [ventures, setVentures] = useState(null);
   const [hasRoleProfile, setHasRoleProfile] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [profileRes, recsRes, connRes] = await Promise.all([getMyProfile(), getMyRecommendationsAsContributor(), getMyConversations()]);
+      // THE SAME SOURCE OPPORTUNITIES USES. The dashboard counted rows in the
+      // role-first recommendations table, which ignores the fields the person
+      // chose, so it said "4 ventures currently need you" while Opportunities
+      // showed 2. Both numbers were true and answered different questions, and
+      // a person reading them can only see a contradiction.
+      const [profileRes, recsRes, connRes, venturesRes] = await Promise.all([
+        getMyProfile(), getMyRecommendationsAsContributor(), getMyConversations(), getRankedVentures(),
+      ]);
+      if (venturesRes.ok && venturesRes.data.success) setVentures(venturesRes.data);
       if (profileRes.ok && profileRes.data.success) { setProfile(profileRes.data.profile); setHasRoleProfile(!!profileRes.data.roleProfile); }
       if (recsRes.ok && recsRes.data.success) setRecs(recsRes.data.recommendations);
       if (connRes.ok && connRes.data.success) setConnections(connRes.data.conversations);
@@ -43,8 +52,29 @@ export default function ContributorDashboard() {
   // and unread_count comes back from Postgres as a STRING.
   const pending = connections.filter((c) => (parseInt(c.unread_count) || 0) > 0).length;
   const grouped = groupByStartup(recs);
+  // In your fields, which is what Opportunities lists.
+  const inFields = ventures?.inYourFields || [];
+  const withARole = inFields.filter((v) => v.role.state === 'ROLE_FITS').length;
 
-  const best = grouped.length > 0 ? grouped[0] : null;
+  // The best fit is the best VENTURE in your fields, shaped to what the card
+  // below already expects. Taking grouped[0] meant the headline could name a
+  // venture in a field the person did not choose, while the count beside it
+  // described their fields. Falls back to the role-first list only when no
+  // fields are chosen, so somebody who has not picked any still sees
+  // something real.
+  const bestVenture = inFields[0] || null;
+  const best = bestVenture
+    ? {
+        startup_id: bestVenture.id,
+        startup_name: bestVenture.name,
+        domain: bestVenture.domain,
+        roles: [{
+          gap_role: bestVenture.role.best || bestVenture.role.closest || null,
+          score: bestVenture.score / 100,
+        }],
+        noRoleFits: bestVenture.role.state !== 'ROLE_FITS',
+      }
+    : (grouped.length > 0 ? grouped[0] : null);
 
   return (
     <Shell persona="CONTRIBUTOR" title={profile?.display_name || 'Dashboard'} subtitle={profile?.headline}>
@@ -69,12 +99,14 @@ export default function ContributorDashboard() {
         </p>
         <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
           {best
-            ? `${best.startup_name} needs a ${best.roles[0].gap_role}, and you fit.`
+            ? best.noRoleFits
+              ? `${best.startup_name} is the closest to what you want, though no open role fits you.`
+              : `${best.startup_name} needs a ${best.roles[0].gap_role}, and you fit.`
             : 'Nobody has matched with you yet.'}
         </h1>
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
           {best
-            ? `${grouped.length === 1 ? 'One venture' : `${grouped.length} ventures`} currently need what you do. This is the closest fit.`
+            ? `${inFields.length === 1 ? 'One venture is' : `${inFields.length} ventures are`} in the fields you chose${withARole > 0 ? `, ${withARole} with a role that fits you` : ', none with a role that fits you right now'}.`
             : 'Fill in what you are looking for and the domains you care about. That is what founders are matched against.'}
         </p>
       </div>
@@ -83,9 +115,9 @@ export default function ContributorDashboard() {
           label, number, meaning. */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricTile
-          label="Ventures" value={grouped.length}
+          label="In your fields" value={inFields.length}
           icon={Target} to="/app/contributor/opportunities" {...TILE_PALETTE.lavender}
-          caption={grouped.length === 0 ? 'None yet' : 'Currently need you'}
+          caption={inFields.length === 0 ? 'None yet' : withARole > 0 ? `${withARole} with a role for you` : 'None with a role for you'}
         />
         <MetricTile
           label="Best fit" value={best ? Math.round(best.roles[0].score * 100) : '\u2014'} unit={best ? '%' : null}
@@ -124,7 +156,7 @@ export default function ContributorDashboard() {
             <div className="relative flex items-start justify-between gap-8">
               <div className="min-w-0">
                 <p className="text-[11px] font-medium tracking-[0.12em] uppercase text-mint-500 mb-2">
-                  {Math.round(best.roles[0].score * 100)}% fit · {best.roles[0].gap_role}
+                  {Math.round(best.roles[0].score * 100)}% fit{best.roles[0].gap_role ? ` · ${best.roles[0].gap_role}` : ''}{best.noRoleFits ? ' (no open role fits)' : ''}
                 </p>
                 <p className="font-display text-[26px] font-semibold text-white leading-tight mb-2">{best.startup_name}</p>
                 <p className="text-[14px] text-white/60 leading-relaxed max-w-xl">{(best.domain || []).join(' · ')}</p>
