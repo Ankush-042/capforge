@@ -81,7 +81,7 @@ function bestRole(headline, skills, gaps) {
 async function rankVenturesForContributor(userId, { field = null } = {}) {
   const me = (await pool.query(
     `SELECT p.user_id, p.headline, p.skills, p.display_name,
-            cp.preferred_domains, cp.preferred_stage, cp.mission
+            cp.preferred_domains, cp.preferred_stage, cp.looking_for
      FROM profiles p
      LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
      WHERE p.user_id = $1`,
@@ -180,7 +180,7 @@ async function rankVenturesForContributor(userId, { field = null } = {}) {
 
   return {
     success: true,
-    you: { headline: me.headline, fields: me.preferred_domains || [], hasMission: Boolean(me.mission) },
+    you: { headline: me.headline, fields: me.preferred_domains || [], hasMission: Boolean(me.looking_for) },
     inYourFields: inFields,
     elsewhere,
     facts: {

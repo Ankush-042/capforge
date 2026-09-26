@@ -108,11 +108,15 @@ for (const file of walk(BACKEND)) {
   for (const sql of extractSqlStrings(src)) {
     // Collect aliases so we do not flag them as unknown tables/columns.
     const aliases = new Set();
+    // WHICH TABLE each alias points at, not merely that it is an alias.
+    // Keeping only the names was a real hole: see the column check below.
+    const aliasOf = new Map();
     const aliasRe = /\b(?:FROM|JOIN)\s+(\w+)\s+(?:AS\s+)?(\w+)\b/gi;
     let a;
     while ((a = aliasRe.exec(sql)) !== null) {
       if (!['ON','WHERE','SET','USING','AND','OR','LEFT','RIGHT','INNER','OUTER','JOIN'].includes(a[2].toUpperCase())) {
         aliases.add(a[2]);
+        aliasOf.set(a[2], a[1]);
       }
     }
 
@@ -144,13 +148,29 @@ for (const file of walk(BACKEND)) {
       problems.push({ file: rel, kind: 'UNKNOWN TABLE', detail: t });
     }
 
-    // Unknown columns, only where the qualifier is a REAL table name
-    const colRe = /\b([a-z_]{3,})\.([a-z_]{2,})\b/g;
-    while ((m = colRe.exec(sql)) !== null) {
-      const [full, tbl, col] = m;
-      if (!schema[tbl]) continue;
+    // Unknown columns, RESOLVING ALIASES FIRST.
+    //
+    // This previously skipped any qualifier that was not itself a table name,
+    // which meant every alias-qualified column in the entire backend went
+    // unchecked. Since essentially every query uses aliases, the check was
+    // close to a no-op: cp.mission passed cleanly against a
+    // contributor_profiles table that has no mission column, and the failure
+    // surfaced as a 500 in front of a user instead.
+    //
+    // The qualifier length floor is gone too, because a one-letter alias is
+    // the commonest kind and s.name was never examined. It is safe now: a
+    // qualifier is only checked when it resolves to a known table, so
+    // req.body and data.rows are skipped exactly as before.
+    const colRe = /\b([a-z_]+)\.([a-z_]{2,})\b/g;
+    while ((m = colRe.exec(bare)) !== null) {
+      const [full, qualifier, col] = m;
+      const tbl = schema[qualifier] ? qualifier
+        : aliasOf.has(qualifier) ? aliasOf.get(qualifier)
+        : null;
+      if (!tbl || !schema[tbl]) continue;          // not a table we know
+      if (cteNames.has(String(tbl).toLowerCase())) continue;  // CTE columns are defined inline
       if (schema[tbl].has(col)) continue;
-      problems.push({ file: rel, kind: 'UNKNOWN COLUMN', detail: full });
+      problems.push({ file: rel, kind: 'UNKNOWN COLUMN', detail: `${full}  (${qualifier} = ${tbl})` });
     }
   }
 }
