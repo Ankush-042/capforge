@@ -87,7 +87,20 @@ const DOMAIN_EQUIVALENTS = [
 
 function domainsMatch(a, b) {
   if (a === b) return true;
-  if (a.includes(b) || b.includes(a)) return true;
+  // CONTAINMENT, BUT GUARDED. Bare substring matching in both directions says
+  // 'medtech'.includes('edtech'), so an edtech venture matched a medtech one.
+  // The same collision was found and fixed in the scheme catalogue. Require a
+  // boundary: the shorter string must sit at the start or end of the longer
+  // one AND be preceded or followed by a separator, so 'health' still matches
+  // 'health tech' while 'edtech' no longer matches 'medtech'.
+  const [shortSide, longSide] = a.length <= b.length ? [a, b] : [b, a];
+  if (longSide.includes(shortSide) && shortSide.length >= 4) {
+    const i = longSide.indexOf(shortSide);
+    const before = i === 0 ? '' : longSide[i - 1];
+    const after = longSide[i + shortSide.length] || '';
+    const boundary = (c) => c === '' || /[\s/,-]/.test(c);
+    if (boundary(before) && boundary(after)) return true;
+  }
   for (const group of DOMAIN_EQUIVALENTS) {
     if (group.includes(a) && group.includes(b)) return true;
   }
