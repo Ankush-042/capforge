@@ -145,7 +145,7 @@ export default function ContributorOpportunities() {
       <Shell persona="CONTRIBUTOR" title="Opportunities">
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
           <p className="text-[15px] text-ink-700 mb-1">Finish your profile first.</p>
-          <Link to="/app/profile" className="text-[13px] text-violet-700 hover:text-violet-600 transition-colors">Go to your profile</Link>
+          <Link to="/app/my-profile" className="text-[13px] text-violet-700 hover:text-violet-600 transition-colors">Go to your profile</Link>
         </div>
       </Shell>
     );
@@ -178,7 +178,7 @@ export default function ContributorOpportunities() {
         {!you.hasMission && (
           <p className="text-[13.5px] text-amber-700 mt-3">
             You have not said what you are looking for.{' '}
-            <Link to="/app/profile" className="underline hover:no-underline">Write two sentences</Link>
+            <Link to="/app/my-profile" className="underline hover:no-underline">Write two sentences</Link>
             {' '}and this ordering gets considerably better.
           </p>
         )}
