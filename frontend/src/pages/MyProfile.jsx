@@ -23,7 +23,7 @@ import { useToast } from '../components/Toast.jsx';
  * domain match they should have had.
  */
 
-const DOMAINS = ['healthtech', 'fintech', 'edtech', 'climate', 'saas', 'cybersecurity', 'logistics', 'proptech', 'hr tech', 'legal tech', 'biotech', 'creator economy'];
+const DOMAINS = ['healthtech', 'fintech', 'edtech', 'climate', 'saas', 'cybersecurity', 'logistics', 'proptech', 'hr tech', 'legal tech', 'biotech', 'creator economy', 'marketing'];
 const STAGES = ['idea', 'prototype', 'mvp', 'early traction'];
 
 const FIELD = 'w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface-muted text-[14.5px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors';

@@ -13,7 +13,8 @@ const { domainsMatch } = require('../backend/matching/matchingService');
 
 // The twelve the profile picker offers.
 const PICKER = ['healthtech', 'fintech', 'edtech', 'climate', 'saas', 'cybersecurity',
-                'logistics', 'proptech', 'hr tech', 'legal tech', 'biotech', 'creator economy'];
+                'logistics', 'proptech', 'hr tech', 'legal tech', 'biotech', 'creator economy',
+                'marketing'];
 
 (async () => {
   const ventures = (await pool.query(

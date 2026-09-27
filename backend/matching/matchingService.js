@@ -70,19 +70,55 @@ const GENERIC_SKILL_TOKENS = new Set([
  * consider the same space. Anything not here still matches by substring or
  * shared distinctive token.
  */
+/**
+ * Words that appear in half the domain labels on the platform and therefore
+ * distinguish nothing. Without this, any two domains sharing "tech" match.
+ */
+const GENERIC_DOMAIN_TOKENS = new Set([
+  'tech', 'technology', 'software', 'platform', 'platforms', 'services',
+  'solutions', 'systems', 'management', 'automation', 'analytics', 'digital',
+  'online', 'data', 'tools', 'application', 'applications', 'enterprise',
+]);
+
+/**
+ * WIDENED AGAINST WHAT THE STRUCTURING STEP ACTUALLY PRODUCES. A diagnostic
+ * over all 26 ventures found five reachable from no field in the picker at
+ * all — they existed and nobody browsing by field would ever have seen them —
+ * and climate returning one venture when three are about climate. The AI
+ * labels a solar venture 'solar energy', a crop-insurance venture
+ * 'agriculture · remote sensing', and an EV charging venture 'electric
+ * vehicles · smart grid'. None of them says 'climate'.
+ *
+ * The fix belongs here rather than in the labels, because the structuring
+ * step will keep inventing reasonable words nobody listed.
+ */
 const DOMAIN_EQUIVALENTS = [
-  ['health', 'healthtech', 'healthcare', 'health tech', 'medtech', 'medical', 'telemedicine', 'digital health', 'rural health', 'patient education', 'clinical'],
-  ['fintech', 'finance', 'financial services', 'payments', 'banking', 'cross-border payments'],
-  ['edtech', 'education', 'e-learning', 'adaptive learning', 'k-12', 'learning'],
-  ['climate', 'cleantech', 'sustainability', 'carbon', 'environment', 'renewable energy'],
+  ['health', 'healthtech', 'healthcare', 'health tech', 'medtech', 'medical', 'telemedicine',
+   'digital health', 'rural health', 'patient education', 'clinical', 'medical technology',
+   'medical diagnostics', 'health it', 'clinical decision support', 'elderly care',
+   'medication adherence'],
+  ['fintech', 'finance', 'financial services', 'payments', 'banking', 'cross-border payments',
+   'personal finance', 'budgeting', 'lending', 'invoice financing', 'supply chain finance',
+   'b2b payments', 'insurance', 'insurtech'],
+  ['edtech', 'education', 'e-learning', 'adaptive learning', 'k-12', 'learning',
+   'education technology', 'career development', 'career preparation', 'interview coaching',
+   'language assessment', 'edtech for k-12', 'skilling', 'assessment'],
+  ['climate', 'cleantech', 'sustainability', 'carbon', 'environment', 'renewable energy',
+   'solar energy', 'solar', 'community energy', 'energy', 'energy management', 'clean energy',
+   'electric vehicles', 'smart grid', 'building automation', 'agriculture', 'agritech',
+   'remote sensing', 'geospatial', 'climate tech'],
   ['ai', 'artificial intelligence', 'machine learning', 'ai/ml', 'deep learning'],
-  ['cybersecurity', 'security', 'infosec', 'cloud security', 'endpoint security'],
+  ['cybersecurity', 'security', 'infosec', 'cloud security', 'endpoint security',
+   'information security', 'email security', 'phishing detection', 'smb security',
+   'application security', 'data security', 'compliance automation'],
   ['logistics', 'supply chain', 'transportation', 'freight'],
   ['proptech', 'real estate', 'property management'],
   ['hr tech', 'hrtech', 'people analytics', 'employee engagement', 'human resources'],
   ['legal tech', 'legaltech', 'contract analysis', 'compliance'],
   ['biotech', 'synthetic biology', 'bioinformatics', 'life sciences'],
-  ['saas', 'b2b saas', 'software as a service'],
+  ['saas', 'b2b saas', 'software as a service', 'enterprise saas'],
+  ['marketing', 'adtech', 'advertising technology', 'advertising technology (adtech)',
+   'marketing automation', 'growth marketing', 'advertising'],
 ];
 
 function domainsMatch(a, b) {
@@ -104,11 +140,14 @@ function domainsMatch(a, b) {
   for (const group of DOMAIN_EQUIVALENTS) {
     if (group.includes(a) && group.includes(b)) return true;
   }
-  // Shared distinctive word, reusing the same generic-token guard as skills
-  // so "artificial intelligence" does not match everything via "artificial".
+  // Shared distinctive word. The length filter alone was not enough: "tech"
+  // is four letters, so 'hr tech' matched 'legal tech' and every multi-word
+  // domain containing it matched every other one. ClauseIQ, a contract
+  // analysis venture, was appearing under hr tech.
   const aTokens = new Set(a.split(/[\s/,-]+/).filter(t => t.length > 3));
   const bTokens = b.split(/[\s/,-]+/).filter(t => t.length > 3);
-  return bTokens.some(t => aTokens.has(t) && !GENERIC_SKILL_TOKENS.has(t));
+  return bTokens.some(t => aTokens.has(t)
+    && !GENERIC_SKILL_TOKENS.has(t) && !GENERIC_DOMAIN_TOKENS.has(t));
 }
 
 /**
