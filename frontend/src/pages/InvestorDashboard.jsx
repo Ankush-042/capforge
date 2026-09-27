@@ -12,6 +12,9 @@ export default function InvestorDashboard() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [deals, setDeals] = useState([]);
+  // A CLOSE FIT IS NOT THE SAME AS BEING IN THE LIST. Every venture is ranked
+  // for every investor by design, so the count of rows says nothing about fit.
+  // Half is the threshold the deal flow page already treats as a real match.
   const [connections, setConnections] = useState([]);
   const [hasRoleProfile, setHasRoleProfile] = useState(true);
 
@@ -37,6 +40,7 @@ export default function InvestorDashboard() {
     : 0;
 
   const top = deals.length > 0 ? deals[0] : null;
+  const strongFits = deals.filter((d) => parseFloat(d.score) >= 0.5).length;
 
   return (
     <Shell persona="INVESTOR" title={profile?.display_name || 'Dashboard'}>
@@ -65,7 +69,9 @@ export default function InvestorDashboard() {
         </h1>
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
           {top
-            ? `${deals.length === 1 ? 'One venture fits' : `${deals.length} ventures fit`} what you invest in, closest first.`
+            ? strongFits > 0
+              ? `${strongFits} ${strongFits === 1 ? 'venture is' : 'ventures are'} a close fit for your thesis. All ${deals.length} on the platform are ranked below them, because judging an early company is your call rather than ours.`
+              : `Nothing is a close fit for your thesis yet. All ${deals.length} ventures are ranked anyway, closest first, because hiding them would only mean deciding for you.`
             : 'Ventures appear here once they match your domains and stages.'}
         </p>
       </div>
