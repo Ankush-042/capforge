@@ -78,9 +78,9 @@ export default function InvestorDashboard() {
 
       <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricTile
-          label="Deal flow" value={deals.length}
+          label="Deal flow" value={strongFits}
           icon={Search} to="/app/investor/deal-flow" {...TILE_PALETTE.lavender}
-          caption={deals.length === 0 ? 'Nothing yet' : 'Fit your thesis'}
+          caption={deals.length === 0 ? 'Nothing yet' : `Fit your thesis, of ${deals.length} ranked`}
         />
         <MetricTile
           label="Best fit" value={top ? Math.round(parseFloat(top.score) * 100) : '\u2014'} unit={top ? '%' : null}
