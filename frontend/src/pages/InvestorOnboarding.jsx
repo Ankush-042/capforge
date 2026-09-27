@@ -95,7 +95,7 @@ export default function InvestorOnboarding() {
               Nothing outside this will reach you.
             </h1>
             <p className="text-[15px] text-white/70 leading-relaxed max-w-lg">
-              Your deal flow is filtered by what you say here, and only shows ventures that have crossed a real readiness bar. Narrow is fine. Empty is not.
+              Your deal flow is ranked by what you say here, and the second half matters as much as the first. Nothing is hidden from you: a weak venture ranks low rather than disappearing, and you decide.
             </p>
           </div>
         </motion.div>

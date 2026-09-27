@@ -126,6 +126,50 @@ async function refreshEverythingForUser(userId) {
     const { scoreContributorAgainstVentures } = require('../matching/alignmentService');
     const pool = require('../shared/db');
 
+    // INVESTORS GO DOWN THEIR OWN PATH AND HAD NONE AT ALL.
+    //
+    // CONFIRMED BY A REAL SIGNUP. This function handled contributors only, so
+    // an investor could write their thesis, save it, and open a deal flow that
+    // was completely empty. Nothing ranked ventures against them until
+    // something else happened to trigger it. A contributor saving the same
+    // form gets alignment scored and ranked within seconds.
+    //
+    // It is the investor version of the bug that kept appearing on the other
+    // two sides: the engine works for whoever existed when a script was last
+    // run by hand.
+    const role = (await pool.query(`SELECT primary_role FROM users WHERE id = $1`, [userId])).rows[0]?.primary_role;
+
+    if (role === 'INVESTOR') {
+      try {
+        const { scoreInvestorAgainstVentures } = require('../matching/alignmentService');
+        const inv = (await pool.query(
+          `SELECT ip.thesis, ip.preferred_domains, ip.preferred_stages
+           FROM investor_profiles ip JOIN profiles p ON p.id = ip.profile_id
+           WHERE p.user_id = $1`, [userId]
+        )).rows[0];
+
+        if (inv?.thesis) {
+          const ventures = (await pool.query(
+            `SELECT id, name, problem, solution, domain, stage, founder_vision
+             FROM startups WHERE verification_status != 'UNVERIFIED'`
+          )).rows;
+          await scoreInvestorAgainstVentures({
+            userId, thesis: inv.thesis,
+            domains: inv.preferred_domains || [], stages: inv.preferred_stages || [],
+            ventures,
+          });
+        }
+
+        // Awaited, so the deal flow exists by the time the response returns
+        // and the investor lands on a page with something on it.
+        const { rankStartupsForInvestor } = require('../investors/investorMatchingService');
+        await rankStartupsForInvestor(userId);
+      } catch (err) {
+        console.error(`Investor refresh failed for ${userId}: ${err.message}`);
+      }
+      return;   // nothing below applies to an investor
+    }
+
     // DESTRUCTIVE ORDER, now fixed. This used to DELETE every alignment score
     // for the user and then try to regenerate them. When the regeneration hit
     // a rate limit, which happens routinely, the person was left with NO

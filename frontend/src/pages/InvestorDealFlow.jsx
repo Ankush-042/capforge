@@ -140,7 +140,7 @@ export default function InvestorDealFlow() {
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-            {deals.length === 0 ? 'Nothing matching yet' : `${deals.length} past the readiness bar`}
+            {deals.length === 0 ? 'Nothing matching yet' : `${deals.length} ranked for you`}
           </p>
           <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
             {top
@@ -148,7 +148,7 @@ export default function InvestorDealFlow() {
               : 'Nothing matches your thesis yet.'}
           </h1>
           <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
-            Ventures only appear here once they have crossed a real readiness bar, and they are ranked against the thesis you wrote. This is a filtered view, not a directory.
+            Ranked against the thesis you wrote, closest first. Nothing is hidden from you: a venture that is early or thin ranks low and says why, rather than being kept off this page. Judging that is your job, not ours.
           </p>
         </div>
         <button
@@ -165,7 +165,7 @@ export default function InvestorDealFlow() {
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
           <p className="text-[15px] text-ink-700 mb-1">{note || 'Nothing matches your thesis yet.'}</p>
           <p className="text-[13px] text-ink-500 mb-6 max-w-md mx-auto">
-            Ventures appear as they cross the readiness bar. If this stays empty, your thesis domains may be narrower than what is currently being built.
+            If this stays empty, your thesis domains may be narrower than what is currently being built. Widening one field is usually enough.
           </p>
           <Link
             to="/app/my-profile"

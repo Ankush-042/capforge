@@ -92,7 +92,7 @@ export default function SavedSearches() {
             : 'Run these whenever you want to see what has changed.'}
         </h1>
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
-          A saved search is a bet you are watching. New ventures cross the readiness bar constantly, so what returns nothing today may return something next month.
+          A saved search is a bet you are watching. Founders join and ventures change constantly, so what returns nothing today may return something next month.
         </p>
       </div>
 
@@ -172,7 +172,7 @@ export default function SavedSearches() {
               {results.length === 0 ? (
                 <div className="bg-surface rounded-xl border border-surface-border shadow-card py-12 text-center">
                   <p className="text-[14px] text-ink-700 mb-1">Nothing matches this today.</p>
-                  <p className="text-[13px] text-ink-500">Worth re-running. Ventures cross the readiness bar all the time.</p>
+                  <p className="text-[13px] text-ink-500">Worth re-running. New ventures arrive all the time.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-4">

@@ -65,8 +65,8 @@ export default function InvestorDashboard() {
         </h1>
         <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
           {top
-            ? `${deals.length === 1 ? 'One venture has' : `${deals.length} ventures have`} crossed the readiness bar and fit what you invest in.`
-            : 'Ventures appear here once they pass the readiness bar and match your domains and stages.'}
+            ? `${deals.length === 1 ? 'One venture fits' : `${deals.length} ventures fit`} what you invest in, closest first.`
+            : 'Ventures appear here once they match your domains and stages.'}
         </p>
       </div>
 
@@ -131,7 +131,7 @@ export default function InvestorDashboard() {
           <div className="bg-surface rounded-xl border border-surface-border shadow-card">
             <p className="text-[13px] text-ink-500 py-12 text-center">
               {deals.length === 0
-                ? (hasRoleProfile ? 'Nothing matches your thesis yet. Ventures appear as they cross the readiness bar.' : 'Complete your thesis to start seeing real deal flow.')
+                ? (hasRoleProfile ? 'Nothing matches your thesis yet. New ventures appear here as founders join.' : 'Complete your thesis to start seeing real deal flow.')
                 : 'Just the one so far.'}
             </p>
           </div>

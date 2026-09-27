@@ -209,7 +209,7 @@ export default function Landing() {
           <StepRow n={1} align="left" title="You share the spark" desc="Not a business plan. Not a pitch deck. Just the thing you cannot stop thinking about, in your own words, before it is anything official." />
           <StepRow n={2} align="right" title="Someone believes it too" desc="Your idea reaches people who care about the same problem. Not applicants looking for a job. People who read it and want in." />
           <StepRow n={3} align="left" title="You build it together" desc="The moment you both commit, CapForge turns the spark into a real venture: structured, understood, and honest about what it still needs." />
-          <StepRow n={4} align="right" title="Investors find you" desc="Keep building and the platform notices. Cross the readiness bar and you show up in front of investors who back exactly your kind of company." />
+          <StepRow n={4} align="right" title="Investors find you" desc="Keep building and the platform notices. Fill a role, ship something, and you climb the deal flow of investors who back exactly your kind of company." />
         </div>
         </div>
       </section>
@@ -273,7 +273,7 @@ export default function Landing() {
             ['I only have an idea. Is that enough?', 'That is the entire point. CapForge is built for the stage before a company exists. You do not need a deck, a name, or a plan. You need the thing you cannot stop thinking about.'],
             ['How is this different from a job board?', 'A job board fills a role at a company that already exists. This finds the person who wants to build the company with you, and gives them a real stake in it rather than a listing to apply to.'],
             ['What if nobody responds to my idea?', 'Then you have learned something real, cheaply. But the matching works on what your venture needs, not on how polished your writing is, so a rough idea in a domain people care about reaches the right people.'],
-            ['When do investors actually see me?', 'Only once your venture crosses a real readiness bar, measured on what you have built and who has joined. Nothing is shown to investors before it is genuinely ready to be seen.'],
+            ['When do investors actually see me?', 'Straight away, ranked rather than hidden. An investor sees every venture matching their thesis, ordered by readiness and fit, with the weak parts stated. Judging an early company is their job, and a platform that hides you until it decides you are ready is making that call for them.'],
           ].map(([q, a], i) => (
             <motion.div
               key={q}
