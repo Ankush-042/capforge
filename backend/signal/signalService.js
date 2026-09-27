@@ -172,7 +172,39 @@ ${context}`,
     },
   ], { temperature: 0.4, max_tokens: 900 });
 
-  if (!ai.success) return { success: false, error: 'SYNTHESIS_FAILED', detail: ai.detail || ai.error };
+  /**
+   * THE SEARCH RESULTS ARE REAL AND ALREADY CACHED. Only the personalised
+   * read failed, and returning a bare failure threw away perfectly good
+   * market context that had already been fetched and paid for.
+   *
+   * Reported from real use: during heavy seeding every Groq key was rate
+   * limited, so a founder opening this panel saw "Current market trends are
+   * unavailable right now" on every load. Nothing was cached on failure, so
+   * each page view retried and failed again.
+   *
+   * It degrades to what it has instead: the actual headlines, with the
+   * personal read missing and said to be missing. Same rule the launch
+   * assistant and the email layer already follow — the model makes it better
+   * and is never what holds it up.
+   */
+  if (!ai.success) {
+    // `sources` is already extracted from search.results above. Re-deriving
+    // it from a variable that does not exist in this scope would have made the
+    // failure handler itself throw, turning a graceful degradation into a 500.
+    const fallbackSources = (sources || []).slice(0, 5);
+    return {
+      success: true,
+      degraded: true,
+      signal: {
+        headline: 'What is being written about your market',
+        body: null,
+        sources: fallbackSources,
+      },
+      note: fallbackSources.length > 0
+        ? 'The personal read is unavailable at the moment. These are the current results for your domain and stage, unchanged.'
+        : 'Market context is unavailable at the moment.',
+    };
+  }
 
   let parsed;
   try {
@@ -250,7 +282,39 @@ ${context}`,
     },
   ], { temperature: 0.4, max_tokens: 900 });
 
-  if (!ai.success) return { success: false, error: 'SYNTHESIS_FAILED', detail: ai.detail || ai.error };
+  /**
+   * THE SEARCH RESULTS ARE REAL AND ALREADY CACHED. Only the personalised
+   * read failed, and returning a bare failure threw away perfectly good
+   * market context that had already been fetched and paid for.
+   *
+   * Reported from real use: during heavy seeding every Groq key was rate
+   * limited, so a founder opening this panel saw "Current market trends are
+   * unavailable right now" on every load. Nothing was cached on failure, so
+   * each page view retried and failed again.
+   *
+   * It degrades to what it has instead: the actual headlines, with the
+   * personal read missing and said to be missing. Same rule the launch
+   * assistant and the email layer already follow — the model makes it better
+   * and is never what holds it up.
+   */
+  if (!ai.success) {
+    // `sources` is already extracted from search.results above. Re-deriving
+    // it from a variable that does not exist in this scope would have made the
+    // failure handler itself throw, turning a graceful degradation into a 500.
+    const fallbackSources = (sources || []).slice(0, 5);
+    return {
+      success: true,
+      degraded: true,
+      signal: {
+        headline: 'What is being written about your market',
+        body: null,
+        sources: fallbackSources,
+      },
+      note: fallbackSources.length > 0
+        ? 'The personal read is unavailable at the moment. These are the current results for your domain and stage, unchanged.'
+        : 'Market context is unavailable at the moment.',
+    };
+  }
 
   let parsed;
   try {
@@ -347,7 +411,39 @@ ${context}`,
     },
   ], { temperature: 0.4, max_tokens: 900 });
 
-  if (!ai.success) return { success: false, error: 'SYNTHESIS_FAILED', detail: ai.detail || ai.error };
+  /**
+   * THE SEARCH RESULTS ARE REAL AND ALREADY CACHED. Only the personalised
+   * read failed, and returning a bare failure threw away perfectly good
+   * market context that had already been fetched and paid for.
+   *
+   * Reported from real use: during heavy seeding every Groq key was rate
+   * limited, so a founder opening this panel saw "Current market trends are
+   * unavailable right now" on every load. Nothing was cached on failure, so
+   * each page view retried and failed again.
+   *
+   * It degrades to what it has instead: the actual headlines, with the
+   * personal read missing and said to be missing. Same rule the launch
+   * assistant and the email layer already follow — the model makes it better
+   * and is never what holds it up.
+   */
+  if (!ai.success) {
+    // `sources` is already extracted from search.results above. Re-deriving
+    // it from a variable that does not exist in this scope would have made the
+    // failure handler itself throw, turning a graceful degradation into a 500.
+    const fallbackSources = (sources || []).slice(0, 5);
+    return {
+      success: true,
+      degraded: true,
+      signal: {
+        headline: 'What is being written about your market',
+        body: null,
+        sources: fallbackSources,
+      },
+      note: fallbackSources.length > 0
+        ? 'The personal read is unavailable at the moment. These are the current results for your domain and stage, unchanged.'
+        : 'Market context is unavailable at the moment.',
+    };
+  }
 
   let parsed;
   try {

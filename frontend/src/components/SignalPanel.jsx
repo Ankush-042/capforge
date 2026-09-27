@@ -14,6 +14,7 @@ export default function SignalPanel({ endpoint, subtitle }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [signal, setSignal] = useState(null);
+  const [note, setNote] = useState(null);
   const [error, setError] = useState(null);
 
   async function load(refresh = false) {
@@ -24,7 +25,7 @@ export default function SignalPanel({ endpoint, subtitle }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) { setSignal(data.signal); setError(null); }
+      if (data.success) { setSignal(data.signal); setNote(data.note || null); setError(null); }
       else setError(data.error);
     } catch (err) {
       setError('NETWORK');
@@ -108,7 +109,15 @@ export default function SignalPanel({ endpoint, subtitle }) {
         </p>
 
         <div className="text-[15px] text-white/70 leading-relaxed space-y-3">
-          {signal.body.split('\n').filter(Boolean).map((para, i) => <p key={i}>{para}</p>)}
+          {signal.body
+            ? signal.body.split('\n').filter(Boolean).map((para, i) => <p key={i}>{para}</p>)
+            : (
+              /* The read failed but the market results underneath it are real
+                 and already fetched. Showing them beats showing nothing, and
+                 saying which half is missing beats implying the whole thing
+                 is broken. */
+              <p className="text-white/60">{note || 'The personal read is unavailable at the moment. The results below are current.'}</p>
+            )}
         </div>
 
         {signal.based_on && (
