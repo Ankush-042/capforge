@@ -192,7 +192,39 @@ async function semanticSearchStartups(queryText, requestingUserId) {
      LIMIT 20`,
     [JSON.stringify(queryEmbedding), requestingUserId]
   );
-  return { success: true, results: result.rows, method: 'semantic_embedding' };
+
+  /**
+   * CUT WHERE RELEVANCE DOES, not at a fixed count.
+   *
+   * Reported from real use: searching "edtech" returned three genuinely
+   * relevant ventures followed by seventeen unrelated ones, because the query
+   * sorts by similarity and then takes twenty regardless of how similar any of
+   * them are. Everything on the platform is SOME distance from any query, so
+   * a fixed limit always returns a full page and most of it is noise.
+   *
+   * Two cuts, because either alone fails. A relative one, since a specific
+   * query returns a tight cluster and a vague one does not, and the gap after
+   * the good results is what marks the edge. And an absolute floor, because
+   * when NOTHING is relevant the relative rule would happily return the least
+   * irrelevant thing on the platform.
+   */
+  const rows = result.rows.map((r) => ({ ...r, similarity: parseFloat(r.similarity) }));
+  const FLOOR = 0.30;          // below this it is not an answer to the question
+  const SPREAD = 0.12;         // how far behind the best a result may fall
+
+  const usable = rows.filter((r) => r.similarity >= FLOOR);
+  const best = usable.length > 0 ? usable[0].similarity : 0;
+  const results = usable.filter((r) => r.similarity >= best - SPREAD);
+
+  return {
+    success: true,
+    results,
+    method: 'semantic_embedding',
+    // Said plainly, so an empty result reads as "nothing here is about that"
+    // rather than as a broken search.
+    considered: rows.length,
+    cutOff: rows.length - results.length,
+  };
 }
 
 module.exports = { searchStartups, searchContributors, searchInvestors, naturalLanguageSearchStartups, semanticSearchStartups };

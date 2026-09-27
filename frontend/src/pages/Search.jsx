@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Search as SearchIcon, Sparkles, BookmarkPlus, ArrowUpRight } from 'lucide-react';
+import { Search as SearchIcon, Sparkles, BookmarkPlus, ArrowUpRight, ArrowLeft } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { searchStartups, searchContributors, semanticSearchStartups, createSavedSearch } from '../services/startups.js';
@@ -23,7 +23,13 @@ import { useToast } from '../components/Toast.jsx';
 
 const FUNDING_STAGES = ['Bootstrapped', 'Pre-seed', 'Seed', 'Series A+'];
 
+const DOMAINS = ['healthtech', 'fintech', 'edtech', 'climate', 'saas', 'cybersecurity',
+  'logistics', 'proptech', 'hr tech', 'legal tech', 'biotech', 'creator economy', 'marketing'];
+
 export default function Search() {
+  const navigate = useNavigate();
+  // How many the relevance cut removed, so a short list is explained.
+  const [cutOff, setCutOff] = useState(0);
   const { persona, displayName } = useMyPersona();
   const showToast = useToast();
   const [tab, setTab] = useState('startups');
@@ -53,6 +59,9 @@ export default function Search() {
         : await searchContributors(currentFilters());
     setSearching(false);
     setResults(response.ok && response.data.success ? response.data.results : []);
+    // How many the relevance cut removed. Zero for keyword search, which has
+    // no such cut.
+    setCutOff(response.ok && response.data.success ? (response.data.cutOff || 0) : 0);
   }
 
   async function handleSaveSearch() {
@@ -67,6 +76,15 @@ export default function Search() {
 
   return (
     <Shell persona={persona} displayName={displayName} title="Search" subtitle="Everything on the platform">
+      {/* A WAY BACK. Every other detail page in the product has one and this
+          did not, so arriving here from a saved search was a dead end. */}
+      <button
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 transition-colors mb-5"
+      >
+        <ArrowLeft size={15} /> Back
+      </button>
+
       {/* THE SEARCH ITSELF, given real weight rather than being one control
           among seven. */}
       <div className="relative mb-4">
@@ -96,7 +114,7 @@ export default function Search() {
           {['startups', 'contributors'].map((t) => (
             <button
               key={t}
-              onClick={() => { setTab(t); setResults([]); setSearched(false); }}
+              onClick={() => { setTab(t); setResults([]); setCutOff(0); setSearched(false); }}
               className={`text-[13px] px-4 py-1.5 rounded-full font-medium transition-colors ${
                 tab === t ? 'bg-surface text-ink-950 shadow-sm' : 'text-ink-500 hover:text-ink-900'
               }`}
@@ -118,13 +136,14 @@ export default function Search() {
         )}
 
         {!isSemantic && (
-          <input
+          <select
             value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-            placeholder="Filter by field"
-            className="text-[13px] px-4 py-2 rounded-full border border-surface-border bg-surface text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 transition-colors w-[180px]"
-          />
+            onChange={(e) => { setDomain(e.target.value); }}
+            className="text-[13px] px-4 py-2 rounded-full border border-surface-border bg-surface text-ink-900 focus:outline-none focus:border-violet-500 transition-colors"
+          >
+            <option value="">Any field</option>
+            {DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
         )}
 
         {!isSemantic && tab === 'startups' && persona === 'INVESTOR' && (
@@ -170,14 +189,23 @@ export default function Search() {
         </div>
       ) : results.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <p className="text-[15px] text-ink-700 mb-1">Nothing found.</p>
-          <p className="text-[13px] text-ink-500">Try fewer filters, or different words.</p>
+          <p className="text-[15px] text-ink-700 mb-1">
+            {isSemantic ? 'Nothing on the platform is about that.' : 'Nothing matches those filters.'}
+          </p>
+          <p className="text-[13px] text-ink-500 max-w-sm mx-auto leading-relaxed">
+            {isSemantic
+              ? 'Results below a real level of relevance are left out rather than padded, so an empty answer here means the ventures are not there yet.'
+              : 'Try a different field, or fewer filters.'}
+          </p>
         </div>
       ) : (
         <>
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="text-[15px] font-semibold text-ink-900">
               {results.length} {tab === 'startups' ? (results.length === 1 ? 'venture' : 'ventures') : (results.length === 1 ? 'person' : 'people')}
+              {isSemantic && cutOff > 0 && (
+                <span className="font-normal text-ink-500"> · {cutOff} less relevant left out</span>
+              )}
             </h2>
             {isSemantic && <span className="text-[13px] text-ink-500">Ranked by how close the meaning is</span>}
           </div>

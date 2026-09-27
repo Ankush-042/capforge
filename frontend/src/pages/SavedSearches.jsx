@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Bookmark, Play, Trash2, ArrowUpRight, Search } from 'lucide-react';
+import { Bookmark, Play, Trash2, ArrowUpRight, Search , ArrowLeft } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import { getMySavedSearches, runSavedSearch, deleteSavedSearch } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
@@ -36,6 +36,7 @@ function describeFilters(filters) {
 }
 
 export default function SavedSearches() {
+  const navigate = useNavigate();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
   const [searches, setSearches] = useState([]);
@@ -70,6 +71,14 @@ export default function SavedSearches() {
   if (loading) {
     return (
       <Shell persona="INVESTOR" title="Saved searches">
+      {/* A way back. This page was reachable and had no exit. */}
+      <button
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 transition-colors mb-5"
+      >
+        <ArrowLeft size={15} /> Back
+      </button>
+
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
         </div>
