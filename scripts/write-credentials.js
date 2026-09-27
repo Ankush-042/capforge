@@ -32,7 +32,12 @@ const SEED_PASSWORD = 'SeedPass123!';
      FROM users u
      JOIN profiles p ON p.user_id = u.id
      LEFT JOIN startups s ON s.founder_id = u.id
+       AND s.verification_status != 'UNVERIFIED'
      WHERE u.primary_role = 'FOUNDER'
+       -- Only founders who actually have a real venture, or who signed up
+       -- recently enough to be one of the accounts under test. Sixty-odd
+       -- abandoned ventures from earlier testing are not credentials.
+       AND (s.id IS NOT NULL OR u.created_at > now() - interval '3 days')
      ORDER BY s.domain[1] NULLS LAST, s.name`
   )).rows;
 
@@ -42,6 +47,7 @@ const SEED_PASSWORD = 'SeedPass123!';
      JOIN profiles p ON p.user_id = u.id
      LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
      WHERE u.primary_role = 'CONTRIBUTOR'
+       AND (p.headline IS NOT NULL OR u.created_at > now() - interval '3 days')
      ORDER BY u.email`
   )).rows;
 
@@ -111,7 +117,18 @@ ${founders.filter(f => f.startup).length} ventures · ${contributors.length} con
     out += `| \`${i.email}\` | ${i.display_name || '—'} | ${(i.preferred_domains || []).slice(0, 4).join(', ') || '—'} |\n`;
   }
 
-  const handmade = [...founders, ...contributors, ...investors].filter((a) => a.email && !seeded(a.email));
+  // Recent and non-seeded. Filtering on the email domain alone swept up
+  // every throwaway account from months of testing, which is not what
+  // "created by hand" is asking for.
+  const recent = (await pool.query(
+    `SELECT u.email, p.display_name, u.primary_role
+     FROM users u JOIN profiles p ON p.user_id = u.id
+     WHERE u.email NOT LIKE '%@seed.test'
+       AND u.email NOT LIKE '%@capforge.internal'
+       AND u.created_at > now() - interval '3 days'
+     ORDER BY u.created_at DESC`
+  )).rows;
+  const handmade = recent;
   if (handmade.length > 0) {
     out += `\n---\n\n## Created by hand
 
@@ -119,7 +136,7 @@ These were signed up through the interface rather than seeded, so they are
 the ones to use when showing that a stranger can arrive and be matched.
 
 `;
-    for (const a of handmade) out += `- \`${a.email}\` — ${a.display_name || '—'}\n`;
+    for (const a of handmade) out += `- \`${a.email}\` — ${a.display_name || '—'} (${a.primary_role})\n`;
   }
 
   out += `\n---\n\n## Domain coverage
