@@ -49,14 +49,24 @@ export default function Search() {
     return params;
   }
 
-  async function runSearch() {
+  /**
+   * OVERRIDES, because state is not updated within the same tick as the
+   * change handler that set it. A dropdown calling runSearch() directly
+   * searched with the PREVIOUS value, which is why selecting a field appeared
+   * to do nothing at all.
+   */
+  async function runSearch(overrides = {}) {
     setSearching(true);
     setSearched(true);
+    const filters = { ...currentFilters(), ...overrides };
+    if (overrides.domain === '') delete filters.domain;
+    if (overrides.fundingStage === '') delete filters.fundingStage;
+
     const response = (mode === 'semantic' && tab === 'startups')
       ? await semanticSearchStartups(query)
       : tab === 'startups'
-        ? await searchStartups(currentFilters())
-        : await searchContributors(currentFilters());
+        ? await searchStartups(filters)
+        : await searchContributors(filters);
     setSearching(false);
     setResults(response.ok && response.data.success ? response.data.results : []);
     // How many the relevance cut removed. Zero for keyword search, which has
@@ -138,7 +148,7 @@ export default function Search() {
         {!isSemantic && (
           <select
             value={domain}
-            onChange={(e) => { setDomain(e.target.value); }}
+            onChange={(e) => { setDomain(e.target.value); runSearch({ domain: e.target.value }); }}
             className="text-[13px] px-4 py-2 rounded-full border border-surface-border bg-surface text-ink-900 focus:outline-none focus:border-violet-500 transition-colors"
           >
             <option value="">Any field</option>
@@ -149,7 +159,7 @@ export default function Search() {
         {!isSemantic && tab === 'startups' && persona === 'INVESTOR' && (
           <select
             value={fundingStage}
-            onChange={(e) => setFundingStage(e.target.value)}
+            onChange={(e) => { setFundingStage(e.target.value); runSearch({ fundingStage: e.target.value }); }}
             className="text-[13px] px-4 py-2 rounded-full border border-surface-border bg-surface text-ink-900 focus:outline-none focus:border-violet-500 transition-colors"
           >
             <option value="">Any funding stage</option>

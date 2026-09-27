@@ -32,12 +32,24 @@ async function searchStartups({ domain, stage, fundingStage, role, skill, q }, r
     i++;
   }
 
+  /**
+   * DOMAIN IS MATCHED IN JS, not by SQL equality.
+   *
+   * This compared labels with LOWER(d) = ANY(...), exact equality. The
+   * structuring step labels healthtech ventures 'healthcare', 'medical
+   * technology' and 'telemedicine', so selecting healthtech in the filter
+   * matched almost nothing and the dropdown appeared to do nothing at all.
+   *
+   * domainsMatch already knows these are the same field and is tested against
+   * the real labels on the platform. The candidate set is small enough to
+   * filter after the query rather than duplicating that logic in SQL, where
+   * it would immediately drift from the version the rest of the engine uses.
+   */
+  let domainFilter = null;
   if (domain) {
-    const domainList = Array.isArray(domain) ? domain : [domain];
-    conditions.push(`EXISTS (SELECT 1 FROM unnest(domain) d WHERE LOWER(d) = ANY($${i}::text[]))`);
-    params.push(domainList.map(d => d.toLowerCase().trim()));
-    i++;
+    domainFilter = (Array.isArray(domain) ? domain : [domain]).map((d) => String(d).toLowerCase().trim());
   }
+
   if (stage) {
     conditions.push(`LOWER(stage) = LOWER($${i})`);
     params.push(stage);
@@ -68,7 +80,17 @@ async function searchStartups({ domain, stage, fundingStage, role, skill, q }, r
   const query = `SELECT id, name, problem, solution, domain, stage, business_model, status, created_at
                   FROM startups WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC LIMIT 50`;
   const result = await pool.query(query, params);
-  return { success: true, results: result.rows };
+
+  // The field filter, applied with the same matcher the rest of the engine
+  // uses, so 'healthtech' finds a venture labelled 'medical technology'.
+  let rows = result.rows;
+  if (domainFilter) {
+    const { domainsMatch } = require('../matching/matchingService');
+    rows = rows.filter((r) => (r.domain || []).some((label) =>
+      domainFilter.some((want) => domainsMatch(want, String(label).toLowerCase().trim()))));
+  }
+
+  return { success: true, results: rows };
 }
 
 async function searchContributors({ skill, domain, stage, availability, q }) {
