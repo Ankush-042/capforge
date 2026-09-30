@@ -47,10 +47,12 @@ function SkillRow({ s, index }) {
 export default function SkillDemand() {
   const [loading, setLoading] = useState(true);
   const [skills, setSkills] = useState([]);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     getSkillDemand().then(({ ok, data }) => {
       if (ok && data.success) setSkills(data.skills);
+      else setFailed(true);
       setLoading(false);
     });
   }, []);
@@ -90,7 +92,13 @@ export default function SkillDemand() {
         </p>
       </div>
 
-      {skills.length === 0 ? (
+      {failed ? (
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
+          <TrendingUp size={22} className="text-ink-300 mx-auto mb-3" />
+          <p className="text-[15px] text-ink-700 mb-1">This could not be loaded just now.</p>
+          <p className="text-[13px] text-ink-500">It is a loading problem rather than an empty platform. Try again in a moment.</p>
+        </div>
+      ) : skills.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
           <TrendingUp size={22} className="text-ink-300 mx-auto mb-3" />
           <p className="text-[15px] text-ink-700 mb-1">No open roles to measure yet.</p>
