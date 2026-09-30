@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { RefreshCw, Check, AlertTriangle, ArrowUpRight, Bookmark } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import WatchControls from '../components/WatchControls.jsx';
 import { getInvestorRecommendations, refreshInvestorRecommendations } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
@@ -123,9 +124,7 @@ export default function InvestorDealFlow() {
   if (loading) {
     return (
       <Shell persona="INVESTOR" title="Deal flow">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
+        <SkeletonPage cards={3} />
       </Shell>
     );
   }

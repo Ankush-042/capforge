@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, MessageSquare, Sparkles, Target, Users, Rocket, BadgeIndianRupee, PieChart, Flag, ShieldAlert,
   Crosshair, BarChart3, LayoutGrid, Gauge, Eye, Presentation, Search,
-  Bookmark, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity,
+  Bookmark, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity, Bell,
 } from 'lucide-react';
 import StartupSwitcher from './StartupSwitcher.jsx';
 import { useMyIdentity } from '../context/MyIdentityContext.jsx';
@@ -168,7 +168,28 @@ function NavItem({ label, icon: Icon, path, active }) {
   );
 }
 
+function useUnreadCount() {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    async function check() {
+      try {
+        const { getNotifications } = await import('../services/startups.js');
+        const { ok, data } = await getNotifications(true);
+        if (alive && ok && data.success) setN((data.notifications || []).length);
+      } catch { /* the header must never be what breaks a page */ }
+    }
+    check();
+    // Quiet cadence. This sits on every page, so anything faster would be a
+    // request per minute per open tab for a number that rarely changes.
+    const t = setInterval(check, 120000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+  return n;
+}
+
 export default function Shell({ children, title, subtitle, persona: externalPersona, displayName: externalDisplayName }) {
+  const unread = useUnreadCount();
   const location = useLocation();
 
   // REAL, COMPREHENSIVE FIX: previously, ~20 pages hardcoded a literal
@@ -294,16 +315,36 @@ export default function Shell({ children, title, subtitle, persona: externalPers
             company rather than a row in a table. */}
         <header className="h-[76px] shrink-0 border-b border-surface-border flex items-center justify-between px-10 bg-surface">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-forest-600 flex items-center justify-center shrink-0 shadow-sm">
-              <span className="text-white font-display font-bold text-[15px] leading-none">
+            {/* Flat fill rather than a gradient. A gradient on a 40px square
+                reads as decoration; a solid mark reads as identity. */}
+            <div className="w-10 h-10 rounded-xl bg-ink-950 flex items-center justify-center shrink-0">
+              <span className="text-white font-display font-semibold text-[15px] leading-none">
                 {(title || 'C').trim().charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="min-w-0">
-              <p className="font-display text-[17px] font-semibold text-ink-950 tracking-[-0.01em] truncate">{title}</p>
-              {subtitle && <p className="text-[13px] text-ink-500 truncate max-w-xl">{subtitle}</p>}
+              <p className="font-display text-[17.5px] font-semibold text-ink-950 tracking-[-0.015em] truncate leading-tight">{title}</p>
+              {subtitle && <p className="text-[12.5px] text-ink-500 truncate max-w-xl mt-0.5">{subtitle}</p>}
             </div>
           </div>
+
+          {/* THE RIGHT SIDE WAS EMPTY, which is the real reason this bar read
+              as filler: it told you where you were, and the sidebar already
+              does that. Notifications were reachable only through the command
+              palette, so unless somebody knew a keyboard shortcut the entire
+              system was invisible. */}
+          <Link
+            to="/app/notifications"
+            className="relative flex items-center justify-center w-9 h-9 rounded-lg text-ink-500 hover:text-ink-900 hover:bg-surface-muted transition-colors shrink-0"
+            title={unread > 0 ? `${unread} unread` : 'Notifications'}
+          >
+            <Bell size={17} />
+            {unread > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-violet-500 text-white text-[10px] font-semibold flex items-center justify-center leading-none tabular-nums">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </Link>
         </header>
         <main className="flex-1 px-10 py-9 max-w-[1440px] w-full mx-auto">{children}</main>
       </div>
