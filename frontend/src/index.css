@@ -1,68 +1,78 @@
 
 /* ============================================================================
-   UI PROPOSAL — active only under .ui-next, which Shell adds when a URL
-   carries ?ui=next. Nothing below affects the product otherwise, and the
-   whole thing is deleted by removing this block and the flag in Shell.
-
-   Three changes, and deliberately no structural ones. The card system, the
-   layout and the spacing between elements are all left exactly as they are.
-
-   1. THE CANVAS STOPS BEING VIOLET. #F3F1F8 is a violet-tinted grey that
-      works when cards cover most of the page and looks like a wash when they
-      do not, which is why a sparse screen reads as ugly. It is a true
-      neutral now, so it recedes and colour comes only from content.
-
-   2. REAL TYPOGRAPHIC HIERARCHY. Headings currently sit a fraction above
-      body text in both size and weight, so every page reads flat and the eye
-      has nowhere to land. Headings get weight and tightened letter-spacing;
-      secondary text drops in colour rather than in size, which keeps every
-      layout exactly where it is.
-
-   3. VIOLET MEANS ACTION. There are 345 violet usages, on buttons, links,
-      badges, borders and icons alike, so the colour signals nothing. Under
-      this flag it stays on anything you can act on and everything decorative
-      goes quiet. Green still means good, amber and red still mean attention.
+   UI REFINEMENT — PHASE 1
+   Global treatment. No structural change anywhere: the card system, the
+   layout and the spacing between elements are untouched, because those are
+   the parts that already work. Everything here changes how things read, not
+   where they are.
    ========================================================================= */
 
-.ui-next h1,
-.ui-next h2 {
-  letter-spacing: -0.018em;
-}
+/* TYPOGRAPHY -----------------------------------------------------------------
+   Headings sat a fraction above body text in size and weight, so every page
+   read flat and the eye had nowhere to land. Headings gain weight and tighter
+   tracking; secondary text recedes by COLOUR rather than size, so no layout
+   moves by a pixel. */
+.app-shell h1,
+.app-shell h2 { letter-spacing: -0.018em; }
 
-/* Section headings: the commonest heading in the product, and currently
-   almost indistinguishable from the paragraph under it. */
-.ui-next h2.text-\[15px\],
-.ui-next p.text-\[15px\].font-semibold {
+.app-shell h2.text-\[15px\],
+.app-shell p.text-\[15px\].font-semibold {
   font-size: 16.5px;
   font-weight: 650;
   color: #101114;
 }
 
-.ui-next .font-editorial {
-  letter-spacing: -0.022em;
-}
+.app-shell .font-editorial { letter-spacing: -0.022em; }
+.app-shell .text-ink-500 { color: #74767F; }
+.app-shell .text-ink-300 { color: #AFB1B9; }
 
-/* Secondary text recedes by colour rather than by size, so nothing moves. */
-.ui-next .text-ink-500 { color: #74767F; }
-.ui-next .text-ink-300 { color: #AFB1B9; }
+/* NUMBERS --------------------------------------------------------------------
+   Figures were set in the same proportional face as labels, so columns of
+   them never lined up and a score read like a word. Tabular everywhere a
+   number carries meaning. */
+.app-shell .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1, 'cv01' 1; }
 
-/* Decorative violet goes quiet. Anything clickable keeps it: buttons carry a
-   violet background, links carry hover states, and neither is touched here. */
-.ui-next .border-violet-500\/20,
-.ui-next .border-violet-500\/25,
-.ui-next .border-violet-500\/30,
-.ui-next .border-violet-500\/40 {
-  border-color: #E4E3EC;
-}
+/* VIOLET MEANS ACTION --------------------------------------------------------
+   There were 345 violet usages across buttons, links, badges, borders and
+   icons alike, which is why the colour signalled nothing. It stays on
+   anything clickable; decorative uses go quiet. Green still means good,
+   amber and red still mean attention. */
+.app-shell .border-violet-500\/20,
+.app-shell .border-violet-500\/25,
+.app-shell .border-violet-500\/30,
+.app-shell .border-violet-500\/40 { border-color: #E4E3EC; }
 
-/* Badges and tints that mark a category rather than an action. */
-.ui-next span.bg-violet-50 { background-color: #F2F2F4; color: #57595F; }
+.app-shell span.bg-violet-50 { background-color: #F2F2F4; color: #57595F; }
 
-/* One shadow for everything flattens hierarchy: if every card floats, none
-   does. Cards rest on a hairline, and only something genuinely raised keeps
-   a shadow. */
-.ui-next .shadow-card {
+/* CARD HIERARCHY -------------------------------------------------------------
+   One shadow on every card flattens hierarchy: if everything floats, nothing
+   does. Cards rest on a hairline, and only something genuinely raised keeps a
+   shadow. A card marked primary carries real weight, so a page has a first
+   thing to look at. */
+.app-shell .shadow-card {
   box-shadow: none;
   border-color: #E7E6EE;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
-.ui-next .shadow-card:hover { border-color: #D8D6E4; }
+.app-shell .shadow-card:hover { border-color: #D8D6E4; }
+
+.app-shell .shadow-elevated {
+  box-shadow: 0 1px 2px rgba(20,20,30,0.04), 0 8px 24px rgba(20,20,30,0.06);
+  border-color: #DFDDE9;
+}
+
+/* INTERACTION ----------------------------------------------------------------
+   Focus was inconsistent across the app, which is what makes an interface
+   feel static. One visible ring everywhere, keyboard only, so it never
+   appears on a mouse click. */
+.app-shell button:focus-visible,
+.app-shell a:focus-visible,
+.app-shell input:focus-visible,
+.app-shell select:focus-visible,
+.app-shell textarea:focus-visible {
+  outline: 2px solid #7C5CFC;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.app-shell button { transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease; }
