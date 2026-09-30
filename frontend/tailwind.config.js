@@ -17,27 +17,6 @@ export default {
         // purple + transaction green, informed by real marketplace/
         // matching-platform design intelligence, not ad-hoc choice.
         trust: { DEFAULT: '#7C3AED', light: '#A78BFA', bg: '#FAF5FF', fg: '#4C1D95', border: '#DDD6FE' },
-
-        /**
-         * PROPOSAL, applied to one page only so it can be judged and not
-         * merely described. Nothing existing reads these names, so adding
-         * them changes no screen until a screen asks for them.
-         *
-         * The direction: this product's character is already in its writing.
-         * It says "no open role fits you", "we cannot measure product-market
-         * fit", "this is our judgement, not data". Nothing else in the space
-         * does that. So it should look like a serious instrument that tells
-         * you the truth, not a SaaS dashboard that flatters you.
-         *
-         * What that means concretely: a warm paper surface rather than cold
-         * white, near-black warm ink, ONE accent instead of eight, hairline
-         * borders instead of soft shadows, and real size contrast so a page
-         * has a loudest thing on it.
-         */
-        paper: { DEFAULT: '#FBFAF7', raised: '#FFFFFF', sunk: '#F4F2ED', line: '#E5E1D8', edge: '#D6D1C4' },
-        graphite: { 950: '#14130F', 800: '#2E2C26', 600: '#57544B', 400: '#8B8779', 300: '#ADA99C' },
-        deep: { DEFAULT: '#1F5D52', soft: '#EDF3F0', line: '#C8DAD4', deep: '#123D36' },
-        flag: { warn: '#B4762A', stop: '#B0453A', go: '#1F5D52' },
         transact: { DEFAULT: '#16A34A', bg: '#EAF7F0' },
       },
       fontFamily: {
