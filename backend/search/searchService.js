@@ -230,7 +230,17 @@ async function semanticSearchStartups(queryText, requestingUserId) {
    * when NOTHING is relevant the relative rule would happily return the least
    * irrelevant thing on the platform.
    */
-  const rows = result.rows.map((r) => ({ ...r, similarity: parseFloat(r.similarity) }));
+  let rows = result.rows.map((r) => ({ ...r, similarity: parseFloat(r.similarity) }));
+
+  // A field filter applies here too. It used to be dropped entirely in this
+  // mode, and the interface hid the control to match, so switching to search
+  // by meaning silently threw away the filter somebody had just set.
+  if (domain) {
+    const wanted = (Array.isArray(domain) ? domain : [domain]).map((d) => String(d).toLowerCase().trim());
+    const { domainsMatch } = require('../matching/matchingService');
+    rows = rows.filter((r) => (r.domain || []).some((label) =>
+      wanted.some((w) => domainsMatch(w, String(label).toLowerCase().trim()))));
+  }
   const FLOOR = 0.30;          // below this it is not an answer to the question
   const SPREAD = 0.12;         // how far behind the best a result may fall
 

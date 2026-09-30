@@ -36,7 +36,8 @@ export const respondToConnection = (id, action) => apiFetch(`/connections/${id}/
 export const getMyConnections = () => apiFetch('/connections');
 
 export const searchStartups = (params) => apiFetch(`/search/startups?${new URLSearchParams(params)}`);
-export const semanticSearchStartups = (query) => apiFetch(`/search/startups/semantic?query=${encodeURIComponent(query)}`);
+export const semanticSearchStartups = (query, domain) =>
+  apiFetch(`/search/startups/semantic?query=${encodeURIComponent(query)}${domain ? `&domain=${encodeURIComponent(domain)}` : ''}`);
 export const getReadinessHistory = (startupId) => apiFetch(`/startups/${startupId}/readiness-history`);
 export const getNotificationPreferences = () => apiFetch('/notifications/preferences');
 export const updateNotificationPreferences = (payload) => apiFetch('/notifications/preferences', { method: 'PATCH', body: JSON.stringify(payload) });

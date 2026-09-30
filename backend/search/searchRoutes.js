@@ -32,7 +32,7 @@ router.get('/startups/nl', requireAuth, async (req, res) => {
 router.get('/startups/semantic', requireAuth, async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ success: false, error: 'MISSING_QUERY' });
-  const result = await semanticSearchStartups(query, req.user.userId);
+  const result = await semanticSearchStartups(query, req.user.userId, { domain: req.query.domain || undefined });
   if (!result.success) return res.status(400).json(result);
   res.json(result);
 });

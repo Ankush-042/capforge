@@ -63,7 +63,7 @@ export default function Search() {
     if (overrides.fundingStage === '') delete filters.fundingStage;
 
     const response = (mode === 'semantic' && tab === 'startups')
-      ? await semanticSearchStartups(query)
+      ? await semanticSearchStartups(query, filters.domain)
       : tab === 'startups'
         ? await searchStartups(filters)
         : await searchContributors(filters);
@@ -145,7 +145,7 @@ export default function Search() {
           </button>
         )}
 
-        {!isSemantic && (
+        {(
           <select
             value={domain}
             onChange={(e) => { setDomain(e.target.value); runSearch({ domain: e.target.value }); }}
@@ -156,7 +156,7 @@ export default function Search() {
           </select>
         )}
 
-        {!isSemantic && tab === 'startups' && persona === 'INVESTOR' && (
+        {tab === 'startups' && persona === 'INVESTOR' && !isSemantic && (
           <select
             value={fundingStage}
             onChange={(e) => { setFundingStage(e.target.value); runSearch({ fundingStage: e.target.value }); }}
@@ -167,7 +167,7 @@ export default function Search() {
           </select>
         )}
 
-        {persona === 'INVESTOR' && tab === 'startups' && !isSemantic && (
+        {persona === 'INVESTOR' && tab === 'startups' && (
           <button
             onClick={handleSaveSearch}
             className="flex items-center gap-1.5 text-[13px] px-4 py-2 rounded-full font-medium text-ink-700 hover:text-violet-700 transition-colors"
@@ -177,13 +177,16 @@ export default function Search() {
         )}
       </div>
 
-      {/* What the mode actually does, since 'Semantic' explains nothing. */}
-      {isSemantic && (
-        <p className="text-[13px] text-ink-500 mb-6 max-w-2xl leading-relaxed">
-          Describe what you are after in plain language and this finds ventures that mean the same thing, not ones that happen to use the same words.
-        </p>
-      )}
-      {!isSemantic && <div className="mb-6" />}
+      {/* What each mode does, in both states rather than only one. The toggle
+          reads as a decoration otherwise, and somebody who has never pressed
+          it has no idea what they would be turning on. */}
+      <p className="text-[13px] text-ink-500 mb-6 max-w-2xl leading-relaxed">
+        {isSemantic
+          ? 'Describe what you are after in plain language and this finds ventures that mean the same thing, not ones that happen to use the same words. Anything below a real level of relevance is left out rather than padding the page.'
+          : tab === 'startups'
+            ? 'Matches names, problems and keywords exactly. For a description of the kind of venture you want rather than its words, use search by meaning.'
+            : 'Matches names, roles and skills. Narrow by field to find people who want to work in it.'}
+      </p>
 
       {!searched ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
