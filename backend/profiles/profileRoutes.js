@@ -338,6 +338,18 @@ async function refreshInvestorAlignment(userId) {
       userId, thesis: row.thesis,
       domains: row.preferred_domains, stages: row.preferred_stages, ventures,
     });
+
+    // AND BUILD THE DEAL FLOW. Scoring alignment without ranking leaves an
+    // investor with a page that says nothing matches them, because nothing
+    // has been written yet. They had to find the 'Check for new' button and
+    // press it themselves, which is not a thing anybody should have to
+    // discover on their first visit.
+    try {
+      const { rankStartupsForInvestor } = require('../investors/investorMatchingService');
+      await rankStartupsForInvestor(userId);
+    } catch (err) {
+      console.error(`Deal flow ranking failed for ${userId}: ${err.message}`);
+    }
     if (r?.failed) console.error(`Investor alignment rescore failed for ${userId}: ${r.reason}`);
   })();
 

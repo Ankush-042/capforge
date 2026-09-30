@@ -101,7 +101,7 @@ export default function InvestorOnboarding() {
         </motion.div>
 
         <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7 mb-4">
-          <p className="text-[16px] font-semibold text-ink-950 mb-1">What do you back?</p>
+          <p className="text-[16px] font-semibold text-ink-950 mb-1">Your investment thesis</p>
           <p className="text-[13.5px] text-ink-500 mb-4">
             In your own words. What you look for, and what you pass on. This is read when ranking ventures against you, so the second half matters.
           </p>
