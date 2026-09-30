@@ -125,7 +125,7 @@ ${founders.filter(f => f.startup).length} ventures · ${contributors.length} con
      FROM users u JOIN profiles p ON p.user_id = u.id
      WHERE u.email NOT LIKE '%@seed.test'
        AND u.email NOT LIKE '%@capforge.internal'
-       AND u.created_at > now() - interval '3 days'
+       AND u.created_at > now() - interval '30 days'
      ORDER BY u.created_at DESC`
   )).rows;
   const handmade = recent;
