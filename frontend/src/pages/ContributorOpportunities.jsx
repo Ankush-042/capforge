@@ -70,11 +70,21 @@ function VentureCard({ v, index, onMessage }) {
                   style={{ color: st.tone, backgroundColor: st.bg }}>
               {roleLine(v.role)}
             </span>
+            {/* FACTS READ AS FACTS. These were a row of grey sentences, so a
+                number carried no more weight than the word beside it and the
+                eye skated over all of it. The figure is now the dark, medium
+                part and the word around it is the quiet part, which is the
+                whole difference between prose and data. Nothing moves. */}
             <span className="flex items-center gap-1.5 text-[12.5px] text-ink-500">
-              <Users size={12} /> {v.teamSize} on the team
+              <Users size={12} />
+              <span className="font-medium text-ink-800 tabular-nums">{v.teamSize}</span> on the team
             </span>
             {v.stage && <span className="text-[12.5px] text-ink-500">{v.stage}</span>}
-            {v.readiness !== null && <span className="text-[12.5px] text-ink-500">readiness {v.readiness}</span>}
+            {v.readiness !== null && (
+              <span className="text-[12.5px] text-ink-500">
+                readiness <span className="font-medium text-ink-800 tabular-nums">{v.readiness}</span>
+              </span>
+            )}
           </div>
 
           {v.alignmentReason && (
@@ -85,8 +95,10 @@ function VentureCard({ v, index, onMessage }) {
         </div>
 
         <div className="text-right shrink-0">
-          <p className="text-[24px] font-semibold text-ink-950 tabular-nums leading-none">{v.score}<span className="text-[15px]">%</span></p>
-          <p className="text-[11px] text-ink-300 mt-1">suits you</p>
+          <p className="text-[28px] font-semibold text-ink-950 tabular-nums leading-none tracking-[-0.02em]">
+            {v.score}<span className="text-[15px] text-ink-400 font-normal">%</span>
+          </p>
+          <p className="text-[10.5px] font-medium tracking-[0.1em] uppercase text-ink-300 mt-1.5">suits you</p>
         </div>
       </div>
 

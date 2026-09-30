@@ -39,7 +39,7 @@ export default function MetricTile({
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[13px] font-semibold tracking-wide uppercase" style={{ color: fg, opacity: 0.75 }}>
+        <p className="text-[10.5px] font-semibold tracking-[0.12em] uppercase" style={{ color: fg, opacity: 0.75 }}>
           {label}
         </p>
         {Icon && (
@@ -57,7 +57,7 @@ export default function MetricTile({
       <div>
         <div className="flex items-baseline gap-1.5 flex-wrap">
           <span
-            className="text-[38px] font-bold leading-none tabular-nums tracking-tight"
+            className="text-[40px] font-semibold leading-none tabular-nums tracking-[-0.03em]"
             style={{ color: valueColor || fg }}
           >
             {value}
@@ -83,7 +83,7 @@ export default function MetricTile({
         )}
 
         {caption && (
-          <p className="text-[13px] mt-2 leading-snug truncate" style={{ color: fg, opacity: 0.75 }}>
+          <p className="text-[12.5px] mt-2 leading-snug truncate" style={{ color: fg, opacity: 0.75 }}>
             {caption}
           </p>
         )}

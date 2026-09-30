@@ -76,3 +76,37 @@
 }
 
 .app-shell button { transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease; }
+
+/* BUTTON TIERS ---------------------------------------------------------------
+   Every action in the product was the same black pill, so a destructive
+   action, a primary action and an incidental one all looked equally
+   important. The classes already in use are left exactly as they are; these
+   only refine how they render, so no button moves and none needs rewriting.
+
+   Primary keeps the solid fill. Anything on a plain background reads as
+   secondary and gets a border rather than nothing, which is what made quiet
+   actions look unclickable. */
+.app-shell button.bg-ink-900 {
+  box-shadow: 0 1px 2px rgba(20, 20, 30, 0.10);
+}
+.app-shell button.bg-ink-900:active { transform: translateY(0.5px); }
+
+/* Anything that is only text on a surface: give it a hit area and a hover
+   state, because a bare word does not read as a control. */
+.app-shell button.text-ink-500:hover,
+.app-shell button.text-ink-300:hover { color: #14141A; }
+
+/* ICONOGRAPHY ----------------------------------------------------------------
+   Lucide strokes at 2px by default, which is heavy beside this text and made
+   every icon shout. 1.75 sits with the type. */
+.app-shell svg { stroke-width: 1.75; }
+
+/* NUMERALS -------------------------------------------------------------------
+   Anything that is a figure lines up in a column and does not wobble as it
+   changes. */
+.app-shell .tabular-nums,
+.app-shell [class*="text-\[2"] ,
+.app-shell [class*="text-\[3"] ,
+.app-shell [class*="text-\[4"] {
+  font-variant-numeric: tabular-nums;
+}
