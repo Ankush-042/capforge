@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { MessageSquare, Sparkles, Building2 } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import ConversationThread from './ConversationThread.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { getMyConversations } from '../services/startups.js';
@@ -103,7 +105,62 @@ function ConversationCard({ c, index }) {
   );
 }
 
+
+/**
+ * One conversation in the list. Everything the card carried is here — the
+ * person, their last line, the venture it concerns, whether it is waiting on
+ * you — in a shape that belongs in a column rather than a grid.
+ */
+function ConversationRow({ c, active }) {
+  const unread = parseInt(c.unread_count) || 0;
+
+  return (
+    <Link
+      to={`/app/inbox/${c.id}`}
+      className={`block px-5 py-4 border-l-2 transition-colors ${
+        active
+          ? 'bg-violet-50/60 border-l-violet-500'
+          : unread > 0
+            ? 'border-l-violet-500/40 hover:bg-surface-muted'
+            : 'border-l-transparent hover:bg-surface-muted'
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <Avatar name={c.other_display_name} src={c.other_avatar} size={34} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className={`text-[13.5px] truncate ${unread > 0 ? 'font-semibold text-ink-950' : 'font-medium text-ink-900'}`}>
+              {c.other_display_name || 'Someone'}
+            </p>
+            <span className="text-[11px] text-ink-300 shrink-0 tabular-nums">{timeAgo(c.last_message_at)}</span>
+          </div>
+
+          <p className={`text-[12.5px] leading-snug line-clamp-2 mt-0.5 ${unread > 0 ? 'text-ink-800' : 'text-ink-500'}`}>
+            {c.last_message || 'No messages yet.'}
+          </p>
+
+          <div className="flex items-center gap-2 mt-1.5">
+            {(c.startup_name || c.spark_id) && (
+              <span className="flex items-center gap-1 text-[11px] text-ink-300 truncate">
+                {c.spark_id
+                  ? <><Sparkles size={10} className="text-violet-500 shrink-0" /> an idea</>
+                  : <><Building2 size={10} className="shrink-0" /> {c.startup_name}</>}
+              </span>
+            )}
+            {unread > 0 && (
+              <span className="ml-auto min-w-[17px] h-[17px] px-1.5 rounded-full bg-violet-500 text-white text-[10px] font-semibold flex items-center justify-center tabular-nums shrink-0">
+                {unread}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function Inbox() {
+  const { id: selectedId } = useParams();
   const { persona, displayName } = useMyPersona();
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState([]);
@@ -132,61 +189,80 @@ export default function Inbox() {
     <Shell persona={persona} displayName={displayName} title="Messages" subtitle={
       conversations.length === 0 ? 'Nobody yet' : `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`
     }>
-      <div className="mb-7">
-        <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-          {waiting.length > 0 ? `${waiting.length} waiting on you` : conversations.length > 0 ? 'All caught up' : 'Nothing yet'}
-        </p>
-        <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight max-w-3xl">
-          {conversations.length === 0
-            ? 'No conversations yet.'
-            : waiting.length > 0
-              ? `${waiting.length === 1 ? 'Someone is' : `${waiting.length} people are`} waiting to hear back.`
-              : 'You are up to date.'}
-        </h1>
-        <p className="text-[15px] text-ink-700 mt-3 max-w-2xl leading-relaxed">
-          {conversations.length === 0
-            ? 'Every company on here started as two people talking. Reach out to someone and this fills up.'
-            : 'This is where teams actually form. Nothing gets built without these.'}
-        </p>
-      </div>
+      {/* TWO PANES, which is the actual fix.
+          This was a two-column grid of cards that navigated away to a separate
+          page for every conversation, so reading one meant losing the others
+          and going back to reach the next. That is not how anybody reads
+          messages. The list stays on the left and the conversation opens on
+          the right, so moving between eight threads costs eight clicks and no
+          navigation at all.
 
+          Nothing about a conversation row changed: the card content was
+          already right, carrying the person, the last line, the venture it
+          concerns and whether it is waiting on you. */}
       {conversations.length === 0 ? (
-        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <MessageSquare size={24} className="text-ink-300 mx-auto mb-4" />
-          <p className="text-[15px] text-ink-700 mb-1">Nobody to talk to yet.</p>
-          <p className="text-[13px] text-ink-500 max-w-sm mx-auto">
-            Conversations start when you reach out to someone, or when someone decides they want in on what you are building.
-          </p>
-        </div>
+        <EmptyState
+          icon={MessageSquare}
+          title="Nobody to talk to yet."
+          body="Conversations start when you reach out to someone, or when somebody decides they want in on what you are building."
+        />
       ) : (
-        <>
-          {waiting.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-[15px] font-semibold text-ink-900">Waiting on you</h2>
-                <span className="text-[13px] text-ink-500">Answer these first</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {waiting.map((c, i) => <ConversationCard key={c.id} c={c} index={i} />)}
-              </div>
-            </div>
-          )}
+        <div className="grid grid-cols-[340px_1fr] gap-6 items-start" style={{ minHeight: 'calc(100vh - 210px)' }}>
 
-          {rest.length > 0 && (
-            <div>
-              {waiting.length > 0 && (
-                <div className="flex items-baseline justify-between mb-3">
-                  <h2 className="text-[15px] font-semibold text-ink-900">Everything else</h2>
-                  <span className="text-[13px] text-ink-500">Most recent first</span>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                {rest.map((c, i) => <ConversationCard key={c.id} c={c} index={i} />)}
-              </div>
+          {/* THE LIST */}
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card overflow-hidden flex flex-col"
+               style={{ maxHeight: 'calc(100vh - 210px)' }}>
+            <div className="px-5 py-3.5 border-b border-surface-border shrink-0">
+              <p className="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-ink-300">
+                {waiting.length > 0 ? `${waiting.length} waiting on you` : 'All caught up'}
+              </p>
             </div>
-          )}
-        </>
+
+            <div className="overflow-y-auto flex-1">
+              {waiting.length > 0 && (
+                <>
+                  <p className="px-5 pt-4 pb-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-violet-600">
+                    Waiting on you
+                  </p>
+                  {waiting.map((c) => (
+                    <ConversationRow key={c.id} c={c} active={c.id === selectedId} />
+                  ))}
+                </>
+              )}
+
+              {rest.length > 0 && (
+                <>
+                  {waiting.length > 0 && (
+                    <p className="px-5 pt-5 pb-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-ink-300">
+                      Everything else
+                    </p>
+                  )}
+                  {rest.map((c) => (
+                    <ConversationRow key={c.id} c={c} active={c.id === selectedId} />
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* THE CONVERSATION */}
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card px-7 py-6"
+               style={{ minHeight: 'calc(100vh - 210px)' }}>
+            {selectedId ? (
+              <ConversationThread key={selectedId} conversationId={selectedId} embedded />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center h-full py-24">
+                <MessageSquare size={22} className="text-ink-300 mb-3" />
+                <p className="text-[15px] text-ink-700 mb-1">
+                  {waiting.length > 0 ? 'Start with whoever is waiting.' : 'Pick a conversation.'}
+                </p>
+                <p className="text-[13px] text-ink-500 max-w-xs leading-relaxed">
+                  This is where teams actually form. Nothing gets built without these.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </Shell>
   );

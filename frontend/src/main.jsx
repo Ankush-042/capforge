@@ -57,7 +57,6 @@ import LearningRecommendations from './pages/LearningRecommendations.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Investability from './pages/Investability.jsx';
 import Inbox from './pages/Inbox.jsx';
-import ConversationThread from './pages/ConversationThread.jsx';
 import ProfileView from './pages/ProfileView.jsx';
 import SavedSearches from './pages/SavedSearches.jsx';
 import MyProfile from './pages/MyProfile.jsx';
@@ -161,7 +160,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/app/find-investors" element={<ProtectedRoute><FindInvestors /></ProtectedRoute>} />
         <Route path="/app/investability" element={<ProtectedRoute><Investability /></ProtectedRoute>} />
         <Route path="/app/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
-        <Route path="/app/inbox/:id" element={<ProtectedRoute><ConversationThread /></ProtectedRoute>} />
+        {/* Both render the inbox, which shows the conversation in its right
+            pane. A direct link still opens the right thread, and the browser
+            back button still works, without a second standalone page that
+            would drift from this one. */}
+        <Route path="/app/inbox/:id" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
         <Route path="/app/profile/:userId" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
         <Route path="/app/investor/saved-searches" element={<ProtectedRoute><SavedSearches /></ProtectedRoute>} />
         <Route path="/app/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />

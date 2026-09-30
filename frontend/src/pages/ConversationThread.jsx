@@ -29,9 +29,17 @@ function dayLabel(iso) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
 }
 
-export default function ConversationThread() {
+/**
+ * EMBEDDABLE. The inbox is two panes now, and a conversation is the right one.
+ * Rather than a second copy of this that would drift from the first, the same
+ * component renders either as its own page or inside the inbox: pass a
+ * conversationId and `embedded`, and it skips its own Shell and its own back
+ * button, which the surrounding layout already provides.
+ */
+export default function ConversationThread({ conversationId, embedded = false } = {}) {
   const { persona, displayName } = useMyPersona();
-  const { id } = useParams();
+  const params = useParams();
+  const id = conversationId || params.id;
   const navigate = useNavigate();
   const showToast = useToast();
   const { activeStartup } = useActiveStartup();
@@ -89,6 +97,12 @@ export default function ConversationThread() {
   }
 
   if (loading) {
+    const loadingBody = (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
+      </div>
+    );
+    if (embedded) return loadingBody;
     return (
       <Shell persona={persona} displayName={displayName} title="Conversation">
         <div className="flex items-center justify-center h-64">
@@ -109,16 +123,13 @@ export default function ConversationThread() {
   const canConfirm = conversation && conversation.startup_id && !formed
     && conversation.other_role !== 'INVESTOR' && persona !== 'INVESTOR';
 
-  return (
-    <Shell
-      persona={persona}
-      displayName={displayName}
-      title={other}
-      subtitle={conversation?.other_headline || 'Conversation'}
-    >
-      <button onClick={() => navigate('/app/inbox')} className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 mb-5 transition-colors">
-        <ArrowLeft size={15} /> Back to messages
-      </button>
+  const body = (
+    <>
+      {!embedded && (
+        <button onClick={() => navigate('/app/inbox')} className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 mb-5 transition-colors">
+          <ArrowLeft size={15} /> Back to messages
+        </button>
+      )}
 
       {/* WHAT THIS IS ABOUT. A thread with no context is just a name. */}
       {(conversation?.startup_name || conversation?.spark_id) && !formed && (
@@ -286,6 +297,19 @@ export default function ConversationThread() {
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <Shell
+      persona={persona}
+      displayName={displayName}
+      title={other}
+      subtitle={conversation?.other_headline || 'Conversation'}
+    >
+      {body}
     </Shell>
   );
 }
