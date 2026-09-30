@@ -37,7 +37,7 @@ const SEED_PASSWORD = 'SeedPass123!';
        -- Only founders who actually have a real venture, or who signed up
        -- recently enough to be one of the accounts under test. Sixty-odd
        -- abandoned ventures from earlier testing are not credentials.
-       AND (s.id IS NOT NULL OR u.created_at > now() - interval '3 days')
+       AND (s.id IS NOT NULL OR u.created_at > now() - interval '30 days')
      ORDER BY s.domain[1] NULLS LAST, s.name`
   )).rows;
 
@@ -47,7 +47,7 @@ const SEED_PASSWORD = 'SeedPass123!';
      JOIN profiles p ON p.user_id = u.id
      LEFT JOIN contributor_profiles cp ON cp.profile_id = p.id
      WHERE u.primary_role = 'CONTRIBUTOR'
-       AND (p.headline IS NOT NULL OR u.created_at > now() - interval '3 days')
+       AND (p.headline IS NOT NULL OR u.created_at > now() - interval '30 days')
      ORDER BY u.email`
   )).rows;
 
