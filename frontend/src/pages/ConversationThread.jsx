@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Send, Handshake, Check, Presentation, Sparkles, Building2 } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Moment from '../components/Moment.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { getConversationMessages, sendMessage, getMyProfile, confirmTeamFormation, sendPitch } from '../services/startups.js';
@@ -52,6 +53,7 @@ export default function ConversationThread({ conversationId, embedded = false } 
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [moment, setMoment] = useState(null);
   const [pitchSending, setPitchSending] = useState(false);
   const bottomRef = useRef(null);
 
@@ -82,9 +84,19 @@ export default function ConversationThread({ conversationId, embedded = false } 
     const { ok, data } = await confirmTeamFormation(id);
     setConfirming(false);
     if (!ok || !data.success) { showToast(data.detail || data.error || 'Could not confirm.', 'error'); return; }
-    showToast(data.bothConfirmed
-      ? 'It is real. They are on the team, and your readiness has been recalculated.'
-      : 'You are in. Waiting on them now.');
+    if (data.bothConfirmed) {
+      // THE OTHER MOMENT THIS PRODUCT EXISTS TO CAUSE. Both of them said yes
+      // and a team exists that did not exist a second ago. Years of
+      // somebody's life start here, and it was a toast in the corner.
+      setMoment({
+        kind: 'A team exists',
+        title: 'You are building this together now.',
+        line: 'Both of you said yes, which is the part nobody can undo for you. The role they fill is closed, and your readiness has already been recalculated.',
+        action: { label: 'See the team', to: '/app/team' },
+      });
+    } else {
+      showToast('You are in. Waiting on them now.');
+    }
     await load();
   }
 
@@ -122,6 +134,11 @@ export default function ConversationThread({ conversationId, embedded = false } 
 
   const body = (
     <>
+      <Moment
+        open={!!moment}
+        onClose={() => { const m = moment; setMoment(null); if (m?.action) navigate(m.action.to); }}
+        {...(moment || {})}
+      />
       {!embedded && (
         <button onClick={() => navigate('/app/inbox')} className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 mb-5 transition-colors">
           <ArrowLeft size={15} /> Back to messages

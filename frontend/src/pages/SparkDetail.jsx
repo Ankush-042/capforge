@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Flame, MessageCircle, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import Moment from '../components/Moment.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import { updateSpark } from '../services/startups.js';
 import { getSpark, resonateWithSpark, commitToSpark } from '../services/startups.js';
@@ -22,6 +23,7 @@ import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
  */
 export default function SparkDetail() {
   const { refresh: refreshStartups } = useActiveStartup();
+  const [moment, setMoment] = useState(null);
   const { id } = useParams();
   const navigate = useNavigate();
   const showToast = useToast();
@@ -67,8 +69,17 @@ export default function SparkDetail() {
         // every founder surface keeps showing the empty state until a full
         // page reload, which is the same bug onboarding had.
         await refreshStartups();
-        showToast(res.structured === false ? 'It is real. Structuring did not finish, you can re-run it.' : 'It is real now. Welcome to your venture.');
-        navigate(`/app/startups/${res.startupId}`);
+        // THE MOMENT THIS PRODUCT EXISTS TO CAUSE. Two people agreed on an
+        // idea and a company now exists. It was a toast in the corner: the
+        // same treatment as "could not save that".
+        setMoment({
+          kind: 'It is real',
+          title: 'You just started a company.',
+          line: res.structured === false
+            ? 'Two people agreed and this is a venture now. Structuring did not finish, so run it when you can and the roles will follow.'
+            : 'Two people agreed on an idea and it stopped being an idea. The roles it needs have already been worked out.',
+          action: { label: 'See your venture', to: `/app/startups/${res.startupId}` },
+        });
         return;
       }
       showToast('Committed. Waiting on them.');
@@ -238,8 +249,17 @@ export default function SparkDetail() {
   const { spark, resonances, isAuthor } = data;
   const myResonance = !isAuthor ? resonances[0] : null;
 
+  const momentNode = (
+    <Moment
+      open={!!moment}
+      onClose={() => { const m = moment; setMoment(null); if (m?.action) navigate(m.action.to); }}
+      {...(moment || {})}
+    />
+  );
+
   return (
     <Shell title={spark.title}>
+      {momentNode}
       <Link to="/app/sparks" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 transition-colors mb-6">
         <ArrowLeft size={15} /> Back to sparks
       </Link>
