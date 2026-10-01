@@ -17,13 +17,13 @@ import { Sparkles, Eye, UserPlus, TrendingUp, Compass, Target, MessageSquare, Ga
 
 const SHORTCUTS = {
   FOUNDER: [
-    { icon: Sparkles, label: 'Ask about your venture', to: '/app' },
+    { icon: Sparkles, label: 'Ask about your venture', to: '/app/assistant' },
     { icon: Eye, label: 'How it looks to an investor', to: '/app/investability' },
     { icon: UserPlus, label: 'Find people', to: '/app/gaps' },
     { icon: TrendingUp, label: 'Find investors', to: '/app/find-investors' },
   ],
   CONTRIBUTOR: [
-    { icon: Sparkles, label: 'Ask about your options', to: '/app' },
+    { icon: Sparkles, label: 'Ask about your options', to: '/app/assistant' },
     { icon: Target, label: 'Ventures in your fields', to: '/app/contributor/opportunities' },
     { icon: Gauge, label: 'How you are doing', to: '/app/contributor/standing' },
     { icon: MessageSquare, label: 'Messages', to: '/app/inbox' },
