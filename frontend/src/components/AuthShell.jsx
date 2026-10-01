@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Wordmark from './Wordmark.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowUpRight, Lightbulb, Hammer, Landmark } from 'lucide-react';
@@ -47,6 +48,48 @@ const ROLES = [
 ];
 
 const FIELD = 'w-full px-4 py-3 rounded-lg border border-surface-border bg-surface-muted text-[15px] text-ink-900 placeholder:text-ink-300 focus:outline-none focus:border-violet-500 focus:bg-surface transition-colors';
+
+/**
+ * Proof rather than a claim.
+ *
+ * The sign-up page said "where startups actually begin" and showed nothing,
+ * which is what every sign-up page in the world does. These are real rows
+ * counted from the database, through an endpoint that had existed unused.
+ *
+ * It fails silently and renders nothing if it cannot load. A sign-up page
+ * must never depend on a statistic.
+ */
+function Proof() {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/public/stats')
+      .then((r) => r.json())
+      .then((d) => { if (alive && d.success) setStats(d.stats); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  if (!stats) return null;
+
+  const items = [
+    { value: stats.activeVentures, label: 'ventures being built' },
+    { value: stats.realContributors, label: 'people here' },
+    ...(stats.teamsFormed > 0 ? [{ value: stats.teamsFormed, label: 'have joined one' }] : []),
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-x-10 gap-y-4 mt-10 pt-8 border-t border-surface-border">
+      {items.map((i) => (
+        <div key={i.label}>
+          <p className="text-[26px] font-semibold text-ink-950 tabular-nums leading-none tracking-[-0.02em]">{i.value}</p>
+          <p className="text-[12.5px] text-ink-500 mt-1.5">{i.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function AuthShell({ mode }) {
   const isSignUp = mode === 'sign-up';
