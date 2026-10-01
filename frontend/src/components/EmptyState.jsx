@@ -22,6 +22,38 @@ import { Link } from 'react-router-dom';
  *   And it should offer the one thing worth doing next, when there is one.
  *   Not three links. One.
  */
+/**
+ * The failure case, as its own thing.
+ *
+ * A page that cannot load its data must not render the same screen as a page
+ * whose data is genuinely empty. One is a problem with us; the other is an
+ * answer about the world, and showing the second when the first is true is a
+ * lie somebody acts on.
+ */
+export function LoadFailed({ what = 'This', onRetry }) {
+  return (
+    <div className="bg-surface rounded-xl border border-surface-border shadow-card py-14 px-8 text-center">
+      <div className="w-11 h-11 rounded-xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#FDF1EF' }}>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C85A4A" strokeWidth="1.75" strokeLinecap="round">
+          <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+        </svg>
+      </div>
+      <p className="text-[15.5px] font-medium text-ink-950 mb-1.5">{what} could not be loaded.</p>
+      <p className="text-[13.5px] text-ink-500 leading-relaxed max-w-sm mx-auto">
+        This is a loading problem rather than an empty platform. The data is there.
+      </p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="mt-5 bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-full text-[13.5px] font-medium transition-colors"
+        >
+          Try again
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function EmptyState({
   icon: Icon,
   title,

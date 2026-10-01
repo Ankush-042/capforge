@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, X, ArrowUpRight, TrendingUp, TrendingDown, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import { getWatchlist, removeFromWatchlist } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
@@ -117,9 +118,7 @@ export default function InvestorPortfolio() {
   if (loading) {
     return (
       <Shell persona="INVESTOR" title="Tracking">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
+        <SkeletonPage cards={3} />
       </Shell>
     );
   }

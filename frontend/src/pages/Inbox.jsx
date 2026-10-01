@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { MessageSquare, Sparkles, Building2 } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import ConversationThread from './ConversationThread.jsx';
 import Avatar from '../components/Avatar.jsx';
@@ -175,9 +176,7 @@ export default function Inbox() {
   if (loading) {
     return (
       <Shell persona={persona} displayName={displayName} title="Messages">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
+        <SkeletonPage cards={3} />
       </Shell>
     );
   }

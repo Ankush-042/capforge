@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ArrowUpRight, AlertTriangle, Users, Flag, TrendingUp, TrendingDown, Eye } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import CountUp from '../components/CountUp.jsx';
 import Trajectory from '../components/Trajectory.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
@@ -141,9 +142,7 @@ export default function Progress() {
   if (loading) {
     return (
       <Shell title="Progress">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
+        <SkeletonPage cards={3} />
       </Shell>
     );
   }

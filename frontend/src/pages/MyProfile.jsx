@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Check, AlertTriangle, X } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import AvatarUpload from '../components/AvatarUpload.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { getMyProfile, updateBaseProfile, upsertContributorProfile, upsertInvestorProfile } from '../services/startups.js';
@@ -177,9 +178,7 @@ export default function MyProfile() {
   if (loading) {
     return (
       <Shell persona={persona} displayName={displayName} title="Your profile">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
+        <SkeletonPage cards={3} />
       </Shell>
     );
   }

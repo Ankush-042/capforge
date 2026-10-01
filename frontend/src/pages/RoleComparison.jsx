@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, AlertTriangle, Check, Users } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import { getRoleComparison } from '../services/startups.js';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
@@ -119,9 +120,7 @@ export default function RoleComparison() {
   if (loading) {
     return (
       <Shell title="Which role first">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
+        <SkeletonPage cards={3} />
       </Shell>
     );
   }

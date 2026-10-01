@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Bell, MessageSquare, Sparkles, Building2, Users, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../services/startups.js';
 
@@ -89,9 +90,7 @@ export default function Notifications() {
   if (loading) {
     return (
       <Shell persona={persona} displayName={displayName} title="Notifications">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" />
-        </div>
+        <SkeletonPage cards={3} />
       </Shell>
     );
   }
