@@ -71,10 +71,12 @@ function DegradedFacts({ facts, note, isContributor }) {
   );
 }
 
-export default function VentureAssistant({ startupId, startupName, mode = 'founder' }) {
+export default function VentureAssistant({ startupId, startupName, mode = 'founder', alwaysOpen = false }) {
   const isContributor = mode === 'contributor';
   const SUGGESTIONS = isContributor ? CONTRIBUTOR_SUGGESTIONS : FOUNDER_SUGGESTIONS;
-  const [open, setOpen] = useState(false);
+  // alwaysOpen is for the assistant's own page, where a collapsed widget
+  // under a heading is just a blank screen with a button on it.
+  const [open, setOpen] = useState(alwaysOpen);
   const [question, setQuestion] = useState('');
   const [thread, setThread] = useState([]);
   const [asking, setAsking] = useState(false);
@@ -108,7 +110,7 @@ export default function VentureAssistant({ startupId, startupName, mode = 'found
 
   return (
     <>
-      {!open && (
+      {!open && !alwaysOpen && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-ink-950 hover:bg-ink-900 text-white pl-4 pr-5 py-3 rounded-full shadow-elevated transition-colors"
@@ -123,9 +125,12 @@ export default function VentureAssistant({ startupId, startupName, mode = 'found
           <motion.div
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            exit={alwaysOpen ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-6 right-6 z-40 w-[420px] max-h-[70vh] bg-surface rounded-2xl border border-surface-border shadow-elevated flex flex-col overflow-hidden"
+            className={alwaysOpen
+              ? "bg-surface rounded-2xl border border-surface-border shadow-card flex flex-col overflow-hidden w-full"
+              : "fixed bottom-6 right-6 z-40 w-[420px] max-h-[70vh] bg-surface rounded-2xl border border-surface-border shadow-elevated flex flex-col overflow-hidden"}
+            style={alwaysOpen ? { height: "calc(100vh - 330px)", minHeight: 460 } : undefined}
           >
             <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-surface-border">
               <div className="min-w-0">
@@ -134,9 +139,11 @@ export default function VentureAssistant({ startupId, startupName, mode = 'found
                 </p>
                 <p className="text-[12px] text-ink-500 mt-0.5">{isContributor ? 'Answers only from the ventures actually matching you.' : 'Answers only from your real data. Not general advice.'}</p>
               </div>
-              <button onClick={() => setOpen(false)} className="text-ink-300 hover:text-ink-900 transition-colors shrink-0">
-                <X size={17} />
-              </button>
+              {!alwaysOpen && (
+                <button onClick={() => setOpen(false)} className="text-ink-300 hover:text-ink-900 transition-colors shrink-0">
+                  <X size={17} />
+                </button>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-[200px]">

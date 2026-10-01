@@ -25,27 +25,14 @@ export default function Assistant() {
       subtitle={isContributor ? 'About your options here' : activeStartup?.name}
     >
       <div className="max-w-3xl">
-        <div className="mb-7">
-          <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-violet-600 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-            Reads your real data
-          </p>
-          <h1 className="font-editorial italic text-[32px] text-trust-fg leading-tight">
-            {isContributor
-              ? 'Ask about where you actually stand.'
-              : 'Ask about your venture.'}
-          </h1>
-          <p className="text-[15px] text-ink-700 mt-3 leading-relaxed">
-            {isContributor
-              ? 'It reads your matches, your fields and your profile as they are right now, and it will tell you when a match is weak rather than talking you into it.'
-              : 'It reads your readiness, your open roles, who has been matched to them and your conversations as they are right now. It will say what is weak rather than reassure you.'}
-          </p>
-        </div>
-
+        {/* No heading block. The panel carries its own header saying what it
+            is and what it can see, and repeating that above it was the
+            blankness: a title, a paragraph, and a closed widget. */}
         <VentureAssistant
           startupId={activeStartup?.id}
           startupName={activeStartup?.name}
           mode={isContributor ? 'contributor' : 'founder'}
+          alwaysOpen
         />
       </div>
     </Shell>
