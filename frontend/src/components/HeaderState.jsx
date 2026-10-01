@@ -1,84 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { getProgress, getRankedVentures, getInvestorRecommendations } from '../services/startups.js';
+import { Sparkles, Eye, UserPlus, TrendingUp, Compass, Target, MessageSquare, Gauge } from 'lucide-react';
 
 /**
- * The numbers you would otherwise go hunting for, in the bar at the top.
+ * Four shortcuts in the header, to the things each persona actually does.
  *
- * The header named the page, which the sidebar already does, so it carried no
- * information and read as a band of filler across every screen. This is what
- * it should have been carrying: the two or three figures that tell somebody
- * where they stand, each one a link to the page that explains it.
+ * The bar named the page, which the sidebar already does, so it carried no
+ * information and read as filler on every screen. These are actions rather
+ * than navigation, which is why they are icons and not labels: the sidebar is
+ * where you go, this is what you do, and if the two looked alike the bar
+ * would just be clutter.
  *
- * Deliberately different per persona, because "where do I stand" is a
- * different question for each of them. A founder asks how ready they are and
- * what is still open; a contributor asks how many ventures are in their
- * fields; an investor asks how many are a close fit.
- *
- * NEVER A BLOCKER. It loads after the page, fails silently, and renders
- * nothing until it has something true to say. A header that can break a page
- * is worse than a header that says nothing.
+ * Readiness was tried here first and removed, because it is already the
+ * largest thing on the home page and repeating it taught nobody anything.
  */
 
-function Stat({ label, value, to }) {
-  const body = (
-    <div className="text-right">
-      <p className="text-[17px] font-semibold text-ink-950 tabular-nums leading-none">{value}</p>
-      <p className="text-[10px] font-medium tracking-[0.1em] uppercase text-ink-300 mt-1">{label}</p>
-    </div>
-  );
-  return to
-    ? <Link to={to} className="hover:opacity-70 transition-opacity">{body}</Link>
-    : body;
-}
+const SHORTCUTS = {
+  FOUNDER: [
+    { icon: Sparkles, label: 'Ask about your venture', to: '/app' },
+    { icon: Eye, label: 'How it looks to an investor', to: '/app/investability' },
+    { icon: UserPlus, label: 'Find people', to: '/app/gaps' },
+    { icon: TrendingUp, label: 'Find investors', to: '/app/find-investors' },
+  ],
+  CONTRIBUTOR: [
+    { icon: Sparkles, label: 'Ask about your options', to: '/app' },
+    { icon: Target, label: 'Ventures in your fields', to: '/app/contributor/opportunities' },
+    { icon: Gauge, label: 'How you are doing', to: '/app/contributor/standing' },
+    { icon: MessageSquare, label: 'Messages', to: '/app/inbox' },
+  ],
+  INVESTOR: [
+    { icon: Compass, label: 'Explore everything', to: '/app/investor/explore' },
+    { icon: Target, label: 'Deal flow', to: '/app/investor/deal-flow' },
+    { icon: Eye, label: 'What you track', to: '/app/investor/portfolio' },
+    { icon: MessageSquare, label: 'Messages', to: '/app/inbox' },
+  ],
+};
 
-export default function HeaderState({ persona, startupId }) {
-  const [stats, setStats] = useState(null);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        if (persona === 'FOUNDER' && startupId) {
-          const { ok, data } = await getProgress(startupId);
-          if (!alive || !ok || !data.success) return;
-          const p = data.progress;
-          const open = (p.dimensions || []).reduce((a, d) => a + (d.gaps?.length || 0), 0);
-          setStats([
-            { label: 'Readiness', value: p.score ?? '—', to: '/app/readiness' },
-            ...(open > 0 ? [{ label: 'Roles open', value: open, to: '/app/gaps' }] : []),
-          ]);
-        } else if (persona === 'CONTRIBUTOR') {
-          const { ok, data } = await getRankedVentures();
-          if (!alive || !ok || !data.success) return;
-          setStats([
-            { label: 'In your fields', value: data.facts.venturesInYourFields, to: '/app/contributor/opportunities' },
-            ...(data.facts.venturesWithARoleForYou > 0
-              ? [{ label: 'With a role', value: data.facts.venturesWithARoleForYou, to: '/app/contributor/opportunities' }]
-              : []),
-          ]);
-        } else if (persona === 'INVESTOR') {
-          const { ok, data } = await getInvestorRecommendations();
-          if (!alive || !ok || !data.success) return;
-          const deals = data.recommendations || [];
-          const close = deals.filter((d) => parseFloat(d.score) >= 0.5).length;
-          setStats([
-            { label: 'In deal flow', value: deals.length, to: '/app/investor/deal-flow' },
-            ...(close > 0 ? [{ label: 'Close fit', value: close, to: '/app/investor/deal-flow' }] : []),
-          ]);
-        }
-      } catch {
-        /* The header must never be what breaks a page. */
-      }
-    })();
-    return () => { alive = false; };
-  }, [persona, startupId]);
-
-  if (!stats || stats.length === 0) return null;
+export default function HeaderState({ persona }) {
+  const items = SHORTCUTS[persona] || [];
+  if (items.length === 0) return null;
 
   return (
-    <div className="hidden lg:flex items-center gap-7 pr-7 mr-1 border-r border-surface-border">
-      {stats.map((s) => <Stat key={s.label} {...s} />)}
+    <div className="hidden lg:flex items-center gap-1 pr-3 mr-1 border-r border-surface-border">
+      {items.map(({ icon: Icon, label, to }) => (
+        <Link
+          key={to + label}
+          to={to}
+          title={label}
+          aria-label={label}
+          className="flex items-center justify-center w-9 h-9 rounded-lg text-ink-500 hover:text-ink-900 hover:bg-surface-muted transition-colors"
+        >
+          <Icon size={16.5} />
+        </Link>
+      ))}
     </div>
   );
 }

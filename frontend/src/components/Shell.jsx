@@ -343,7 +343,7 @@ export default function Shell({ children, title, subtitle, persona: externalPers
               through the command palette, so unless somebody knew a keyboard
               shortcut it was invisible. */}
           <div className="flex items-center gap-2 shrink-0">
-          <HeaderState persona={persona} startupId={activeStartup?.id} />
+          <HeaderState persona={persona} />
 
           <Link
             to="/app/notifications"
