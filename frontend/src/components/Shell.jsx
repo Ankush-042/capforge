@@ -6,6 +6,8 @@ import {
   Bookmark, Scale, GraduationCap, HandCoins, ShieldCheck, Landmark, Activity, Bell,
 } from 'lucide-react';
 import StartupSwitcher from './StartupSwitcher.jsx';
+import HeaderState from './HeaderState.jsx';
+import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useMyIdentity } from '../context/MyIdentityContext.jsx';
 
 /**
@@ -189,6 +191,7 @@ function useUnreadCount() {
 }
 
 export default function Shell({ children, title, subtitle, persona: externalPersona, displayName: externalDisplayName }) {
+  const { activeStartup } = useActiveStartup();
   const unread = useUnreadCount();
   const location = useLocation();
 
@@ -328,11 +331,20 @@ export default function Shell({ children, title, subtitle, persona: externalPers
             </div>
           </div>
 
-          {/* THE RIGHT SIDE WAS EMPTY, which is the real reason this bar read
-              as filler: it told you where you were, and the sidebar already
-              does that. Notifications were reachable only through the command
-              palette, so unless somebody knew a keyboard shortcut the entire
-              system was invisible. */}
+          {/* THE RIGHT SIDE CARRIES WHERE YOU STAND.
+              The bar named the page, which the sidebar already does, so it
+              held no information and read as filler across every screen. It
+              now carries the two or three figures somebody would otherwise go
+              hunting for, each linking to the page that explains it, and
+              different per persona because "where do I stand" is a different
+              question for each.
+
+              Notifications sit beside them: that system was reachable only
+              through the command palette, so unless somebody knew a keyboard
+              shortcut it was invisible. */}
+          <div className="flex items-center gap-2 shrink-0">
+          <HeaderState persona={persona} startupId={activeStartup?.id} />
+
           <Link
             to="/app/notifications"
             className="relative flex items-center justify-center w-9 h-9 rounded-lg text-ink-500 hover:text-ink-900 hover:bg-surface-muted transition-colors shrink-0"
@@ -345,6 +357,7 @@ export default function Shell({ children, title, subtitle, persona: externalPers
               </span>
             )}
           </Link>
+          </div>
         </header>
         <main className="flex-1 px-10 py-9 max-w-[1440px] w-full mx-auto">{children}</main>
       </div>
