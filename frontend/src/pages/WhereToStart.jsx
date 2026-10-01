@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { MessageSquare, ArrowUpRight, Check, AlertTriangle, Users } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import { LoadFailed } from '../components/EmptyState.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import { getWhereToStart, startConversation } from '../services/startups.js';
@@ -121,11 +122,13 @@ export default function WhereToStart() {
   const navigate = useNavigate();
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
+  // A failed request must not render as an empty answer about the world.
+  const [failed, setFailed] = useState(false);
   const [data, setData] = useState(null);
 
   useEffect(() => {
     getWhereToStart().then(({ ok, data: d }) => {
-      if (ok && d.success) setData(d);
+      if (ok && d.success) setData(d); else setFailed(true);
       setLoading(false);
     });
   }, []);
@@ -140,6 +143,16 @@ export default function WhereToStart() {
     return (
       <Shell persona="CONTRIBUTOR" title="Where to start">
         <SkeletonPage cards={3} />
+      </Shell>
+    );
+  }
+
+  // A failed request is not an empty answer. Rendering the same screen for
+  // both tells somebody the platform has nothing when it has everything.
+  if (failed) {
+    return (
+      <Shell persona="CONTRIBUTOR" title="This">
+        <LoadFailed what="This" onRetry={() => window.location.reload()} />
       </Shell>
     );
   }

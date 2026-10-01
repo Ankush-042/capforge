@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import WhatsNew from '../components/WhatsNew.jsx';
 import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
@@ -45,7 +46,7 @@ export default function ContributorDashboard() {
     load();
   }, []);
 
-  if (loading) return <Shell persona="CONTRIBUTOR" title="Dashboard"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell persona="CONTRIBUTOR" title="Dashboard"><SkeletonPage cards={3} /></Shell>;
 
   // Conversations have no PENDING status. That was a field on the dead
   // connections table. The real 'waiting on you' signal is unread messages,

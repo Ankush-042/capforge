@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, AlertTriangle, Eye, MessageSquare, Target, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import { LoadFailed } from '../components/EmptyState.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import { getMyStanding } from '../services/startups.js';
@@ -62,11 +63,13 @@ const SITUATION = {
 
 export default function ContributorStanding() {
   const [loading, setLoading] = useState(true);
+  // A failed request must not render as an empty answer about the world.
+  const [failed, setFailed] = useState(false);
   const [s, setS] = useState(null);
 
   useEffect(() => {
     getMyStanding().then(({ ok, data }) => {
-      if (ok && data.success) setS(data.standing);
+      if (ok && data.success) setS(data.standing); else setFailed(true);
       setLoading(false);
     });
   }, []);
@@ -75,6 +78,16 @@ export default function ContributorStanding() {
     return (
       <Shell persona="CONTRIBUTOR" title="How you are doing">
         <SkeletonPage cards={3} />
+      </Shell>
+    );
+  }
+
+  // A failed request is not an empty answer. Rendering the same screen for
+  // both tells somebody the platform has nothing when it has everything.
+  if (failed) {
+    return (
+      <Shell persona="CONTRIBUTOR" title="Where you stand">
+        <LoadFailed what="Where you stand" onRetry={() => window.location.reload()} />
       </Shell>
     );
   }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, MessageSquare, Users } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import { LoadFailed } from '../components/EmptyState.jsx';
 import CountUp from '../components/CountUp.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import Avatar from '../components/Avatar.jsx';
@@ -128,12 +129,14 @@ export default function ContributorOpportunities() {
   const showToast = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  // A failed request must not render as an empty answer about the world.
+  const [failed, setFailed] = useState(false);
   const [data, setData] = useState(null);
   const [showElsewhere, setShowElsewhere] = useState(false);
 
   useEffect(() => {
     getRankedVentures().then(({ ok, data: d }) => {
-      if (ok && d.success) setData(d);
+      if (ok && d.success) setData(d); else setFailed(true);
       setLoading(false);
     });
   }, []);
@@ -148,6 +151,16 @@ export default function ContributorOpportunities() {
     return (
       <Shell persona="CONTRIBUTOR" title="Opportunities">
         <SkeletonPage cards={3} />
+      </Shell>
+    );
+  }
+
+  // A failed request is not an empty answer. Rendering the same screen for
+  // both tells somebody the platform has nothing when it has everything.
+  if (failed) {
+    return (
+      <Shell persona="CONTRIBUTOR" title="Your opportunities">
+        <LoadFailed what="Your opportunities" onRetry={() => window.location.reload()} />
       </Shell>
     );
   }

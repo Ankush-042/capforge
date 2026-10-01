@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, X, ArrowUpRight, TrendingUp, TrendingDown, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import { LoadFailed } from '../components/EmptyState.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import { getWatchlist, removeFromWatchlist } from '../services/startups.js';
@@ -97,11 +98,13 @@ function Entry({ e, onRemove, index }) {
 export default function InvestorPortfolio() {
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
+  // A failed request must not render as an empty answer about the world.
+  const [failed, setFailed] = useState(false);
   const [data, setData] = useState({ watching: [], passed: [] });
 
   async function load() {
     const { ok, data: d } = await getWatchlist();
-    if (ok && d.success) setData(d);
+    if (ok && d.success) setData(d); else setFailed(true);
   }
   useEffect(() => { load().then(() => setLoading(false)); }, []);
 
@@ -119,6 +122,16 @@ export default function InvestorPortfolio() {
     return (
       <Shell persona="INVESTOR" title="Tracking">
         <SkeletonPage cards={3} />
+      </Shell>
+    );
+  }
+
+  // A failed request is not an empty answer. Rendering the same screen for
+  // both tells somebody the platform has nothing when it has everything.
+  if (failed) {
+    return (
+      <Shell persona="INVESTOR" title="What you track">
+        <LoadFailed what="What you track" onRetry={() => window.location.reload()} />
       </Shell>
     );
   }

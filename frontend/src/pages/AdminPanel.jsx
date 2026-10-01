@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { ShieldCheck, Search, Ban, CheckCircle2, Shield, ShieldOff, Trash2, AlertTriangle, Wrench, Users2, Building2, Link2, Layers } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import StatCard, { STAT_PALETTE } from '../components/charts/StatCard.jsx';
 import { getAdminStats, getAdminUsers, getAdminStartups, setStartupVerification, deleteAdminStartup, setUserStatus, setUserAdmin, getIntegrityCheck, fixIntegrityIssue } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
@@ -96,7 +97,7 @@ export default function AdminPanel() {
     else showToast(data.error || 'Could not update.', 'error');
   }
 
-  if (loading) return <Shell title="Admin"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell title="Admin"><SkeletonPage cards={3} /></Shell>;
   if (forbidden) return <Shell title="Admin"><div className="bg-surface rounded-xl border border-surface-border shadow-card p-12 text-center"><p className="text-[15px] text-ink-500">Admin access required. This account is not an admin.</p></div></Shell>;
 
   return (

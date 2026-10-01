@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Eye } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import { savePitchContent } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
@@ -68,7 +69,7 @@ export default function PitchEditor() {
     else showToast(data.error === 'FORBIDDEN' ? 'This is not your venture.' : 'Could not save.', 'error');
   }
 
-  if (loading) return <Shell title="Edit pitch"><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-surface-border border-t-violet-500 animate-spin" /></div></Shell>;
+  if (loading) return <Shell title="Edit pitch"><SkeletonPage cards={3} /></Shell>;
   if (!targetId) return <Shell title="Edit pitch"><p className="text-[15px] text-ink-500">You do not have a venture yet.</p></Shell>;
 
   return (

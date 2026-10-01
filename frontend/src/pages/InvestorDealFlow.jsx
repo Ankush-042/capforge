@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { RefreshCw, Check, AlertTriangle, ArrowUpRight, Bookmark, Search } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import { LoadFailed } from '../components/EmptyState.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import WatchControls from '../components/WatchControls.jsx';
 import { getWatchlist, getInvestorRecommendations, refreshInvestorRecommendations } from '../services/startups.js';
@@ -100,6 +101,8 @@ function DealCard({ d, index }) {
 export default function InvestorDealFlow() {
   const showToast = useToast();
   const [loading, setLoading] = useState(true);
+  // A failed request must not render as an empty answer about the world.
+  const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [deals, setDeals] = useState([]);
   // Movement on ventures this investor already marked. The watchlist has
@@ -110,7 +113,7 @@ export default function InvestorDealFlow() {
   async function load() {
     const [{ ok, data }, watchRes] = await Promise.all([getInvestorRecommendations(), getWatchlist()]);
     if (watchRes.ok && watchRes.data.success) setWatched(watchRes.data.watchlist || []);
-    if (ok && data.success) setDeals(data.recommendations);
+    if (ok && data.success) setDeals(data.recommendations); else setFailed(true);
   }
 
   useEffect(() => { load().then(() => setLoading(false)); }, []);
@@ -129,6 +132,16 @@ export default function InvestorDealFlow() {
     return (
       <Shell persona="INVESTOR" title="Deal flow">
         <SkeletonPage cards={3} />
+      </Shell>
+    );
+  }
+
+  // A failed request is not an empty answer. Rendering the same screen for
+  // both tells somebody the platform has nothing when it has everything.
+  if (failed) {
+    return (
+      <Shell persona="INVESTOR" title="Your deal flow">
+        <LoadFailed what="Your deal flow" onRetry={() => window.location.reload()} />
       </Shell>
     );
   }
