@@ -1,4 +1,5 @@
 import React from 'react';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -93,6 +94,10 @@ window.addEventListener('pageshow', (event) => {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    {/* Outermost, so a crash anywhere below it — including inside a provider
+        — renders a page with a way out rather than a white screen. It does
+        nothing at all unless something has already thrown. */}
+    <ErrorBoundary>
     <ToastProvider>
     <MyIdentityProvider>
     <ActiveStartupProvider>
@@ -179,5 +184,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ActiveStartupProvider>
     </MyIdentityProvider>
     </ToastProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
