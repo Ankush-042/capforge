@@ -77,10 +77,20 @@ export default function InvestorDashboard() {
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
+        {/* THE TILE SHOWS WHAT THE PAGE SHOWS.
+            It read 0 while linking to a page listing fourteen ventures,
+            because it counted only close fits. Both numbers were true and
+            the pairing was nonsense: a tile is a door, and the number on it
+            should be what is behind it. The count is the deal flow; how many
+            are a close fit is the caption, which is the subordinate fact. */}
         <MetricTile
-          label="Deal flow" value={strongFits}
+          label="Deal flow" value={deals.length}
           icon={Search} to="/app/investor/deal-flow" {...TILE_PALETTE.lavender}
-          caption={deals.length === 0 ? 'Nothing yet' : `Fit your thesis, of ${deals.length} ranked`}
+          caption={deals.length === 0
+            ? 'Nothing yet'
+            : strongFits > 0
+              ? `${strongFits} a close fit`
+              : 'None a close fit yet'}
         />
         <MetricTile
           label="Best fit" value={top ? Math.round(parseFloat(top.score) * 100) : '\u2014'} unit={top ? '%' : null}
