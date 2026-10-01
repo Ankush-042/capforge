@@ -141,7 +141,7 @@ export default function InvestorDashboard() {
       <div>
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-[15px] font-semibold text-ink-900">Also matching</h2>
-          <Link to="/app/investor/saved-searches" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">Saved searches</Link>
+          <Link to="/app/investor/explore" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">Explore everything</Link>
         </div>
         {deals.length <= 1 ? (
           <div className="bg-surface rounded-xl border border-surface-border shadow-card">

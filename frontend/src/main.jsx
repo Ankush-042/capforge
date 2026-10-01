@@ -58,7 +58,7 @@ import Analytics from './pages/Analytics.jsx';
 import Investability from './pages/Investability.jsx';
 import Inbox from './pages/Inbox.jsx';
 import ProfileView from './pages/ProfileView.jsx';
-import SavedSearches from './pages/SavedSearches.jsx';
+import Explore from './pages/Explore.jsx';
 import MyProfile from './pages/MyProfile.jsx';
 import { ToastProvider } from './components/Toast.jsx';
 
@@ -166,7 +166,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             would drift from this one. */}
         <Route path="/app/inbox/:id" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
         <Route path="/app/profile/:userId" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
-        <Route path="/app/investor/saved-searches" element={<ProtectedRoute><SavedSearches /></ProtectedRoute>} />
+        {/* Saved searches became Explore: a saved query waits, a tracked
+            venture feeds deal flow. The old path still resolves so any link
+            to it keeps working. */}
+        <Route path="/app/investor/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
+        <Route path="/app/investor/saved-searches" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
         <Route path="/app/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { RefreshCw, Check, AlertTriangle, ArrowUpRight, Bookmark } from 'lucide-react';
+import { RefreshCw, Check, AlertTriangle, ArrowUpRight, Bookmark, Search } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import WatchControls from '../components/WatchControls.jsx';
@@ -272,8 +272,8 @@ export default function InvestorDealFlow() {
                   <h2 className="text-[15px] font-semibold text-ink-900">Worth a conversation</h2>
                   <p className="text-[13px] text-ink-500 mt-0.5">Real overlap with what you said you back.</p>
                 </div>
-                <Link to="/app/investor/saved-searches" className="flex items-center gap-1.5 text-[13px] text-ink-500 hover:text-violet-600 transition-colors">
-                  <Bookmark size={13} /> Saved searches
+                <Link to="/app/investor/explore" className="flex items-center gap-1.5 text-[13px] text-ink-500 hover:text-violet-600 transition-colors">
+                  <Search size={13} /> Explore everything
                 </Link>
               </div>
               <div className="grid grid-cols-2 gap-4">
