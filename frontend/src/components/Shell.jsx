@@ -1,3 +1,4 @@
+import Wordmark from './Wordmark.jsx';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -250,7 +251,7 @@ export default function Shell({ children, title, subtitle, persona: externalPers
                 <circle cx="13" cy="3.5" r="1.6" fill="#3FB081" />
               </svg>
             </div>
-            <span className="text-[16px] font-bold font-display text-ink-950 tracking-[-0.02em]">CapForge</span>
+            <Wordmark size={16} />
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-ink-700 font-medium">{identity.name.split(' ')[0]}</span>
           </span>
           <span className="text-ink-300 text-xs">⌄</span>

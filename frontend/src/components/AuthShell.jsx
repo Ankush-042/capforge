@@ -117,7 +117,7 @@ export function AuthShell({ mode }) {
               <circle cx="13" cy="3.5" r="1.6" fill="#3FB081" />
             </svg>
           </div>
-          <span className="font-display font-bold text-[15px] tracking-[-0.02em] text-ink-950">CapForge</span>
+          <Wordmark size={15} />
         </Link>
         <Link to="/" className="text-[13.5px] text-ink-500 hover:text-ink-900 flex items-center gap-1.5 transition-colors">
           <ArrowLeft size={14} /> Back
@@ -146,6 +146,12 @@ export function AuthShell({ mode }) {
                 ? 'Share what you cannot stop thinking about, find the person who wants to build it with you, and grow it until investors come looking.'
                 : 'Pick up where you left off.'}
             </p>
+
+            {/* Proof rather than a claim. The page said "where startups
+                actually begin" and showed nothing, which is what every other
+                sign-up page does. These are real rows counted from the
+                database, and the endpoint has existed unused all along. */}
+            {isSignUp && <Proof />}
           </motion.div>
 
           <motion.div
