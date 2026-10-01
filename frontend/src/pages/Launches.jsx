@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, Check, Plus } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import FeatureIntro from '../components/FeatureIntro.jsx';
+import INTROS from '../content/intros.js';
 import SkeletonPage from '../components/Skeleton.jsx';
 import { useMyIdentity } from '../context/MyIdentityContext.jsx';
 import Avatar from '../components/Avatar.jsx';
@@ -196,12 +198,7 @@ export default function Launches() {
       </div>
 
       {launches.length === 0 ? (
-        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <p className="text-[15px] text-ink-700 mb-1">{isFounder ? 'You have not put anything up yet.' : 'Nothing has been put up yet.'}</p>
-          <p className="text-[13px] text-ink-500 max-w-sm mx-auto">
-            {isFounder ? 'Put something up and people here can try it and tell you what happened.' : 'When a founder here has something to show, it appears on this page and you can try it.'}
-          </p>
-        </div>
+        <FeatureIntro {...INTROS[isFounder ? 'launchesFounder' : 'launchesContributor']} />
       ) : (
         <>
           {needsPeople.length > 0 && (

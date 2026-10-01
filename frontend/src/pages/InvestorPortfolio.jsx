@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, X, ArrowUpRight, TrendingUp, TrendingDown, Check } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import FeatureIntro from '../components/FeatureIntro.jsx';
+import INTROS from '../content/intros.js';
 import { LoadFailed } from '../components/EmptyState.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
@@ -162,16 +164,8 @@ export default function InvestorPortfolio() {
       </div>
 
       {watching.length === 0 && passed.length === 0 ? (
-        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <Eye size={22} className="text-ink-300 mx-auto mb-3" />
-          <p className="text-[15px] text-ink-700 mb-1">Nothing tracked yet.</p>
-          <p className="text-[13px] text-ink-500 mb-6 max-w-sm mx-auto">
-            Watching a venture tells you when it moves. Recording a pass tells future you why you said no.
-          </p>
-          <Link to="/app/investor/deal-flow" className="inline-flex items-center gap-2 text-[13px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-full transition-colors">
-            See your deal flow <ArrowUpRight size={14} />
-          </Link>
-        </div>
+
+        <FeatureIntro {...INTROS.trackingInvestor} />
       ) : (
         <>
           <div className="grid grid-cols-3 gap-4 mb-8">

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { RefreshCw, Check, AlertTriangle, ArrowUpRight, Bookmark, Search } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import FeatureIntro from '../components/FeatureIntro.jsx';
+import INTROS from '../content/intros.js';
 import { LoadFailed } from '../components/EmptyState.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import WatchControls from '../components/WatchControls.jsx';
@@ -264,18 +266,8 @@ export default function InvestorDealFlow() {
       )}
 
       {deals.length === 0 ? (
-        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <p className="text-[15px] text-ink-700 mb-1">{note || 'Nothing matches your thesis yet.'}</p>
-          <p className="text-[13px] text-ink-500 mb-6 max-w-md mx-auto">
-            If this stays empty, your thesis domains may be narrower than what is currently being built. Widening one field is usually enough.
-          </p>
-          <Link
-            to="/app/my-profile"
-            className="inline-flex items-center gap-2 text-[13px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-5 py-2.5 rounded-full transition-colors"
-          >
-            Review your thesis <ArrowUpRight size={14} />
-          </Link>
-        </div>
+
+        <FeatureIntro {...INTROS.dealFlowInvestor} />
       ) : (
         <>
           {strong.length > 0 && (

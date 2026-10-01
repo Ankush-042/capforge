@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, MessageSquare, Users } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import FeatureIntro from '../components/FeatureIntro.jsx';
+import INTROS from '../content/intros.js';
 import { LoadFailed } from '../components/EmptyState.jsx';
 import CountUp from '../components/CountUp.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
@@ -168,10 +170,8 @@ export default function ContributorOpportunities() {
   if (!data) {
     return (
       <Shell persona="CONTRIBUTOR" title="Opportunities">
-        <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
-          <p className="text-[15px] text-ink-700 mb-1">Finish your profile first.</p>
-          <Link to="/app/my-profile" className="text-[13px] text-violet-700 hover:text-violet-600 transition-colors">Go to your profile</Link>
-        </div>
+
+        <FeatureIntro {...INTROS.opportunitiesContributor} />
       </Shell>
     );
   }
