@@ -71,7 +71,7 @@ export default function InvestorDashboard() {
           {top
             ? strongFits > 0
               ? `${strongFits} ${strongFits === 1 ? 'venture is' : 'ventures are'} a close fit for your thesis. All ${deals.length} on the platform are ranked below them, because judging an early company is your call rather than ours.`
-              : `Nothing is a close fit for your thesis yet. All ${deals.length} ventures are ranked anyway, closest first, because hiding them would only mean deciding for you.`
+              : `None of the ${deals.length} ventures here clears 50% against your thesis, which is the line above which we call something a close fit. They are all ranked anyway, closest first, because hiding them would only mean deciding for you.`
             : 'Ventures appear here once they match your domains and stages.'}
         </p>
       </div>

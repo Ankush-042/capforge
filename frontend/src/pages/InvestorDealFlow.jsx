@@ -229,6 +229,27 @@ export default function InvestorDealFlow() {
         </div>
       )}
 
+      {/* WHY THE STRONG SECTION IS EMPTY, said rather than left to be worked
+          out. Fourteen ventures on the page and none called a close fit
+          reads as a broken engine unless the bar is named. */}
+      {deals.length > 0 && strong.length === 0 && (
+        <div className="bg-surface rounded-xl border border-surface-border shadow-card px-6 py-5 mb-6">
+          <p className="text-[14px] text-ink-800 leading-relaxed">
+            None of these clears 50% against your thesis, which is the line above which we
+            call something a close fit. {deals.length} {deals.length === 1 ? 'venture is' : 'ventures are'} ranked below
+            anyway, closest first, because hiding them would only mean deciding for you.
+          </p>
+          <p className="text-[13px] text-ink-500 leading-relaxed mt-2">
+            That score weighs your stated fields, stage and cheque size against each venture.
+            If the strongest here is still near the line, widening one field on your thesis
+            usually moves several at once.{' '}
+            <Link to="/app/my-profile" className="text-violet-700 hover:text-violet-600 transition-colors underline">
+              Review your thesis
+            </Link>.
+          </p>
+        </div>
+      )}
+
       {deals.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
           <p className="text-[15px] text-ink-700 mb-1">{note || 'Nothing matches your thesis yet.'}</p>
