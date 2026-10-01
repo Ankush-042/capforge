@@ -110,3 +110,59 @@
 .app-shell [class*="text-\[4"] {
   font-variant-numeric: tabular-nums;
 }
+
+/* MOTION ---------------------------------------------------------------------
+   Entry animation existed on some pages and not others, at different
+   timings, which reads as unfinished rather than as a choice. One curve and
+   one duration everywhere.
+
+   The rule throughout: motion explains a change, it never decorates one.
+   Nothing bounces, nothing slides in from off-screen, and nothing moves on
+   an element the person did not touch. */
+@keyframes cf-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.app-shell .shadow-card,
+.app-shell .shadow-elevated {
+  animation: cf-rise 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* A card you can open should answer the cursor. One pixel, not four: a lift
+   large enough to notice consciously is a lift that was overdone. */
+.app-shell a > .shadow-card:hover,
+.app-shell .shadow-card.group:hover {
+  transform: translateY(-1px);
+}
+
+/* Bars fill rather than appear, because the width IS the information. */
+.app-shell [style*="width:"] { transition: width 520ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Anybody who has asked their system to stop animating gets none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .app-shell *::before,
+  .app-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* DENSITY --------------------------------------------------------------------
+   Section spacing drifted between pages, so the rhythm of the product
+   changed depending which screen you were on. These are the two gaps every
+   page already uses; they are now the same gap. */
+.app-shell .mb-7 { margin-bottom: 30px; }
+.app-shell .mb-8 { margin-bottom: 38px; }
+.app-shell .mb-9 { margin-bottom: 46px; }
+
+/* ONE LOUD THING -------------------------------------------------------------
+   A page should have a first thing to look at. The headline on every page is
+   the editorial line, and it was competing with the paragraph beneath it. */
+.app-shell h1.font-editorial {
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: -0.028em;
+}

@@ -1,3 +1,4 @@
+import CountUp from '../CountUp.jsx';
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -60,7 +61,10 @@ export default function MetricTile({
             className="text-[40px] font-semibold leading-none tabular-nums tracking-[-0.03em]"
             style={{ color: valueColor || fg }}
           >
-            {value}
+            {/* The figure arrives at its value rather than appearing at it,
+                which reads as a measurement being taken. Anything that is not
+                a number passes straight through. */}
+            {typeof value === 'number' ? <CountUp value={value} /> : value}
           </span>
           {unit && <span className="text-[15px] font-medium" style={{ color: fg, opacity: 0.6 }}>{unit}</span>}
           {badge && (

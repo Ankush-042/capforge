@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, MessageSquare, Users } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import CountUp from '../components/CountUp.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { getRankedVentures, startConversation } from '../services/startups.js';
@@ -96,7 +97,7 @@ function VentureCard({ v, index, onMessage }) {
 
         <div className="text-right shrink-0">
           <p className="text-[28px] font-semibold text-ink-950 tabular-nums leading-none tracking-[-0.02em]">
-            {v.score}<span className="text-[15px] text-ink-400 font-normal">%</span>
+            <CountUp value={v.score} /><span className="text-[15px] text-ink-400 font-normal">%</span>
           </p>
           <p className="text-[10.5px] font-medium tracking-[0.1em] uppercase text-ink-300 mt-1.5">suits you</p>
         </div>

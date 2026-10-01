@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ArrowUpRight, AlertTriangle, Users, Flag, TrendingUp, TrendingDown, Eye } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
+import CountUp from '../components/CountUp.jsx';
 import Trajectory from '../components/Trajectory.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import { getProgress } from '../services/startups.js';
@@ -197,7 +198,7 @@ export default function Progress() {
               <div className="col-span-2">
                 <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-mint-500 mb-2">Where you stand</p>
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="font-display text-[64px] font-bold text-white leading-none tabular-nums">{p.score}</span>
+                  <span className="font-display text-[64px] font-bold text-white leading-none tabular-nums"><CountUp value={p.score} /></span>
                   <span className="text-[17px] text-white/50">/ 100</span>
                 </div>
                 {p.delta !== null && p.delta !== 0 && (
