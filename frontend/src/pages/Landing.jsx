@@ -142,13 +142,13 @@ export default function Landing() {
         <div className="relative max-w-[1280px] mx-auto px-6 lg:px-10 pt-20 pb-24 grid lg:grid-cols-2 gap-16 items-center">
           <motion.div initial="hidden" animate="visible" variants={heroContainer}>
             <motion.p variants={heroItem} className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] uppercase text-mint-500 mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-mint-500" />Where startups actually begin
+              <span className="w-1.5 h-1.5 rounded-full bg-mint-500" />Find your co-founder. Build the thing.
             </motion.p>
             <motion.h1 variants={heroItem} className="font-display text-[46px] sm:text-[60px] lg:text-[72px] font-semibold leading-[1.02] tracking-tight text-white">
-              It starts with one idea<br />and one person who <span className="italic font-normal text-mint-500">believes it.</span>
+              Where it stops being<br />an idea and <span className="italic font-normal text-mint-500">starts being real.</span>
             </motion.h1>
             <motion.p variants={heroItem} className="text-lg text-white/70 mt-7 max-w-md leading-relaxed">
-              Share the thing you cannot stop thinking about. Find the person who wants to build it with you. CapForge takes it from a spark to a real company, and puts it in front of the investors who back that kind of thing.
+              Put up the thing you cannot stop thinking about, find the person who wants to build it with you, and grow it until investors come looking. CapForge will tell you honestly how far off you are at every step, which is the part nobody else will do.
             </motion.p>
             <motion.div variants={heroItem} className="flex flex-wrap items-center gap-4 mt-9">
               <Link to="/sign-up" className="group relative flex items-center overflow-hidden bg-white hover:bg-white/90 text-ink-950 rounded-full pl-6 pr-2 py-2 font-medium transition-colors">
@@ -265,6 +265,55 @@ export default function Landing() {
       </section>
 
       {/* Questions, real objections answered honestly */}
+      {/* THE THING NOBODY ELSE DOES, said rather than demonstrated.
+          Every other section argues that the matching is good, which is what
+          every platform in this space claims. This one is the actual
+          difference and it was nowhere on the page: the product tells people
+          uncomfortable things, and none of its competitors will. Shown as
+          real sentences lifted from the product, because a claim about
+          honesty that is not itself evidence is just another claim. */}
+      <section id="honest" className="max-w-[1280px] mx-auto px-6 lg:px-10 py-28">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <p className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] uppercase text-forest-600 mb-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-forest-500" />The uncomfortable part
+          </p>
+          <h2 className="font-display text-3xl lg:text-[44px] font-semibold text-ink-950 leading-tight max-w-3xl mb-5">
+            It will tell you things you would rather <span className="italic font-normal text-forest-600">not hear.</span>
+          </h2>
+          <p className="text-[17px] text-ink-700 leading-relaxed max-w-2xl mb-14">
+            Every other platform in this space is built to make you feel good about your idea.
+            This one is built to be right. These are sentences it actually says, not a promise
+            about how it behaves.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-5">
+          {[
+            ['No open role fits you.', 'Said to a contributor looking at a venture they want. The venture still appears, because they may want it anyway, and hiding it would be deciding for them.'],
+            ['We do not measure product-market fit.', 'Readiness says so in as many words. It is 43% of why startups fail and it cannot be measured from an idea-stage profile, so the score states the gap rather than inventing a proxy.'],
+            ['Nothing here is a close fit for your thesis.', 'Said to an investor, with all the ventures ranked below it anyway. A weak one sinks and says why, because judging an early company is their job.'],
+            ['This is our judgement, not data.', 'On every number the product could not source. The equity figures cite Carta and the readiness weights cite a study of 431 failed companies; everything else is labelled as ours.'],
+          ].map(([quote, why], i) => (
+            <motion.div
+              key={quote}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-white rounded-xl border border-surface-border p-7"
+            >
+              <p className="font-editorial italic text-[21px] text-ink-950 leading-snug mb-3">&ldquo;{quote}&rdquo;</p>
+              <p className="text-[14px] text-ink-700 leading-relaxed">{why}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       <section id="faq" className="max-w-[900px] mx-auto px-6 lg:px-10 py-28">
         <Eyebrow>Questions</Eyebrow>
         <h2 className="font-display text-3xl lg:text-[40px] font-semibold text-ink-950 leading-tight mb-12">The things people <span className="italic font-normal text-forest-600">actually ask.</span></h2>
