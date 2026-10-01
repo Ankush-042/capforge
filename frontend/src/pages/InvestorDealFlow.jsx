@@ -5,7 +5,7 @@ import { RefreshCw, Check, AlertTriangle, ArrowUpRight, Bookmark } from 'lucide-
 import Shell from '../components/Shell.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import WatchControls from '../components/WatchControls.jsx';
-import { getInvestorRecommendations, refreshInvestorRecommendations } from '../services/startups.js';
+import { getWatchlist, getInvestorRecommendations, refreshInvestorRecommendations } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 /**
@@ -102,10 +102,14 @@ export default function InvestorDealFlow() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deals, setDeals] = useState([]);
+  // Movement on ventures this investor already marked. The watchlist has
+  // computed it since it was built and no page has ever shown it.
+  const [watched, setWatched] = useState([]);
   const [note, setNote] = useState(null);
 
   async function load() {
-    const { ok, data } = await getInvestorRecommendations();
+    const [{ ok, data }, watchRes] = await Promise.all([getInvestorRecommendations(), getWatchlist()]);
+    if (watchRes.ok && watchRes.data.success) setWatched(watchRes.data.watchlist || []);
     if (ok && data.success) setDeals(data.recommendations);
   }
 
@@ -132,6 +136,11 @@ export default function InvestorDealFlow() {
   const strong = deals.filter((d) => (parseFloat(d.score) || 0) >= 0.5);
   const rest = deals.filter((d) => (parseFloat(d.score) || 0) < 0.5);
   const top = deals[0] || null;
+  // Only genuine movement, biggest first, and never something they passed on:
+  // a pass is a decision and re-surfacing it would be arguing with them.
+  const moved = watched
+    .filter((w) => w.status === 'WATCHING' && w.moved !== null && Math.abs(w.moved) >= 3)
+    .sort((a, b) => Math.abs(b.moved) - Math.abs(a.moved));
 
   return (
     <Shell persona="INVESTOR" title="Deal flow" subtitle="Matched against your thesis, not everything on the platform">
@@ -159,6 +168,66 @@ export default function InvestorDealFlow() {
           {refreshing ? 'Checking…' : 'Check for new'}
         </button>
       </div>
+
+      {/* WHAT MOVED, FIRST.
+          A founder opens Progress and is told what is holding them back. A
+          contributor opens Opportunities and is told where they matter most.
+          An investor opened this and got a ranked list, which answers "what
+          exists" rather than "what should I look at today".
+
+          The watchlist has computed movement on every venture they marked
+          since the day it was built, and no page has ever shown it. A venture
+          they passed over at 29 that is now at 48 is the single most useful
+          thing this page can tell them, and it was sitting in the database. */}
+      {moved.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-baseline justify-between mb-3">
+            <div>
+              <h2 className="text-[15px] font-semibold text-ink-900">Moved since you marked them</h2>
+              <p className="text-[13px] text-ink-500 mt-0.5">
+                You already looked at {moved.length === 1 ? 'this one' : 'these'}. {moved.length === 1 ? 'It has' : 'They have'} changed since.
+              </p>
+            </div>
+            <Link to="/app/investor/portfolio" className="text-[13px] text-ink-500 hover:text-violet-600 transition-colors">
+              Everything you watch
+            </Link>
+          </div>
+
+          <div className="bg-surface rounded-xl border border-surface-border shadow-card overflow-hidden">
+            {moved.slice(0, 4).map((w, i) => (
+              <Link
+                key={w.startupId}
+                to={`/app/startups/${w.startupId}`}
+                className={`flex items-center justify-between gap-5 px-6 py-4 hover:bg-surface-muted transition-colors ${i > 0 ? 'border-t border-surface-border' : ''}`}
+              >
+                <div className="min-w-0">
+                  <p className="text-[14.5px] font-medium text-ink-950 truncate">{w.name}</p>
+                  <p className="text-[12.5px] text-ink-500 truncate">
+                    {w.crossedTheBar
+                      ? 'Now past the level most investors look for'
+                      : (w.domain || []).slice(0, 2).join(' · ')}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-5 shrink-0">
+                  <span className="text-[12.5px] text-ink-300 tabular-nums">
+                    {w.readinessAtWatch} <span className="text-ink-300">→</span>
+                  </span>
+                  <span className="text-[19px] font-semibold text-ink-950 tabular-nums leading-none">
+                    {w.currentReadiness}
+                  </span>
+                  <span
+                    className="text-[12.5px] font-medium tabular-nums w-10 text-right"
+                    style={{ color: w.moved > 0 ? '#1F5D52' : '#C85A4A' }}
+                  >
+                    {w.moved > 0 ? `+${w.moved}` : w.moved}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {deals.length === 0 ? (
         <div className="bg-surface rounded-xl border border-surface-border shadow-card py-16 text-center">
