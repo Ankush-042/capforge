@@ -171,4 +171,93 @@ async function getPlatformStats() {
   };
 }
 
-module.exports = { listAllUsers, listAllStartups, setVerificationStatus, getPlatformStats, setUserStatus, setUserAdmin, deleteStartup, runIntegrityCheck, fixIntegrityIssue };
+module.exports = { listAllUsers, listAllStartups, setVerificationStatus, getPlatformStats, setUserStatus, setUserAdmin, deleteStartup, runIntegrityCheck, fixIntegrityIssue, getOperationalView };
+
+/**
+ * What somebody running this platform actually needs to know.
+ *
+ * The panel had four GROUP BY queries rendered as bar charts: users by role,
+ * startups by status, conversations by status, gaps by priority. All true, and
+ * none of them answers a question anybody would ask. Is the engine working?
+ * Is the platform growing? Is anything broken right now? Nothing on the page
+ * could say.
+ *
+ * Three things it should answer, and each is one query:
+ *
+ *   IS IT HEALTHY — the same checks the doctor script runs, surfaced in the
+ *   product so somebody can see a problem without opening a terminal.
+ *
+ *   IS IT MOVING — signups, ventures and conversations by week. A single
+ *   number says nothing; the shape of eight weeks says everything.
+ *
+ *   IS THE ENGINE WORKING — how many people have matches, how many ventures
+ *   have candidates, and which fields have nobody in them. That last one is
+ *   the most useful thing here and nothing has ever shown it.
+ */
+async function getOperationalView() {
+  const one = async (sql, params = []) => (await pool.query(sql, params)).rows;
+
+  // Eight weeks, with empty weeks present rather than missing: a gap in a
+  // series reads as a quiet week, and a missing row reads as a bug.
+  const activity = await one(
+    `WITH weeks AS (
+       SELECT generate_series(
+         date_trunc('week', now()) - interval '7 weeks',
+         date_trunc('week', now()),
+         interval '1 week'
+       ) AS week
+     )
+     SELECT to_char(w.week, 'DD Mon') AS label,
+            (SELECT COUNT(*)::int FROM users u
+              WHERE date_trunc('week', u.created_at) = w.week) AS signups,
+            (SELECT COUNT(*)::int FROM startups s
+              WHERE date_trunc('week', s.created_at) = w.week
+                AND s.verification_status != 'UNVERIFIED') AS ventures,
+            (SELECT COUNT(*)::int FROM conversations c
+              WHERE date_trunc('week', c.created_at) = w.week) AS conversations,
+            (SELECT COUNT(*)::int FROM startup_team_members tm
+              WHERE date_trunc('week', tm.joined_at) = w.week AND tm.is_founder = false) AS joins
+     FROM weeks w ORDER BY w.week`
+  );
+
+  // The same faults the doctor checks, so a problem is visible in the product
+  // rather than only from a terminal.
+  const health = (await one(
+    `SELECT
+       (SELECT COUNT(*)::int FROM gaps
+         WHERE status NOT IN ('FILLED','DISMISSED') AND embedding IS NULL) AS gaps_without_embedding,
+       (SELECT COUNT(*)::int FROM recommendations r JOIN gaps g ON g.id = r.source_gap_id
+         WHERE r.status = 'ACTIVE' AND g.status IN ('FILLED','DISMISSED')) AS stale_recommendations,
+       (SELECT COUNT(*)::int FROM startups s
+         WHERE s.verification_status != 'UNVERIFIED'
+           AND NOT EXISTS (SELECT 1 FROM readiness_assessments ra WHERE ra.startup_id = s.id)) AS ventures_unassessed,
+       (SELECT COUNT(*)::int FROM startups
+         WHERE verification_status != 'UNVERIFIED' AND (founder_vision IS NULL OR founder_vision = '')) AS ventures_without_vision,
+       (SELECT COUNT(*)::int FROM recommendations WHERE status = 'ACTIVE') AS active_recommendations`
+  ))[0];
+
+  // Is the engine reaching people, or only existing?
+  const reach = (await one(
+    `SELECT
+       (SELECT COUNT(DISTINCT target_user_id)::int FROM recommendations
+         WHERE status = 'ACTIVE' AND recommendation_type = 'CONTRIBUTOR') AS contributors_with_matches,
+       (SELECT COUNT(*)::int FROM users WHERE primary_role = 'CONTRIBUTOR') AS contributors_total,
+       (SELECT COUNT(DISTINCT g.startup_id)::int FROM recommendations r JOIN gaps g ON g.id = r.source_gap_id
+         WHERE r.status = 'ACTIVE') AS ventures_with_candidates,
+       (SELECT COUNT(*)::int FROM startups WHERE verification_status != 'UNVERIFIED') AS ventures_total,
+       (SELECT COUNT(DISTINCT target_user_id)::int FROM recommendations
+         WHERE status = 'ACTIVE' AND recommendation_type = 'STARTUP') AS investors_with_dealflow,
+       (SELECT COUNT(*)::int FROM users WHERE primary_role = 'INVESTOR') AS investors_total`
+  ))[0];
+
+  // Which fields have ventures and which have nobody. The thinnest field is
+  // the most actionable fact on this page and nothing has ever shown it.
+  const fields = await one(
+    `SELECT lower(d) AS field, COUNT(*)::int AS ventures
+     FROM startups s, unnest(s.domain) d
+     WHERE s.verification_status != 'UNVERIFIED'
+     GROUP BY lower(d) ORDER BY ventures DESC, field LIMIT 14`
+  );
+
+  return { success: true, activity, health, reach, fields };
+}

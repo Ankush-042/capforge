@@ -185,3 +185,6 @@ export const getRecord = (userId) => apiFetch(`/profiles/${userId}/record`);
 
 // Ventures ranked for a contributor, venture-first rather than role-first.
 export const getRankedVentures = () => apiFetch('/opportunities/ventures');
+
+// The admin operational view: health, activity over time, engine reach.
+export const getAdminOperational = () => apiFetch('/admin/operational');

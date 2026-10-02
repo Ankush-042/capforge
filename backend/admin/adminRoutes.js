@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { requireAdmin } = require('./adminMiddleware');
-const { listAllUsers, listAllStartups, setVerificationStatus, getPlatformStats, setUserStatus, setUserAdmin, deleteStartup, runIntegrityCheck, fixIntegrityIssue } = require('./adminService');
+const { listAllUsers, listAllStartups, setVerificationStatus, getPlatformStats, setUserStatus, setUserAdmin, deleteStartup, runIntegrityCheck, fixIntegrityIssue, getOperationalView } = require('./adminService');
 
 router.get('/integrity-check', requireAuth, requireAdmin, async (req, res) => res.json(await runIntegrityCheck()));
 router.post('/integrity-check/:checkId/fix', requireAuth, requireAdmin, async (req, res) => {
@@ -34,5 +34,11 @@ router.patch('/users/:id/admin', requireAuth, requireAdmin, async (req, res) => 
   res.json(result);
 });
 router.get('/stats', requireAuth, requireAdmin, async (req, res) => res.json(await getPlatformStats()));
+
+// What somebody running the platform needs: health, movement, and whether
+// the engine is reaching anybody.
+router.get('/operational', requireAuth, requireAdmin, async (req, res) => {
+  res.json(await getOperationalView());
+});
 
 module.exports = router;

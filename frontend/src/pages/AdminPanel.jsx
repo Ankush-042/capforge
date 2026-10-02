@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ShieldCheck, Search, Ban, CheckCircle2, Shield, ShieldOff, Trash2, AlertTriangle, Wrench, Users2, Building2, Link2, Layers } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import StatCard, { STAT_PALETTE } from '../components/charts/StatCard.jsx';
-import { getAdminStats, getAdminUsers, getAdminStartups, setStartupVerification, deleteAdminStartup, setUserStatus, setUserAdmin, getIntegrityCheck, fixIntegrityIssue } from '../services/startups.js';
+import { getAdminOperational, getAdminStats, getAdminUsers, getAdminStartups, setStartupVerification, deleteAdminStartup, setUserStatus, setUserAdmin, getIntegrityCheck, fixIntegrityIssue } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
 const VERIFICATION_STATUSES = ['CLAIMED', 'PENDING_VERIFICATION', 'VERIFIED', 'UNVERIFIED'];
@@ -12,6 +12,200 @@ const SEVERITY_STYLE = { critical: 'bg-signal-critical/10 text-signal-critical',
 const BAR_COLORS = ['#7C5CFC', '#4C86F9', '#F0A84E', '#EF6E85', '#3FB081'];
 
 /** Real, dedicated bar-chart treatment for a breakdown — replaces flat text rows with an actual visual comparison. */
+
+/**
+ * ACTIVITY OVER TIME, which the panel never showed.
+ *
+ * Four bar charts of totals cannot say whether the platform is growing,
+ * stalling or dead. Eight weeks can, at a glance, and the shape is the whole
+ * point: a single number is a fact, a line is a trend.
+ *
+ * Empty weeks are drawn rather than skipped, because a gap in a series reads
+ * as a quiet week while a missing row reads as a bug.
+ */
+function ActivityChart({ rows }) {
+  if (!rows || rows.length === 0) return null;
+  const series = [
+    { key: 'signups', label: 'Signups', color: '#7C5CFC' },
+    { key: 'ventures', label: 'Ventures', color: '#1677E8' },
+    { key: 'conversations', label: 'Conversations', color: '#C58A00' },
+    { key: 'joins', label: 'People joining a team', color: '#3FB081' },
+  ];
+  const totals = Object.fromEntries(series.map((s) => [s.key, rows.reduce((a, r) => a + r[s.key], 0)]));
+
+  return (
+    <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7 mb-6">
+      <div className="flex items-baseline justify-between mb-1">
+        <p className="text-[15px] font-semibold text-ink-900">The last eight weeks</p>
+        <div className="flex items-center gap-5">
+          {series.map((x) => (
+            <span key={x.key} className="flex items-center gap-1.5 text-[12px] text-ink-500">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: x.color }} />
+              {x.label} <span className="font-medium text-ink-900 tabular-nums">{totals[x.key]}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+      <p className="text-[13px] text-ink-500 mb-5">Whether this is growing, flat, or stopped.</p>
+
+      <ResponsiveContainer width="100%" height={240}>
+        <AreaChart data={rows} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+          <defs>
+            {series.map((x) => (
+              <linearGradient key={x.key} id={`fill-${x.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={x.color} stopOpacity={0.18} />
+                <stop offset="100%" stopColor={x.color} stopOpacity={0} />
+              </linearGradient>
+            ))}
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#EFEFF3" vertical={false} />
+          <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#8A8A99' }} />
+          <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#8A8A99' }} />
+          <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E7E6EE', fontSize: 13, boxShadow: 'none' }} />
+          {series.map((x) => (
+            <Area key={x.key} type="monotone" dataKey={x.key} name={x.label}
+                  stroke={x.color} strokeWidth={2} fill={`url(#fill-${x.key})`} dot={false} />
+          ))}
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/**
+ * IS ANYTHING BROKEN RIGHT NOW.
+ *
+ * These are the same faults the doctor script checks, surfaced in the product
+ * so somebody can see a problem without opening a terminal. Each says what it
+ * means rather than only a number, because "12" is not actionable and "12
+ * roles cannot be matched semantically" is.
+ */
+function Health({ health }) {
+  if (!health) return null;
+  const faults = [
+    { n: health.gaps_without_embedding, label: 'open roles have no embedding',
+      means: 'Matching for those roles falls back to keywords, so good people are missed.',
+      fix: 'node scripts/backfill-gap-embeddings.js' },
+    { n: health.stale_recommendations, label: 'recommendations point at closed roles',
+      means: 'Somebody will apply for a role that is already gone.',
+      fix: 'node scripts/expire-stale-recommendations.js' },
+    { n: health.ventures_unassessed, label: 'ventures have never been assessed',
+      means: 'They show no score and sit at the bottom of every investor deal flow.',
+      fix: 'node scripts/recompute-readiness.js' },
+    { n: health.ventures_without_vision, label: 'ventures have no founder vision',
+      means: 'They get no alignment score, so they rank on skills alone.',
+      fix: 'The founder writes this themselves. There is no script for it.' },
+  ].filter((f) => f.n > 0);
+
+  return (
+    <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7 mb-6">
+      <p className="text-[15px] font-semibold text-ink-900 mb-1">Is anything broken</p>
+      <p className="text-[13px] text-ink-500 mb-5">
+        The same checks <span className="font-mono text-[12px]">scripts/doctor.js</span> runs, without opening a terminal.
+      </p>
+
+      {faults.length === 0 ? (
+        <div className="flex items-center gap-2.5 text-[14px] text-mint-500">
+          <span className="w-2 h-2 rounded-full bg-mint-500" />
+          Nothing. {health.active_recommendations} active recommendations across the platform.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {faults.map((f) => (
+            <div key={f.label} className="flex items-start gap-3.5">
+              <span className="text-[19px] font-semibold text-signal-critical tabular-nums leading-none mt-0.5 w-9 shrink-0">{f.n}</span>
+              <div className="min-w-0">
+                <p className="text-[14px] text-ink-900">{f.label}</p>
+                <p className="text-[13px] text-ink-500 leading-relaxed mt-0.5">{f.means}</p>
+                <p className="text-[12px] text-ink-300 font-mono mt-1">{f.fix}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * IS THE ENGINE REACHING ANYBODY.
+ *
+ * Counting rows in the recommendations table says it ran. These say it
+ * worked: what share of each side of the marketplace actually has something.
+ */
+function Reach({ reach }) {
+  if (!reach) return null;
+  const bars = [
+    { label: 'Contributors with matches', got: reach.contributors_with_matches, of: reach.contributors_total },
+    { label: 'Ventures with candidates', got: reach.ventures_with_candidates, of: reach.ventures_total },
+    { label: 'Investors with deal flow', got: reach.investors_with_dealflow, of: reach.investors_total },
+  ];
+
+  return (
+    <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
+      <p className="text-[15px] font-semibold text-ink-900 mb-1">Is the engine reaching anybody</p>
+      <p className="text-[13px] text-ink-500 mb-6">
+        A recommendation count says it ran. This says it worked.
+      </p>
+      <div className="space-y-5">
+        {bars.map((b) => {
+          const pct = b.of > 0 ? Math.round((b.got / b.of) * 100) : 0;
+          return (
+            <div key={b.label}>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="text-[13.5px] text-ink-800">{b.label}</span>
+                <span className="text-[13.5px] text-ink-500 tabular-nums">
+                  <span className="font-semibold text-ink-950">{b.got}</span> of {b.of}
+                </span>
+              </div>
+              <div className="h-[5px] rounded-full bg-surface-muted overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700"
+                     style={{ width: `${pct}%`, backgroundColor: pct < 40 ? '#E15C4D' : pct < 75 ? '#C58A00' : '#3FB081' }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * WHICH FIELDS HAVE NOBODY IN THEM.
+ *
+ * The most actionable fact available to whoever runs this, and nothing has
+ * ever shown it: a field with one venture is a field where a contributor who
+ * picks it sees a single result and concludes the product is empty.
+ */
+function Fields({ fields }) {
+  if (!fields || fields.length === 0) return null;
+  const thin = fields.filter((f) => f.ventures <= 1);
+
+  return (
+    <div className="bg-surface rounded-xl border border-surface-border shadow-card p-7">
+      <p className="text-[15px] font-semibold text-ink-900 mb-1">Ventures per field</p>
+      <p className="text-[13px] text-ink-500 mb-5">
+        {thin.length > 0
+          ? `${thin.length} field${thin.length === 1 ? '' : 's'} with one venture. Somebody choosing one of those sees a single result.`
+          : 'Every field has more than one venture.'}
+      </p>
+      <div className="space-y-2.5">
+        {fields.map((f) => (
+          <div key={f.field} className="flex items-center gap-4">
+            <span className="text-[13px] text-ink-700 w-36 shrink-0 truncate">{f.field}</span>
+            <div className="flex-1 h-[5px] rounded-full bg-surface-muted overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-700"
+                   style={{ width: `${Math.min(100, (f.ventures / Math.max(...fields.map((x) => x.ventures))) * 100)}%`,
+                            backgroundColor: f.ventures <= 1 ? '#E4A33A' : '#7C5CFC' }} />
+            </div>
+            <span className="text-[13px] font-medium text-ink-900 tabular-nums w-7 text-right">{f.ventures}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BreakdownChart({ title, rows }) {
   const data = rows.map(r => ({ name: Object.values(r)[0], value: parseInt(Object.values(r)[1]) }));
   return (
@@ -44,6 +238,9 @@ export default function AdminPanel() {
   const [forbidden, setForbidden] = useState(false);
   const [tab, setTab] = useState('stats');
   const [stats, setStats] = useState(null);
+  // Health, movement and reach. The four GROUP BY charts could answer none
+  // of the questions somebody running this would actually ask.
+  const [ops, setOps] = useState(null);
   const [users, setUsers] = useState([]);
   const [startups, setStartups] = useState([]);
   const [userSearch, setUserSearch] = useState('');
@@ -53,6 +250,7 @@ export default function AdminPanel() {
 
   async function loadAll(uSearch = userSearch, sSearch = startupSearch) {
     const [statsRes, usersRes, startupsRes, healthRes] = await Promise.all([getAdminStats(), getAdminUsers(uSearch), getAdminStartups(sSearch), getIntegrityCheck()]);
+      getAdminOperational().then(({ ok, data }) => { if (ok && data.success) setOps(data); });
     if (statsRes.data?.error === 'FORBIDDEN') { setForbidden(true); setLoading(false); return; }
     if (statsRes.ok && statsRes.data.success) setStats(statsRes.data.stats);
     if (usersRes.ok && usersRes.data.success) setUsers(usersRes.data.users);
@@ -121,6 +319,22 @@ export default function AdminPanel() {
             <StatCard label="Conversations" value={(stats.conversations_by_status || []).reduce((s, r) => s + parseInt(r.count), 0)} sub={`${(stats.conversations_by_status || []).find(r => r.status === 'FORMED')?.count || 0} became teams`} icon={<Link2 size={18} />} {...STAT_PALETTE.cream} />
             <StatCard label="Critical Gaps" value={stats.gaps_by_priority.find(r => r.priority_level === 'CRITICAL')?.count || 0} sub="Need real candidates" icon={<Layers size={18} />} {...STAT_PALETTE.peach} />
           </div>
+          {/* WHAT SOMEBODY RUNNING THIS WOULD ACTUALLY ASK.
+              The four bar charts below were true and answered none of it: is
+              it growing, is anything broken, is the engine reaching anybody,
+              and which fields are empty. Those come first now, and the
+              breakdowns stay underneath because they are still worth having,
+              just not worth the whole page. */}
+          <ActivityChart rows={ops?.activity} />
+
+          <Health health={ops?.health} />
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <Reach reach={ops?.reach} />
+            <Fields fields={ops?.fields} />
+          </div>
+
+          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-300 mb-3">Breakdowns</p>
           <div className="grid grid-cols-2 gap-6">
             <BreakdownChart title="Users By Role" rows={stats.users_by_role} />
             <BreakdownChart title="Startups By Status" rows={stats.startups_by_status} />
