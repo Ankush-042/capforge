@@ -116,13 +116,13 @@ export default function LearningRecommendations() {
                           animate={{ width: `${share}%` }}
                           transition={{ duration: 0.7, delay: 0.1 + i * 0.05 }}
                           className="h-full rounded-full"
-                          style={{ backgroundColor: isTop ? '#7C5CFC' : '#A7A9B1' }}
+                          style={{ backgroundColor: isTop ? '#7C5CFC' : '#B9AEEA' }}
                         />
                       </div>
                     </div>
 
                     <div className="shrink-0 text-right">
-                      <span className="text-[30px] font-bold leading-none tabular-nums" style={{ color: isTop ? '#6845F0' : '#3E4047' }}>
+                      <span className="text-[30px] font-bold leading-none tabular-nums" style={{ color: isTop ? '#6845F0' : '#6B6480' }}>
                         {count}
                       </span>
                       <p className="text-[11.5px] text-ink-500 mt-1">{count === 1 ? 'role' : 'roles'} it opens</p>
