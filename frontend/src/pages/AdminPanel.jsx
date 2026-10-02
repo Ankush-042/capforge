@@ -314,10 +314,10 @@ export default function AdminPanel() {
       {tab === 'stats' && stats && (
         <>
           <div className="grid grid-cols-4 gap-5 mb-6">
-            <StatCard label="Total Users" value={stats.users_by_role.reduce((s, r) => s + parseInt(r.count), 0)} sub="Founders, contributors, investors" icon={<Users2 size={18} />} {...STAT_PALETTE.lavender} />
-            <StatCard label="Total Startups" value={stats.startups_by_status.reduce((s, r) => s + parseInt(r.count), 0)} sub="Across every status" icon={<Building2 size={18} />} {...STAT_PALETTE.blue} />
-            <StatCard label="Conversations" value={(stats.conversations_by_status || []).reduce((s, r) => s + parseInt(r.count), 0)} sub={`${(stats.conversations_by_status || []).find(r => r.status === 'FORMED')?.count || 0} became teams`} icon={<Link2 size={18} />} {...STAT_PALETTE.cream} />
-            <StatCard label="Critical Gaps" value={stats.gaps_by_priority.find(r => r.priority_level === 'CRITICAL')?.count || 0} sub="Need real candidates" icon={<Layers size={18} />} {...STAT_PALETTE.peach} />
+            <StatCard onClick={() => setTab('users')} label="Total Users" value={stats.users_by_role.reduce((s, r) => s + parseInt(r.count), 0)} sub="Founders, contributors, investors" icon={<Users2 size={18} />} {...STAT_PALETTE.lavender} />
+            <StatCard onClick={() => setTab('startups')} label="Total Startups" value={stats.startups_by_status.reduce((s, r) => s + parseInt(r.count), 0)} sub="Across every status" icon={<Building2 size={18} />} {...STAT_PALETTE.blue} />
+            <StatCard onClick={() => setTab('health')} label="Conversations" value={(stats.conversations_by_status || []).reduce((s, r) => s + parseInt(r.count), 0)} sub={`${(stats.conversations_by_status || []).find(r => r.status === 'FORMED')?.count || 0} became teams`} icon={<Link2 size={18} />} {...STAT_PALETTE.cream} />
+            <StatCard onClick={() => setTab('startups')} label="Critical Gaps" value={stats.gaps_by_priority.find(r => r.priority_level === 'CRITICAL')?.count || 0} sub="Need real candidates" icon={<Layers size={18} />} {...STAT_PALETTE.peach} />
           </div>
           {/* WHAT SOMEBODY RUNNING THIS WOULD ACTUALLY ASK.
               The four bar charts below were true and answered none of it: is
