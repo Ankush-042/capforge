@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Wordmark from '../components/Wordmark.jsx';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowUpRight, ArrowDownRight, Menu, X } from 'lucide-react';
@@ -34,9 +35,8 @@ const NAV = [
 
 function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-full border border-ink-900 flex items-center justify-center font-display text-sm font-semibold text-ink-900">C</div>
-      <span className="font-display font-semibold text-[15px] tracking-tight text-ink-900">CAPFORGE</span>
+    <Link to="/" className="flex items-center">
+      <Wordmark size={19} />
     </Link>
   );
 }

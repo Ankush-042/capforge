@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Wordmark from '../components/Wordmark.jsx';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
@@ -130,7 +131,7 @@ export default function Circles() {
       <div className="relative max-w-[880px] mx-auto px-8 pb-28">
         <div className="pt-10 pb-12">
           <Link to="/app" className="inline-flex items-center gap-2 text-[13px] text-white/30 hover:text-white/75 transition-colors">
-            <ArrowLeft size={14} /> Back to CapForge
+            <ArrowLeft size={14} /> Back to <Wordmark size={13.5} className="ml-0.5 text-current" />
           </Link>
         </div>
 

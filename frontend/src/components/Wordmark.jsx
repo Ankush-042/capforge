@@ -13,14 +13,19 @@ import React from 'react';
  * No icon, no gradient, no glyph. The product's visual language is typography
  * and restraint, and a logo mark would be the one piece arguing against that.
  */
-export default function Wordmark({ size = 16, className = '' }) {
+export default function Wordmark({ size = 16, className = 'text-ink-950' }) {
   return (
     <span
       className={`inline-flex items-baseline leading-none tracking-[-0.025em] ${className}`}
       style={{ fontSize: size }}
     >
-      <span className="font-display font-medium text-ink-800">Cap</span>
-      <span className="font-editorial italic font-semibold text-ink-950" style={{ marginLeft: '0.5px' }}>Forge</span>
+      {/* Colour is inherited rather than fixed, because this sits on dark
+          surfaces too — Circles and pitch mode are both near-black, and a
+          hardcoded ink colour would have made it invisible on exactly the two
+          pages that look best. The weight difference carries the mark; the
+          colour comes from wherever it is placed. */}
+      <span className="font-display font-medium opacity-70">Cap</span>
+      <span className="font-editorial italic font-semibold" style={{ marginLeft: '0.5px' }}>Forge</span>
     </span>
   );
 }

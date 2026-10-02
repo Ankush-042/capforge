@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowDown, Users, TrendingUp, Target, Pencil } from 'lucide-react';
 import AuroraShader from '../components/AuroraShader.jsx';
+import Wordmark from '../components/Wordmark.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 
 /**
@@ -338,7 +339,7 @@ export default function PitchMode() {
       )}
 
       <footer className="border-t border-white/5 py-10">
-        <p className="text-center text-[13px] text-white/25">{pitch.name} · Built on CapForge</p>
+        <p className="text-center text-[13px] text-white/25">{pitch.name} · Built on <Wordmark size={12.5} className="text-current" /></p>
       </footer>
     </div>
   );
