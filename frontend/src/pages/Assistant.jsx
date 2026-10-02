@@ -1,5 +1,6 @@
 import React from 'react';
 import Shell from '../components/Shell.jsx';
+import SkeletonPage from '../components/Skeleton.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import { useActiveStartup } from '../context/ActiveStartupContext.jsx';
 import { useMyPersona } from '../hooks/useMyPersona.js';
