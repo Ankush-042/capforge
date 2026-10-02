@@ -86,7 +86,25 @@ export default function VentureAssistant({ startupId, startupName, mode = 'found
 
   async function ask(q) {
     const text = (q ?? question).trim();
-    if (!text || asking || !startupId) return;
+    if (!text || asking) return;
+
+    // CONFIRMED BUG, reported from real use: this required a startupId before
+    // it would do anything, and a CONTRIBUTOR does not have a venture. So on
+    // their side every question and every suggested question returned
+    // silently, with no request made and no error shown. The feature appeared
+    // to exist and did nothing at all.
+    //
+    // A founder needs one; a contributor's assistant reads their matches
+    // instead. And when a founder's venture has not finished loading, saying
+    // so beats returning quietly, which is indistinguishable from a broken
+    // button.
+    if (!isContributor && !startupId) {
+      setThread((t) => [...t, { role: 'you', text }, {
+        role: 'assistant',
+        error: 'Your venture is still loading. Try that again in a moment.',
+      }]);
+      return;
+    }
     setQuestion('');
     setThread((t) => [...t, { role: 'you', text }]);
     setAsking(true);

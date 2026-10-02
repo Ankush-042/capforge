@@ -12,11 +12,28 @@ async function isTeamMember(startupId, userId) {
   return memberCheck.rows.length > 0;
 }
 
+/**
+ * CONFIRMED CRASH, reported from real use: opening the workspace threw
+ * "duplicate key value violates unique constraint workspaces_startup_id_key"
+ * and the page never loaded.
+ *
+ * Check-then-insert is a race, and this page makes several requests at once.
+ * Two of them both saw no workspace, both inserted, and the second lost. The
+ * window is milliseconds and it opens every single time a founder visits the
+ * page for the first time, which is why it reproduced immediately.
+ *
+ * The database settles it instead. ON CONFLICT DO NOTHING means the second
+ * insert is a no-op rather than an error, and the SELECT that follows returns
+ * whichever row won. No locking, no retry loop, and correct no matter how
+ * many requests arrive together.
+ */
 async function getOrCreateWorkspace(startupId) {
-  const existing = await pool.query('SELECT * FROM workspaces WHERE startup_id = $1', [startupId]);
-  if (existing.rows.length > 0) return existing.rows[0];
-  const created = await pool.query('INSERT INTO workspaces (startup_id) VALUES ($1) RETURNING *', [startupId]);
-  return created.rows[0];
+  await pool.query(
+    'INSERT INTO workspaces (startup_id) VALUES ($1) ON CONFLICT (startup_id) DO NOTHING',
+    [startupId]
+  );
+  const row = await pool.query('SELECT * FROM workspaces WHERE startup_id = $1', [startupId]);
+  return row.rows[0];
 }
 
 async function getWorkspace(startupId, userId) {

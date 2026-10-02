@@ -15,8 +15,19 @@ import { useMyPersona } from '../hooks/useMyPersona.js';
  */
 export default function Assistant() {
   const { persona } = useMyPersona();
-  const { activeStartup } = useActiveStartup();
+  const { activeStartup, loading: startupLoading } = useActiveStartup();
   const isContributor = persona === 'CONTRIBUTOR';
+
+  // Wait for the venture before rendering the assistant. Mounting it first
+  // meant a founder's questions fired with no startupId and went nowhere,
+  // which is indistinguishable from a broken button.
+  if (startupLoading) {
+    return (
+      <Shell persona={persona} title="Ask">
+        <SkeletonPage cards={1} />
+      </Shell>
+    );
+  }
 
   return (
     <Shell
