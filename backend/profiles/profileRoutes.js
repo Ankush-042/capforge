@@ -308,9 +308,36 @@ router.post('/contributor', requireAuth, requireRole('CONTRIBUTOR'), async (req,
  */
 const investorRefreshInFlight = new Map();
 
+/**
+ * RANK FIRST, SCORE AFTER.
+ *
+ * CONFIRMED FROM A REAL SIGNUP: a new investor saved their thesis and got an
+ * empty deal flow until they found the "Check for new" button and pressed it
+ * themselves. Two reasons, and both are here.
+ *
+ * The ranking sat AFTER two early returns — a thesis under twenty characters,
+ * or no ventures — so a perfectly ordinary profile skipped it entirely. And
+ * the whole thing ran un-awaited, so the response came back and the page
+ * loaded while the ranking had not started.
+ *
+ * They are separated now because they are different kinds of work. Ranking is
+ * deterministic, needs no model and takes a moment, so it is awaited and the
+ * deal flow exists by the time the page loads. Alignment needs the model, is
+ * slow, and makes the ordering better rather than making it exist — so it
+ * runs in the background and the page does not wait for it.
+ */
 async function refreshInvestorAlignment(userId) {
   const existing = investorRefreshInFlight.get(userId);
   if (existing) { try { await existing; } catch { /* previous failure is its own problem */ } }
+
+  // Deal flow, before anything can return early. An investor with a two-word
+  // thesis still deserves to see ventures.
+  try {
+    const { rankStartupsForInvestor } = require('../investors/investorMatchingService');
+    await rankStartupsForInvestor(userId);
+  } catch (err) {
+    console.error(`Deal flow ranking failed for ${userId}: ${err.message}`);
+  }
 
   const run = (async () => {
     const pool = require('../shared/db');
@@ -340,15 +367,15 @@ async function refreshInvestorAlignment(userId) {
     });
 
     // AND BUILD THE DEAL FLOW. Scoring alignment without ranking leaves an
-    // investor with a page that says nothing matches them, because nothing
-    // has been written yet. They had to find the 'Check for new' button and
-    // press it themselves, which is not a thing anybody should have to
-    // discover on their first visit.
+    // Ranking already ran above, before any early return could skip it and
+    // before the response went back. Repeating it here would only redo
+    // deterministic work; what matters now is that the alignment scores it
+    // reads are better than they were.
     try {
       const { rankStartupsForInvestor } = require('../investors/investorMatchingService');
       await rankStartupsForInvestor(userId);
     } catch (err) {
-      console.error(`Deal flow ranking failed for ${userId}: ${err.message}`);
+      console.error(`Re-rank after alignment failed for ${userId}: ${err.message}`);
     }
     if (r?.failed) console.error(`Investor alignment rescore failed for ${userId}: ${r.reason}`);
   })();
