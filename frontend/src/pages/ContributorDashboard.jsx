@@ -4,7 +4,7 @@ import Shell from '../components/Shell.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import WhatsNew from '../components/WhatsNew.jsx';
-import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight } from 'lucide-react';
+import { Target, Sparkles, UserCheck, MessageSquare, ArrowUpRight, Check } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
 import { getMyProfile, getMyRecommendationsAsContributor, getMyConversations, getRankedVentures } from '../services/startups.js';
@@ -193,10 +193,25 @@ export default function ContributorDashboard() {
                     <p className="text-[15px] font-semibold text-ink-950 truncate">{g.startup_name}</p>
                     <span className="text-[13px] font-semibold text-violet-600 tabular-nums shrink-0">{Math.round(top.score * 100)}%</span>
                   </div>
-                  <p className="text-[13px] text-ink-500 leading-snug">
-                    Needs a {top.gap_role}{g.roles.length > 1 && ` and ${g.roles.length - 1} more`}
+                  <p className="text-[12px] text-ink-300 truncate mb-3">
+                    {(g.domain || []).slice(0, 3).join(' · ')}
                   </p>
-                  <p className="text-[12px] text-ink-300 mt-2 truncate">{(g.domain || []).join(' · ')}</p>
+
+                  {/* WHY, not just what. This showed a name, a percentage,
+                      the role and a row of grey tags: a number with no
+                      argument behind it. The explanation was on the row the
+                      whole time, and the engine even computes a causal
+                      narrative for exactly this, which this card threw away. */}
+                  <p className="flex items-start gap-2 text-[12.5px] text-ink-700 leading-snug">
+                    <Check size={12} className="text-mint-500 shrink-0 mt-[3px]" />
+                    Needs a {top.gap_role}{g.roles.length > 1 && `, and ${g.roles.length - 1} more`}
+                  </p>
+
+                  {(top.causal_narrative || top.explanation?.summary) && (
+                    <p className="text-[12.5px] text-ink-500 leading-snug mt-1.5 line-clamp-2">
+                      {top.causal_narrative || top.explanation?.summary}
+                    </p>
+                  )}
                 </Link>
               );
             })}

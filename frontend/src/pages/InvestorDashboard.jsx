@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import WhatsNew from '../components/WhatsNew.jsx';
-import { Search, Sparkles, BarChart3, MessageSquare, ArrowUpRight } from 'lucide-react';
+import { Search, Sparkles, BarChart3, MessageSquare, ArrowUpRight, Check, AlertTriangle } from 'lucide-react';
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
 import Badge from '../components/charts/Badge.jsx';
@@ -157,12 +157,43 @@ export default function InvestorDashboard() {
             {deals.slice(1, 5).map((d) => (
               <Link key={d.id} to={`/app/startups/${d.startup_id}`}
                 className="group bg-surface rounded-xl border border-surface-border shadow-card p-5 hover:border-violet-500/50 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <p className="text-[15px] font-semibold text-ink-950 truncate">{d.startup_name}</p>
-                  <span className="text-[13px] font-semibold text-violet-600 tabular-nums shrink-0">{Math.round(parseFloat(d.score) * 100)}%</span>
+                <div className="flex items-start justify-between gap-4 mb-1.5">
+                  <p className="text-[15px] font-semibold text-ink-950 truncate group-hover:text-violet-700 transition-colors">{d.startup_name}</p>
+                  <span className="text-[16px] font-semibold text-violet-600 tabular-nums shrink-0 leading-none">
+                    {Math.round(parseFloat(d.score) * 100)}<span className="text-[11px]">%</span>
+                  </span>
                 </div>
-                <p className="text-[13px] text-ink-500 leading-snug">{d.stage || 'Stage not set'}</p>
-                <p className="text-[12px] text-ink-300 mt-2 truncate">{(d.domain || []).join(' · ')}</p>
+
+                <p className="text-[12px] text-ink-300 truncate mb-3">
+                  {(d.domain || []).slice(0, 3).join(' · ')}{d.stage ? ` · ${d.stage}` : ''}
+                </p>
+
+                {/* THE REASON, which this card threw away.
+                    It showed a name, a percentage, a stage and a row of grey
+                    tags — a number with no argument behind it, while the deal
+                    flow card one click away explained itself fully. The
+                    explanation was on the row the whole time and this never
+                    read it. One reason it fits and one thing to watch is
+                    enough at this size; the full case is on the card it links
+                    to. */}
+                {(d.explanation?.strengths?.length > 0 || d.explanation?.watch?.length > 0) ? (
+                  <div className="space-y-1.5">
+                    {(d.explanation?.strengths || []).slice(0, 1).map((t, i) => (
+                      <p key={`s${i}`} className="flex items-start gap-2 text-[12.5px] text-ink-700 leading-snug">
+                        <Check size={12} className="text-mint-500 shrink-0 mt-[3px]" /> {t}
+                      </p>
+                    ))}
+                    {(d.explanation?.watch || []).slice(0, 1).map((t, i) => (
+                      <p key={`w${i}`} className="flex items-start gap-2 text-[12.5px] text-ink-500 leading-snug">
+                        <AlertTriangle size={12} className="text-amber-500 shrink-0 mt-[3px]" /> {t}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[12.5px] text-ink-300 leading-snug">
+                    Ranked on your fields and stage. Open it for the full reasoning.
+                  </p>
+                )}
               </Link>
             ))}
           </div>
