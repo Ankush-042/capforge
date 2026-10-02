@@ -76,6 +76,60 @@ async function callGroqWithKey(model, messages, apiKey, options) {
   return { outcome: 'FAIL', error: 'AI_CALL_FAILED_AFTER_RETRIES', detail: lastError };
 }
 
+
+/**
+ * A LAST RESORT, AFTER EVERY GROQ KEY HAS ALREADY FAILED.
+ *
+ * Groq is somebody else's service. Keys hit their daily quota, keys get
+ * revoked, and an API has outages — and the difference does not matter here,
+ * because the outcome is identical: no answer. So there is no detection
+ * logic, no classifying a 429 against a 500, nothing to misinterpret. One
+ * condition: did any configured key produce an answer? If not, try elsewhere.
+ *
+ * ZERO EFFECT WHEN THINGS WORK, and that is control flow rather than a
+ * judgement. callGroq returns the moment a key succeeds, so this function is
+ * not reached. And with no FALLBACK_API_KEY set it returns immediately, so an
+ * unconfigured install behaves exactly as it did before this existed.
+ *
+ * It can only ever turn "nothing" into "something": in the situation where it
+ * runs at all, the alternative is the failure it is replacing.
+ *
+ * Any OpenAI-compatible host works, because that is the shape Groq already
+ * uses. OpenRouter, Together, Cerebras, or a local model.
+ *   FALLBACK_API_KEY   the key
+ *   FALLBACK_BASE_URL  e.g. https://openrouter.ai/api/v1
+ *   FALLBACK_MODEL     optional; defaults to a widely available model
+ */
+async function callFallbackProvider(messages, options) {
+  const key = process.env.FALLBACK_API_KEY;
+  const base = process.env.FALLBACK_BASE_URL;
+  if (!key || !base) return null;
+
+  const model = process.env.FALLBACK_MODEL || 'meta-llama/llama-3.3-70b-instruct';
+
+  try {
+    const res = await fetch(`${base.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, messages, ...options }),
+    });
+    if (!res.ok) {
+      console.error(`Fallback provider failed: ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) return null;
+    console.log('Every Groq key failed; answered by the fallback provider.');
+    return { success: true, content, viaFallback: true };
+  } catch (err) {
+    // A fallback that throws would be worse than no fallback at all, because
+    // it would turn a clean refusal into a crash.
+    console.error(`Fallback provider unreachable: ${err.message}`);
+    return null;
+  }
+}
+
 async function callGroq(model, messages, options = {}) {
   const keys = getConfiguredKeys();
   if (keys.length === 0) return { success: false, error: 'AI_NOT_CONFIGURED', detail: 'No Groq API key configured (set GROQ_API_KEY in .env).' };
@@ -92,6 +146,12 @@ async function callGroq(model, messages, options = {}) {
     lastRotateDetail = result.detail;
     console.error(`Groq key ${i + 1}/${keys.length} exhausted/invalid (${result.status}) — rotating to next key.`);
   }
+
+  // Everything configured has failed. Before giving up, try elsewhere — and
+  // if nothing else is configured this returns null immediately and the
+  // original failure is returned unchanged.
+  const viaFallback = await callFallbackProvider(messages, options);
+  if (viaFallback) return viaFallback;
 
   return { success: false, error: 'ALL_KEYS_EXHAUSTED', detail: `All ${keys.length} configured Groq key(s) failed. Last: ${lastRotateDetail}` };
 }
