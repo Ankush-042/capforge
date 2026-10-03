@@ -125,15 +125,22 @@ ${founders.filter(f => f.startup).length} ventures · ${contributors.length} con
      FROM users u JOIN profiles p ON p.user_id = u.id
      WHERE u.email NOT LIKE '%@seed.test'
        AND u.email NOT LIKE '%@capforge.internal'
-       AND u.created_at > now() - interval '30 days'
+       -- Accounts on a reserved test domain are deliberate test accounts and
+       -- stay listed permanently. Recency alone would quietly drop them after
+       -- a month, and a credentials file that forgets the accounts you test
+       -- with is worse than one that lists a few extra.
+       AND (u.email LIKE '%@test.com'
+            OR u.email LIKE '%@example.com'
+            OR u.created_at > now() - interval '30 days')
      ORDER BY u.created_at DESC`
   )).rows;
   const handmade = recent;
   if (handmade.length > 0) {
     out += `\n---\n\n## Created by hand
 
-These were signed up through the interface rather than seeded, so they are
-the ones to use when showing that a stranger can arrive and be matched.
+Signed up through the interface rather than seeded, so these are the ones
+that show a stranger arriving and being matched — the harder thing to
+demonstrate, and the path where every real bug in this project was found.
 
 `;
     for (const a of handmade) out += `- \`${a.email}\` — ${a.display_name || '—'} (${a.primary_role})\n`;
