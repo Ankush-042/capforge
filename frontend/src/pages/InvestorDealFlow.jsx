@@ -274,8 +274,14 @@ export default function InvestorDealFlow() {
             <div className="mb-8">
               <div className="flex items-baseline justify-between mb-3">
                 <div>
-                  <h2 className="text-[15px] font-semibold text-ink-900">Worth a conversation</h2>
-                  <p className="text-[13px] text-ink-500 mt-0.5">Real overlap with what you said you back.</p>
+                  <p className="flex items-center gap-2 text-[10.5px] font-semibold tracking-[0.14em] uppercase text-violet-600 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                    Yours
+                  </p>
+                  <h2 className="font-editorial italic text-[25px] text-trust-fg leading-tight">
+                    {strong.length === 1 ? 'One venture matches what you back.' : `${strong.length} ventures match what you back.`}
+                  </h2>
+                  <p className="text-[13.5px] text-ink-700 mt-1.5">Real overlap with the thesis you wrote, closest first.</p>
                 </div>
                 <Link to="/app/investor/explore" className="flex items-center gap-1.5 text-[13px] text-ink-500 hover:text-violet-600 transition-colors">
                   <Search size={13} /> Explore everything
@@ -290,8 +296,12 @@ export default function InvestorDealFlow() {
           {rest.length > 0 && (
             <div>
               <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-[15px] font-semibold text-ink-900">{strong.length > 0 ? 'Adjacent to your thesis' : 'Ranked by fit'}</h2>
-                <span className="text-[13px] text-ink-500">Outside your stated focus, but close</span>
+                <h2 className="text-[13.5px] font-semibold text-ink-500">
+                  {strong.length > 0 ? 'Further afield' : 'Ranked by fit'}
+                </h2>
+                <span className="text-[12.5px] text-ink-300">
+                  {strong.length > 0 ? 'Outside what you said you back, in order of how close' : 'Nothing clears the bar yet, closest first'}
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {rest.map((d, i) => <DealCard key={d.id} d={d} index={i} />)}

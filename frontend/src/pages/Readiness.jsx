@@ -74,7 +74,7 @@ export default function Readiness() {
 
   if (loading) {
     return (
-      <Shell title="Readiness">
+      <Shell title="Readiness" subtitle="Measured against what actually kills companies">
         <SkeletonPage cards={3} />
       </Shell>
     );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Shell from '../components/Shell.jsx';
+import Arc from '../components/Arc.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import VentureAssistant from '../components/VentureAssistant.jsx';
 import WhatsNew from '../components/WhatsNew.jsx';
@@ -55,6 +56,16 @@ export default function ContributorDashboard() {
   const grouped = groupByStartup(recs);
   // In your fields, which is what Opportunities lists.
   const inFields = ventures?.inYourFields || [];
+
+  // LEARN, EARN, CONNECT, GROW — the arc a contributor is on, which nothing
+  // in this product has ever acknowledged. Each stage is reached by something
+  // they actually did, so it moves when they move rather than on its own.
+  const reached = {
+    learn: Boolean(profile?.headline) && (profile?.skills?.length || 0) > 0,
+    connect: connections.length > 0,
+    earn: Boolean(profile?.on_a_team) || connections.some((c) => c.team_formed_at),
+    grow: Boolean(profile?.profile_image) && (profile?.skills?.length || 0) >= 4,
+  };
   const withARole = inFields.filter((v) => v.role.state === 'ROLE_FITS').length;
 
   // The best fit is the best VENTURE in your fields, shaped to what the card
@@ -114,6 +125,8 @@ export default function ContributorDashboard() {
 
       {/* METRIC STRIP — same rhythm as the founder home: four equal tiles,
           label, number, meaning. */}
+      <Arc reached={reached} className="mb-8" />
+
       <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricTile
           label="In your fields" value={inFields.length}

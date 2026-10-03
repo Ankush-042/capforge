@@ -87,7 +87,7 @@ export default function Team() {
 
   if (loading) {
     return (
-      <Shell title="Team">
+      <Shell title="Team" subtitle="Who said yes, and what they came for">
         <SkeletonPage cards={3} />
       </Shell>
     );
