@@ -7,7 +7,7 @@ import { Search, Sparkles, BarChart3, MessageSquare, ArrowUpRight, Check, AlertT
 import MetricTile, { TILE_PALETTE } from '../components/charts/MetricTile.jsx';
 import SignalPanel from '../components/SignalPanel.jsx';
 import Badge from '../components/charts/Badge.jsx';
-import { getMyProfile, getInvestorRecommendations, getMyConversations } from '../services/startups.js';
+import { getMyProfile, getInvestorRecommendations, getMyConversations, getWatchlist } from '../services/startups.js';
 
 export default function InvestorDashboard() {
   const [loading, setLoading] = useState(true);
@@ -17,11 +17,13 @@ export default function InvestorDashboard() {
   // for every investor by design, so the count of rows says nothing about fit.
   // Half is the threshold the deal flow page already treats as a real match.
   const [connections, setConnections] = useState([]);
+  const [watched, setWatched] = useState([]);
   const [hasRoleProfile, setHasRoleProfile] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [profileRes, dealsRes, connRes] = await Promise.all([getMyProfile(), getInvestorRecommendations(), getMyConversations()]);
+      const [profileRes, dealsRes, connRes, watchRes] = await Promise.all([getMyProfile(), getInvestorRecommendations(), getMyConversations(), getWatchlist()]);
+      if (watchRes.ok && watchRes.data.success) setWatched(watchRes.data.watchlist || []);
       if (profileRes.ok && profileRes.data.success) { setProfile(profileRes.data.profile); setHasRoleProfile(!!profileRes.data.roleProfile); }
       if (dealsRes.ok && dealsRes.data.success) setDeals(dealsRes.data.recommendations);
       if (connRes.ok && connRes.data.success) setConnections(connRes.data.conversations);
@@ -39,6 +41,13 @@ export default function InvestorDashboard() {
   const avgFit = deals.length > 0
     ? Math.round(deals.reduce((s, d) => s + (parseFloat(d.score) || 0), 0) / deals.length * 100)
     : 0;
+
+  // Ventures they marked that have genuinely climbed, and threads where the
+  // last word was not theirs. Both are facts only this platform knows, and
+  // both are things an investor can act on — which an average across
+  // twenty-six scores is not.
+  const movedCount = watched.filter((w) => w.status === 'WATCHING' && w.moved !== null && w.moved >= 3).length;
+  const awaitingReply = connections.filter((c) => (parseInt(c.unread_count) || 0) > 0).length;
 
   const top = deals.length > 0 ? deals[0] : null;
   const strongFits = deals.filter((d) => parseFloat(d.score) >= 0.5).length;
@@ -96,18 +105,22 @@ export default function InvestorDashboard() {
         <MetricTile
           label="Best fit" value={top ? Math.round(parseFloat(top.score) * 100) : '\u2014'} unit={top ? '%' : null}
           icon={Sparkles} to="/app/investor/deal-flow" {...TILE_PALETTE.blue}
-          caption={top ? top.startup_name : 'No matches'}
+          caption={top ? (top.explanation?.strengths?.[0]?.slice(0, 42) || top.startup_name) : 'No matches'}
         />
         <MetricTile
-          label="Average fit" value={deals.length > 0 ? avgFit : '\u2014'} unit={deals.length > 0 ? '%' : null}
+          label="Moved" value={movedCount}
           icon={BarChart3} to="/app/investor/deal-flow" {...TILE_PALETTE.peach}
           progress={avgFit}
-          caption={deals.length > 0 ? 'Across your deal flow' : 'Nothing to average'}
+          caption={movedCount === 0
+            ? (watched.length === 0 ? 'Track something to see this' : 'Nothing has moved yet')
+            : `Of the ${watched.length} you track`}
         />
         <MetricTile
           label="Conversations" value={connections.length}
           icon={MessageSquare} to="/app/inbox" {...TILE_PALETTE.cream}
-          caption={connections.length === 0 ? 'None started' : 'Founders you are talking to'}
+          caption={connections.length === 0
+            ? 'None started'
+            : awaitingReply > 0 ? `${awaitingReply} waiting on you` : 'Founders you are talking to'}
         />
       </div>
 
