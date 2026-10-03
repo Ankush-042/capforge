@@ -59,8 +59,8 @@ export default function WhatsNew() {
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="relative overflow-hidden rounded-xl p-6 mb-6"
         style={{
-          backgroundColor: '#F6F3FE',
-          border: '1px solid #DED5FA',
+          backgroundColor: '#EFEAFC',
+          border: '1px solid #D5C9F7',
           boxShadow: '0 1px 2px rgba(60,40,140,0.04)',
         }}
       >
