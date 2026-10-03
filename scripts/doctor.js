@@ -287,9 +287,34 @@ async function checkQualityRules() {
   } catch (err) {
     const out = (err.stdout?.toString() || '') + (err.stderr?.toString() || '');
     const failed = out.split('\n').filter((l) => l.startsWith('FAIL')).map((l) => l.replace('FAIL  ', '')).slice(0, 4);
+    // NAME THE RIGHT SCRIPT. Pointing at rerank-everything for every failure
+    // was wrong and misleading: missing alignment scores are the commonest
+    // failure here, they happen the moment a new venture is created, and a
+    // rerank does not create them. Advice that does not fix the thing is
+    // worse than no advice, because it costs a run to find that out.
+    const missingAlignment = failed.some((f) => /alignment scores/i.test(f));
+
+    if (missingAlignment && FIX) {
+      try {
+        run('node scripts/score-alignment.js');
+        run('node scripts/score-investor-alignment.js');
+        run('node scripts/rerank-everything.js');
+        execSync('node scripts/test-matching-quality.js', { cwd: ROOT, stdio: 'pipe', timeout: 300000 });
+        ok('Matching quality', 'Alignment scores were missing for a new venture; scored and re-ranked.');
+        return;
+      } catch {
+        // Fall through and report it properly rather than claiming a repair
+        // that did not happen.
+      }
+    }
+
     fail('Matching quality', failed.length ? failed.join('; ') : 'The suite did not pass.',
-      'The engine is producing results it should not. A panel asking why somebody matched may get an answer that is wrong.',
-      'node scripts/test-matching-quality.js, and read which rule failed. Most are fixed by node scripts/rerank-everything.js');
+      missingAlignment
+        ? 'A venture was created and nobody has been scored against it yet. Matching still works; the ordering is thinner than it should be until this runs.'
+        : 'The engine is producing results it should not. A panel asking why somebody matched may get an answer that is wrong.',
+      missingAlignment
+        ? 'node scripts/score-alignment.js, then node scripts/score-investor-alignment.js, then node scripts/rerank-everything.js'
+        : 'node scripts/test-matching-quality.js, and read which rule failed. Most are fixed by node scripts/rerank-everything.js');
   }
 }
 
