@@ -183,6 +183,7 @@ this project, with its symptom and its fix.
 node scripts/verify-schema.js          # every column exists, aliases resolved
 node scripts/check-frontend-refs.js    # every component is imported
 node scripts/check-connectivity.js     # every link resolves to a real route
+node scripts/check-tailwind-opacity.js # no opacity class that compiles to nothing
 node scripts/test-matching-quality.js  # 17 rules the engine must not break
 node scripts/test-ai-outage.mjs        # every AI surface with the model gone
 node scripts/test-ai-fallback.mjs      # the fallback cannot affect a working path

@@ -108,19 +108,19 @@ function Post({ p, meId, onHelped, onReply, onMessage, onDelete, isReply }) {
             </button>
 
             {!isReply && (
-              <button onClick={() => onReply(p)} className="flex items-center gap-1.5 text-[12.5px] text-white/22 hover:text-white/60 transition-colors">
+              <button onClick={() => onReply(p)} className="flex items-center gap-1.5 text-[12.5px] text-white/20 hover:text-white/60 transition-colors">
                 <CornerDownRight size={13} /> Reply
               </button>
             )}
 
             {!mine && (
-              <button onClick={() => onMessage(p)} className="flex items-center gap-1.5 text-[12.5px] text-white/22 hover:text-white/60 transition-colors">
+              <button onClick={() => onMessage(p)} className="flex items-center gap-1.5 text-[12.5px] text-white/20 hover:text-white/60 transition-colors">
                 <MessageSquare size={13} /> Message
               </button>
             )}
 
             {mine && (
-              <button onClick={() => onDelete(p)} className="text-white/12 hover:text-[#FF6B6B] transition-colors ml-auto">
+              <button onClick={() => onDelete(p)} className="text-white/10 hover:text-[#FF6B6B] transition-colors ml-auto">
                 <Trash2 size={13} />
               </button>
             )}
@@ -259,7 +259,7 @@ export default function Circle() {
 
         {loading ? (
           <div className="flex items-center justify-center py-28">
-            <div className="w-7 h-7 rounded-full border-2 border-white/8 animate-spin" style={{ borderTopColor: '#B79CFF' }} />
+            <div className="w-7 h-7 rounded-full border-2 border-white/10 animate-spin" style={{ borderTopColor: '#B79CFF' }} />
           </div>
         ) : posts.length === 0 ? (
           <div className="py-28 max-w-md">
@@ -335,7 +335,7 @@ export default function Circle() {
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
               rows={1}
               placeholder={replyTo ? 'Say something back' : "What's actually on your mind?"}
-              className="flex-1 bg-transparent text-[16px] text-white/92 placeholder:text-white/25 focus:outline-none resize-none leading-relaxed py-1"
+              className="flex-1 bg-transparent text-[16px] text-white/90 placeholder:text-white/25 focus:outline-none resize-none leading-relaxed py-1"
               style={{ maxHeight: 220 }}
             />
             <button
@@ -348,7 +348,7 @@ export default function Circle() {
             </button>
           </div>
 
-          <p className="text-[11.5px] text-white/18 mt-2.5 px-1">
+          <p className="text-[11.5px] text-white/20 mt-2.5 px-1">
             No scores, no ranking. Enter to post, shift-enter for a new line.
           </p>
         </div>

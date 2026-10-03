@@ -192,7 +192,7 @@ export default function Circles() {
                 onChange={(e) => setNewRoom(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && open()}
                 placeholder="What is it about? agritech, hardware, design..."
-                /* EXPLICIT COLOURS, NOT AN OPACITY CLASS. This was bg-white/8,
+                /* EXPLICIT COLOURS, NOT AN OPACITY CLASS. This was bg-white/10,
                    which is not a step on Tailwind's opacity scale, so it
                    compiled to nothing: the input kept the browser's default
                    white background while the text stayed white. Whatever was
@@ -222,7 +222,7 @@ export default function Circles() {
 
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <div className="w-7 h-7 rounded-full border-2 border-white/8 animate-spin" style={{ borderTopColor: '#B79CFF' }} />
+            <div className="w-7 h-7 rounded-full border-2 border-white/10 animate-spin" style={{ borderTopColor: '#B79CFF' }} />
           </div>
         ) : rooms.length === 0 ? (
           <div className="py-20 max-w-md">
