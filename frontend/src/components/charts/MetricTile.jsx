@@ -16,11 +16,17 @@ import { Link } from 'react-router-dom';
  * treatment is how the founder and contributor homes drifted apart in the
  * first place.
  */
+/**
+ * Deeper than they were. The originals were pale enough that, sitting beside
+ * the near-black cards elsewhere on the same page, they read as washed out
+ * rather than as a deliberate second surface. Same hues, more depth, so a
+ * tile holds its own without competing with the dark blocks.
+ */
 export const TILE_PALETTE = {
-  lavender: { bg: '#EED8FF', fg: '#6D28D9' },
-  blue: { bg: '#D1EAFE', fg: '#1677E8' },
-  peach: { bg: '#FFE8DA', fg: '#E84C32' },
-  cream: { bg: '#FFF3D1', fg: '#C58A00' },
+  lavender: { bg: '#E3C9FB', fg: '#5B21B6' },
+  blue: { bg: '#BEDDFB', fg: '#0F5FBF' },
+  peach: { bg: '#FBD7C4', fg: '#C23D26' },
+  cream: { bg: '#FBE7B4', fg: '#9A6B00' },
 };
 
 export default function MetricTile({
@@ -47,10 +53,18 @@ export default function MetricTile({
           // The tinted chip, not a loose icon. This is most of what made the
           // original tiles read as designed rather than assembled.
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${fg}22`, color: fg }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{
+              // A solid dark block rather than a tint of the tile's own
+              // colour. A chip in the same hue disappears into the tile; a
+              // near-black square gives the card an anchor and matches the
+              // dark surfaces used elsewhere in the product.
+              backgroundColor: '#17171C',
+              color: '#FFFFFF',
+              boxShadow: '0 1px 3px rgba(20,20,30,0.18)',
+            }}
           >
-            <Icon size={16} strokeWidth={2} />
+            <Icon size={17} strokeWidth={1.9} />
           </div>
         )}
       </div>
