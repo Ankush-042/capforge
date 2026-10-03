@@ -17,16 +17,34 @@ import { Link } from 'react-router-dom';
  * first place.
  */
 /**
- * Deeper than they were. The originals were pale enough that, sitting beside
- * the near-black cards elsewhere on the same page, they read as washed out
- * rather than as a deliberate second surface. Same hues, more depth, so a
- * tile holds its own without competing with the dark blocks.
+ * NO COLOUR. The tinted tiles never sat right: pale, they washed out beside
+ * the near-black cards on the same page; deepened, they fought them. Colour
+ * was doing no work here — four tiles in four hues is decoration, not
+ * information, since the hue never meant anything.
+ *
+ * So the tile is white and separation comes from DEPTH instead. On a
+ * near-white canvas a white card disappears unless it is genuinely lifted,
+ * which takes three things working together: a shadow that reads as cast
+ * rather than painted, a border a shade darker than the canvas, and a faint
+ * highlight along the top edge where light would strike a raised surface.
+ *
+ * The only black element is the icon block, which is what gives each tile an
+ * anchor and ties these to the dark cards elsewhere in the product.
+ *
+ * The four keys are kept so every existing call site still works. They now
+ * differ only in the accent used for a progress rail or a badge, where the
+ * colour still carries meaning.
  */
+const SURFACE = {
+  bg: '#FFFFFF',
+  fg: '#14141A',
+};
+
 export const TILE_PALETTE = {
-  lavender: { bg: '#E3C9FB', fg: '#5B21B6' },
-  blue: { bg: '#BEDDFB', fg: '#0F5FBF' },
-  peach: { bg: '#FBD7C4', fg: '#C23D26' },
-  cream: { bg: '#FBE7B4', fg: '#9A6B00' },
+  lavender: { ...SURFACE, accent: '#6D28D9' },
+  blue: { ...SURFACE, accent: '#1677E8' },
+  peach: { ...SURFACE, accent: '#E84C32' },
+  cream: { ...SURFACE, accent: '#C58A00' },
 };
 
 export default function MetricTile({
@@ -42,11 +60,12 @@ export default function MetricTile({
   progress,      // 0-100, renders a rail when present
   badge,         // short string, e.g. "3 critical"
   valueColor,    // override for the number, e.g. red when momentum is negative
+  accent,        // the one place colour still carries meaning: badge and rail
 }) {
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[10.5px] font-semibold tracking-[0.12em] uppercase" style={{ color: fg, opacity: 0.75 }}>
+        <p className="text-[10.5px] font-semibold tracking-[0.12em] uppercase" style={{ color: '#8A8A99' }}>
           {label}
         </p>
         {Icon && (
@@ -80,11 +99,11 @@ export default function MetricTile({
                 a number passes straight through. */}
             {typeof value === 'number' ? <CountUp value={value} /> : value}
           </span>
-          {unit && <span className="text-[15px] font-medium" style={{ color: fg, opacity: 0.6 }}>{unit}</span>}
+          {unit && <span className="text-[15px] font-medium" style={{ color: '#8A8A99' }}>{unit}</span>}
           {badge && (
             <span
               className="text-[11px] font-semibold px-2 py-0.5 rounded-md"
-              style={{ backgroundColor: `${fg}22`, color: fg }}
+              style={{ backgroundColor: `${accent || fg}18`, color: accent || fg }}
             >
               {badge}
             </span>
@@ -92,16 +111,16 @@ export default function MetricTile({
         </div>
 
         {typeof progress === 'number' && (
-          <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: `${fg}1F` }}>
+          <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#EDEDF2' }}>
             <div
               className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${Math.max(0, Math.min(100, progress))}%`, backgroundColor: fg }}
+              style={{ width: `${Math.max(0, Math.min(100, progress))}%`, backgroundColor: accent || fg }}
             />
           </div>
         )}
 
         {caption && (
-          <p className="text-[12.5px] mt-2 leading-snug truncate" style={{ color: fg, opacity: 0.75 }}>
+          <p className="text-[12.5px] mt-2 leading-snug truncate" style={{ color: '#6B6B78' }}>
             {caption}
           </p>
         )}
@@ -110,11 +129,55 @@ export default function MetricTile({
   );
 
   const className =
-    'rounded-xl p-6 min-h-[148px] shadow-card flex flex-col justify-between transition-all duration-200 ' +
-    (to || onClick ? 'hover:shadow-elevated hover:-translate-y-0.5 cursor-pointer' : '');
+    'rounded-xl p-6 min-h-[148px] flex flex-col justify-between transition-all duration-200 ' +
+    (to || onClick ? 'hover:-translate-y-0.5 cursor-pointer' : '');
+
+  /**
+   * DEPTH INSTEAD OF COLOUR. On a near-white canvas a white card merges into
+   * the page unless it is genuinely lifted, and three things together are
+   * what do that:
+   *
+   *   a two-part shadow — a tight contact shadow directly beneath the edge
+   *   and a wider, softer one below it, which is how a real cast shadow
+   *   behaves and why a single blurred box-shadow reads as painted on;
+   *
+   *   a border a shade darker than the canvas, so the edge is defined even
+   *   where the shadow is weakest;
+   *
+   *   and a one-pixel light line along the top inside edge, where light
+   *   would strike a raised surface. It is almost invisible on its own and
+   *   it is most of what sells the effect.
+   */
+  const raised = {
+    backgroundColor: bg,
+    border: '1px solid #E8E8EE',
+    boxShadow: [
+      '0 1px 2px rgba(20,20,35,0.05)',
+      '0 4px 12px rgba(20,20,35,0.06)',
+      'inset 0 1px 0 rgba(255,255,255,0.9)',
+    ].join(', '),
+  };
+
+  const lifted = {
+    ...raised,
+    boxShadow: [
+      '0 2px 4px rgba(20,20,35,0.06)',
+      '0 12px 28px rgba(20,20,35,0.10)',
+      'inset 0 1px 0 rgba(255,255,255,0.9)',
+    ].join(', '),
+  };
+
+  const interactive = Boolean(to || onClick);
+  const style = raised;
+  const hoverProps = interactive
+    ? {
+        onMouseEnter: (e) => { e.currentTarget.style.boxShadow = lifted.boxShadow; },
+        onMouseLeave: (e) => { e.currentTarget.style.boxShadow = raised.boxShadow; },
+      }
+    : {};
 
   // A tile can scroll to a section on the same page rather than navigate away.
-  if (!to && onClick) return <button type="button" onClick={onClick} className={`${className} text-left w-full`} style={{ backgroundColor: bg }}>{body}</button>;
-  if (!to) return <div className={className} style={{ backgroundColor: bg }}>{body}</div>;
-  return <Link to={to} className={className} style={{ backgroundColor: bg }}>{body}</Link>;
+  if (!to && onClick) return <button type="button" onClick={onClick} className={`${className} text-left w-full`} style={style} {...hoverProps}>{body}</button>;
+  if (!to) return <div className={className} style={style}>{body}</div>;
+  return <Link to={to} className={className} style={style} {...hoverProps}>{body}</Link>;
 }
