@@ -71,7 +71,25 @@ async function listRooms(userId) {
             EXISTS (SELECT 1 FROM domain_people dp WHERE dp.room = c.room AND dp.user_id = $1) AS yours
      FROM counted c
      WHERE c.people >= ${MIN_PEOPLE_FOR_ROOM}
-     ORDER BY yours DESC, last_post_at DESC NULLS LAST, c.people DESC`,
+
+     UNION
+
+     -- ROOMS SOMEBODY OPENED DELIBERATELY. Everything above is derived from
+     -- the fields people chose, which means a field nobody has picked yet has
+     -- nowhere to talk even when somebody wants to start it. These exist
+     -- because a member decided they should, and they appear with a people
+     -- count of whoever has actually posted rather than a derived one.
+     SELECT mr.slug AS room,
+            (SELECT COUNT(DISTINCT rp.author_id)::int FROM room_posts rp WHERE rp.room = mr.slug) AS people,
+            (SELECT COUNT(*)::int FROM room_posts rp WHERE rp.room = mr.slug) AS posts,
+            (SELECT MAX(rp.created_at) FROM room_posts rp WHERE rp.room = mr.slug) AS last_post_at,
+            (SELECT COUNT(*)::int FROM room_presence pr
+             WHERE pr.room = mr.slug AND pr.last_seen_at > now() - interval '${ACTIVE_WINDOW_HOURS} hours') AS recently_around,
+            (mr.created_by = $1) AS yours
+     FROM member_rooms mr
+     WHERE NOT EXISTS (SELECT 1 FROM counted c2 WHERE c2.room = mr.slug AND c2.people >= ${MIN_PEOPLE_FOR_ROOM})
+
+     ORDER BY yours DESC, last_post_at DESC NULLS LAST, people DESC`,
     [userId]
   );
 
@@ -220,4 +238,33 @@ async function deletePost(userId, postId) {
   return { success: true };
 }
 
-module.exports = { listRooms, getRoom, createPost, toggleHelped, deletePost };
+/**
+ * Open a circle.
+ *
+ * Any member, not only an admin: the person who needs the room is the one who
+ * should be able to make it, and a room nobody joins does no harm while a
+ * room that takes off is content nobody had to plan.
+ *
+ * Creating one that already exists is not an error. They land in the existing
+ * room, which is what they wanted, rather than being told off for it.
+ */
+async function createRoom(userId, label, description) {
+  const name = String(label || '').trim();
+  if (name.length < 2) return { success: false, error: 'NAME_TOO_SHORT' };
+  if (name.length > 40) return { success: false, error: 'NAME_TOO_LONG' };
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, ' ').trim();
+  if (!slug) return { success: false, error: 'NAME_INVALID' };
+
+  const existing = await pool.query('SELECT slug FROM member_rooms WHERE slug = $1', [slug]);
+  if (existing.rows.length > 0) return { success: true, room: existing.rows[0].slug, alreadyExisted: true };
+
+  await pool.query(
+    `INSERT INTO member_rooms (slug, label, description, created_by)
+     VALUES ($1, $2, $3, $4) ON CONFLICT (slug) DO NOTHING`,
+    [slug, name, String(description || '').trim() || null, userId]
+  );
+  return { success: true, room: slug, alreadyExisted: false };
+}
+
+module.exports = { listRooms, getRoom, createPost, toggleHelped, deletePost, createRoom };

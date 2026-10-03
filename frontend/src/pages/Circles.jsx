@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Wordmark from '../components/Wordmark.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
-import { listRooms } from '../services/startups.js';
+import { listRooms, createRoom } from '../services/startups.js';
 
 /**
  * Choosing which circle to walk into.
@@ -103,6 +103,23 @@ function Row({ r, index }) {
 }
 
 export default function Circles() {
+  const navigate = useNavigate();
+  const [opening, setOpening] = useState(false);
+  const [newRoom, setNewRoom] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  // Creating one that already exists is not an error: they land in the room
+  // they wanted rather than being told off for it.
+  async function open() {
+    const label = newRoom.trim();
+    if (label.length < 2 || creating) return;
+    setCreating(true);
+    const { ok, data } = await createRoom(label);
+    setCreating(false);
+    if (!ok || !data.success) return;
+    navigate(`/app/circles/${encodeURIComponent(data.room)}`);
+  }
+
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState([]);
 
@@ -150,6 +167,47 @@ export default function Circles() {
             Here you can just talk. Founders, people building, and investors in the same
             place, because whoever can answer you is usually on the other side of the table.
           </p>
+
+          {/* A room opens by itself once two people here share a field, and
+              until now that was the only way one could exist — so a field
+              nobody had picked yet had nowhere to talk even when somebody
+              wanted to start it. Anybody can open one now. */}
+          <div className="flex items-center gap-5 mt-8">
+            <button
+              onClick={() => setOpening(true)}
+              className="bg-white hover:bg-white/90 text-ink-950 px-5 py-2.5 rounded-full text-[14px] font-medium transition-colors"
+            >
+              Open a circle
+            </button>
+            <span className="text-[13px] text-white/35">
+              Rooms also appear on their own once two people here share a field.
+            </span>
+          </div>
+
+          {opening && (
+            <div className="mt-6 max-w-md">
+              <input
+                autoFocus
+                value={newRoom}
+                onChange={(e) => setNewRoom(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && open()}
+                placeholder="What is it about? agritech, hardware, design..."
+                className="w-full px-5 py-3 rounded-full bg-white/8 border border-white/15 text-white text-[14px] placeholder:text-white/25 focus:outline-none focus:border-white/40 transition-colors"
+              />
+              <div className="flex items-center gap-4 mt-3">
+                <button
+                  onClick={open}
+                  disabled={newRoom.trim().length < 2 || creating}
+                  className="bg-white/90 hover:bg-white disabled:opacity-40 text-ink-950 px-4 py-2 rounded-full text-[13px] font-medium transition-colors"
+                >
+                  {creating ? 'Opening' : 'Open it'}
+                </button>
+                <button onClick={() => { setOpening(false); setNewRoom(''); }} className="text-[13px] text-white/40 hover:text-white transition-colors">
+                  Never mind
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (

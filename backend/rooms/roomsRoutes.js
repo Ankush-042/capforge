@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../auth/authMiddleware');
 const { generalLimit } = require('../shared/rateLimiter');
-const { listRooms, getRoom, createPost, toggleHelped, deletePost } = require('./roomsService');
+const { listRooms, getRoom, createPost, toggleHelped, deletePost, createRoom } = require('./roomsService');
 
 router.get('/rooms', requireAuth, async (req, res) => {
   res.json(await listRooms(req.user.userId));
@@ -32,6 +32,13 @@ router.delete('/rooms/posts/:id', requireAuth, async (req, res) => {
   const result = await deletePost(req.user.userId, req.params.id);
   if (!result.success) return res.status(403).json(result);
   res.json(result);
+});
+
+// Any member can open a circle.
+router.post('/rooms', requireAuth, async (req, res) => {
+  const r = await createRoom(req.user.userId, req.body?.label, req.body?.description);
+  if (!r.success) return res.status(400).json(r);
+  res.json(r);
 });
 
 module.exports = router;

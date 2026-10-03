@@ -188,3 +188,7 @@ export const getRankedVentures = () => apiFetch('/opportunities/ventures');
 
 // The admin operational view: health, activity over time, engine reach.
 export const getAdminOperational = () => apiFetch('/admin/operational');
+
+// Open a circle. Any member can.
+export const createRoom = (label, description) =>
+  apiFetch('/rooms', { method: 'POST', body: JSON.stringify({ label, description }) });
