@@ -68,6 +68,17 @@ async function checkEnvironment() {
       'Add them to .env in the project root. Without DATABASE_URL nothing works; without GROQ_API_KEY the AI features degrade but the product still runs.');
     return false;
   }
+  // A weak or default secret is worse than a missing one, because the
+  // application starts and looks healthy while every token is forgeable.
+  const secret = process.env.JWT_SECRET || '';
+  if (secret === 'dev-secret-change-in-production' || secret.length < 24) {
+    warn('JWT secret', secret.length < 24 ? `Only ${secret.length} characters.` : 'Still the development default.',
+      'Session tokens are guessable or forgeable. Anyone could sign a token claiming to be any user.',
+      'Set JWT_SECRET to a long random string. Any password manager will generate one; 40+ characters is plenty.');
+  } else {
+    ok('JWT secret', 'Set, and not the development default.');
+  }
+
   ok('Environment', 'Every required variable is set.');
   return true;
 }

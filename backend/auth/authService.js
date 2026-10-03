@@ -7,7 +7,27 @@ const jwt = require('jsonwebtoken');
 const pool = require('../shared/db');
 
 const SALT_ROUNDS = 10;
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+/**
+ * REFUSE TO START WITHOUT A REAL SECRET.
+ *
+ * This used to fall back to a hardcoded development string. That string is
+ * public in this repository, so a deployment that forgot to set JWT_SECRET
+ * would sign tokens anybody could forge — including tokens claiming to be
+ * any user id. The application would start normally and show no sign of it.
+ *
+ * A fallback is fine locally, where the process is unreachable. It is a
+ * complete authentication bypass in production, so there the absence of a
+ * secret is a startup failure rather than a default.
+ */
+const JWT_SECRET = process.env.JWT_SECRET
+  || (process.env.NODE_ENV === 'production' ? null : 'dev-secret-change-in-production');
+
+if (!JWT_SECRET) {
+  console.error('\nJWT_SECRET is not set, and this is a production environment.');
+  console.error('Refusing to start: without it every session token would be forgeable.');
+  console.error('Set JWT_SECRET to a long random string in the environment.\n');
+  process.exit(1);
+}
 const JWT_EXPIRES_IN = '7d';
 
 const VALID_ROLES = ['FOUNDER', 'CONTRIBUTOR', 'INVESTOR'];
