@@ -72,7 +72,7 @@ export default function MetricTile({
           // The tinted chip, not a loose icon. This is most of what made the
           // original tiles read as designed rather than assembled.
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            className="w-10 h-10 rounded-[11px] flex items-center justify-center shrink-0"
             style={{
               // A solid dark block rather than a tint of the tile's own
               // colour. A chip in the same hue disappears into the tile; a
@@ -91,7 +91,7 @@ export default function MetricTile({
       <div>
         <div className="flex items-baseline gap-1.5 flex-wrap">
           <span
-            className="text-[40px] font-semibold leading-none tabular-nums tracking-[-0.03em]"
+            className="text-[42px] font-bold leading-none tabular-nums tracking-[-0.035em]"
             style={{ color: valueColor || fg }}
           >
             {/* The figure arrives at its value rather than appearing at it,
