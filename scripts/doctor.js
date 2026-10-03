@@ -41,8 +41,21 @@ const ok = (name, detail) => results.push({ level: 'OK', name, detail });
 const warn = (name, detail, means, fix) => results.push({ level: 'WARN', name, detail, means, fix });
 const fail = (name, detail, means, fix) => results.push({ level: 'FAIL', name, detail, means, fix });
 
+/**
+ * Run a repair, SHOWING ITS OUTPUT.
+ *
+ * This piped output and showed nothing, so a repair that scores every
+ * venture against every person — minutes of real work, slowed further by
+ * rate limits — looked exactly like a hang. Somebody waiting ten minutes at
+ * a silent terminal has no way to tell the difference, and the obvious move
+ * is to kill it, which leaves the repair half done.
+ *
+ * It streams now. A long job that is visibly working is fine; a long job
+ * that says nothing is a bug.
+ */
 function run(cmd) {
-  execSync(cmd, { cwd: ROOT, stdio: 'pipe', timeout: 900000 });
+  console.log(`\n  running: ${cmd}`);
+  execSync(cmd, { cwd: ROOT, stdio: 'inherit', timeout: 1800000 });
 }
 
 // ---------------------------------------------------------------------------
@@ -299,7 +312,7 @@ async function checkQualityRules() {
         run('node scripts/score-alignment.js');
         run('node scripts/score-investor-alignment.js');
         run('node scripts/rerank-everything.js');
-        execSync('node scripts/test-matching-quality.js', { cwd: ROOT, stdio: 'pipe', timeout: 300000 });
+        run('node scripts/test-matching-quality.js');
         ok('Matching quality', 'Alignment scores were missing for a new venture; scored and re-ranked.');
         return;
       } catch {
