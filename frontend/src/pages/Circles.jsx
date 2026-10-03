@@ -192,7 +192,17 @@ export default function Circles() {
                 onChange={(e) => setNewRoom(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && open()}
                 placeholder="What is it about? agritech, hardware, design..."
-                className="w-full px-5 py-3 rounded-full bg-white/8 border border-white/15 text-white text-[14px] placeholder:text-white/25 focus:outline-none focus:border-white/40 transition-colors"
+                /* EXPLICIT COLOURS, NOT AN OPACITY CLASS. This was bg-white/8,
+                   which is not a step on Tailwind's opacity scale, so it
+                   compiled to nothing: the input kept the browser's default
+                   white background while the text stayed white. Whatever was
+                   typed was invisible. Inline styles cannot fail this way. */
+                className="w-full px-5 py-3 rounded-full text-[14px] focus:outline-none transition-colors"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.10)',
+                  border: '1px solid rgba(255,255,255,0.22)',
+                  color: '#FFFFFF',
+                }}
               />
               <div className="flex items-center gap-4 mt-3">
                 <button

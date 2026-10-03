@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Search as SearchIcon, Sparkles, Bookmark, BookmarkCheck, Users, ArrowUpRight } from 'lucide-react';
+import { Search as SearchIcon, Sparkles, Bookmark, BookmarkCheck, Users, ArrowUpRight, MessageSquare } from 'lucide-react';
 import Shell from '../components/Shell.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import Avatar from '../components/Avatar.jsx';
 import SkeletonPage from '../components/Skeleton.jsx';
 import {
-  searchStartups, semanticSearchStartups, getWatchlist, setWatchStatus,
+  searchStartups, semanticSearchStartups, getWatchlist, setWatchStatus, startConversation,
 } from '../services/startups.js';
 import { useToast } from '../components/Toast.jsx';
 
@@ -38,36 +39,52 @@ const DOMAINS = ['healthtech', 'fintech', 'edtech', 'climate', 'saas', 'cybersec
 
 const STAGES = ['Idea', 'Prototype', 'MVP', 'Early Traction'];
 
-function VentureRow({ v, watched, onToggle, index }) {
+function VentureRow({ v, watched, onToggle, index, onMessage }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.2) }}
-      className="bg-surface rounded-xl border border-surface-border shadow-card p-6"
+      className="bg-surface rounded-xl border border-surface-border shadow-card p-6 hover:shadow-elevated transition-shadow"
     >
+      {/* MATCHED TO THE CONTRIBUTOR CARD. This showed a name, three grey
+          domain tags and a problem line, while the equivalent card on the
+          contributor side carried the founder, the team, the stage and the
+          readiness. The data was one join away and was simply not selected.
+          The two sides of the product should not look like different
+          products. */}
       <div className="flex items-start justify-between gap-5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5 mb-1 flex-wrap">
-            <Link to={`/app/startups/${v.id}`} className="text-[16px] font-semibold text-ink-950 hover:text-violet-700 transition-colors">
+            <Link to={`/app/startups/${v.id}`} className="text-[16.5px] font-semibold text-ink-950 hover:text-violet-700 transition-colors">
               {v.name}
             </Link>
-            {v.stage && <span className="text-[11.5px] text-ink-500">{v.stage}</span>}
+            {(v.domain || [])[0] && (
+              <span className="text-[11px] font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded">
+                {(v.domain || [])[0]}
+              </span>
+            )}
           </div>
 
-          <p className="text-[12.5px] text-ink-300 mb-2">{(v.domain || []).slice(0, 3).join(' · ')}</p>
           <p className="text-[13.5px] text-ink-700 leading-relaxed line-clamp-2">{v.problem}</p>
 
-          <Link
-            to={`/app/startups/${v.id}`}
-            className="inline-flex items-center gap-1 text-[13px] text-violet-700 hover:text-violet-600 transition-colors mt-3"
-          >
-            Look properly <ArrowUpRight size={13} />
-          </Link>
+          <div className="flex items-center gap-4 mt-3 flex-wrap">
+            <span className="flex items-center gap-1.5 text-[12.5px] text-ink-500">
+              <Users size={12} />
+              <span className="font-medium text-ink-800 tabular-nums">{v.team_size ?? 0}</span> on the team
+            </span>
+            {v.stage && <span className="text-[12.5px] text-ink-500">{v.stage}</span>}
+            {v.readiness !== null && v.readiness !== undefined && (
+              <span className="text-[12.5px] text-ink-500">
+                readiness <span className="font-medium text-ink-800 tabular-nums">{Math.round(parseFloat(v.readiness))}</span>
+              </span>
+            )}
+            {(v.domain || []).length > 1 && (
+              <span className="text-[12px] text-ink-300 truncate">{(v.domain || []).slice(1, 3).join(' · ')}</span>
+            )}
+          </div>
         </div>
 
-        {/* Saving feeds the watchlist, which Tracking reads and which drives
-            the movement block on deal flow. A saved query went nowhere. */}
         <button
           onClick={() => onToggle(v)}
           className={`shrink-0 flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-full border transition-colors ${
@@ -81,11 +98,28 @@ function VentureRow({ v, watched, onToggle, index }) {
           {watched ? 'Tracking' : 'Track'}
         </button>
       </div>
+
+      <div className="flex items-center gap-4 mt-5 pt-4 border-t border-surface-border">
+        <button
+          onClick={() => onMessage(v)}
+          className="flex items-center gap-1.5 text-[13.5px] font-medium bg-ink-900 hover:bg-ink-700 text-white px-4 py-2 rounded-full transition-colors"
+        >
+          <MessageSquare size={13} /> Write to {v.founder_name?.split(' ')[0] || 'the founder'}
+        </button>
+        <Link to={`/app/startups/${v.id}`} className="flex items-center gap-1 text-[13.5px] text-ink-500 hover:text-violet-700 transition-colors">
+          Look properly <ArrowUpRight size={13} />
+        </Link>
+        <div className="ml-auto flex items-center gap-2">
+          <Avatar name={v.founder_name} src={v.founder_avatar} size={22} />
+          <span className="text-[12.5px] text-ink-500">{v.founder_name}</span>
+        </div>
+      </div>
     </motion.div>
   );
 }
 
 export default function Explore() {
+  const navigate = useNavigate();
   const showToast = useToast();
   const [query, setQuery] = useState('');
   const [domain, setDomain] = useState('');
@@ -131,6 +165,12 @@ export default function Explore() {
     setResults(res.ok && res.data.success ? (res.data.results || []) : []);
     setCutOff(res.ok && res.data.success ? (res.data.cutOff || 0) : 0);
     setLoading(false);
+  }
+
+  async function message(v) {
+    const { ok, data } = await startConversation(v.founder_id, { startupId: v.id });
+    if (ok && data?.success) { navigate(`/app/inbox/${data.conversation.id}`); return; }
+    showToast('Could not open that conversation.', 'error');
   }
 
   async function toggleWatch(v) {
@@ -239,6 +279,7 @@ export default function Explore() {
                 index={i}
                 watched={watching.has(v.id)}
                 onToggle={toggleWatch}
+                onMessage={message}
               />
             ))}
           </div>

@@ -259,6 +259,38 @@ async function createRoom(userId, label, description) {
   const existing = await pool.query('SELECT slug FROM member_rooms WHERE slug = $1', [slug]);
   if (existing.rows.length > 0) return { success: true, room: existing.rows[0].slug, alreadyExisted: true };
 
+  /**
+   * AND AN EQUIVALENT ROOM COUNTS AS THE SAME ROOM.
+   *
+   * Rooms appear automatically from the fields people chose, so 'edtech'
+   * already exists. Somebody typing 'education technology' was getting a
+   * second, empty room beside it — the same conversation split in two, which
+   * is exactly what makes a forum feel dead.
+   *
+   * domainsMatch already knows these are one field. If an equivalent room
+   * exists, whether derived from fields or created by somebody else, they
+   * land in it. That is what they wanted, and it is where the people are.
+   */
+  const { domainsMatch } = require('../matching/matchingService');
+
+  const derived = await pool.query(
+    `SELECT DISTINCT lower(trim(d)) AS room
+     FROM contributor_profiles cp
+     CROSS JOIN LATERAL unnest(COALESCE(cp.preferred_domains, ARRAY[]::text[])) AS d
+     UNION
+     SELECT DISTINCT lower(trim(d)) AS room
+     FROM startups s CROSS JOIN LATERAL unnest(COALESCE(s.domain, ARRAY[]::text[])) AS d
+     WHERE s.verification_status != 'UNVERIFIED'
+     UNION
+     SELECT slug AS room FROM member_rooms`
+  );
+
+  for (const row of derived.rows) {
+    if (row.room && domainsMatch(slug, row.room)) {
+      return { success: true, room: row.room, alreadyExisted: true, equivalent: true };
+    }
+  }
+
   await pool.query(
     `INSERT INTO member_rooms (slug, label, description, created_by)
      VALUES ($1, $2, $3, $4) ON CONFLICT (slug) DO NOTHING`,

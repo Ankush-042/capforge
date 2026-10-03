@@ -21,13 +21,14 @@
 const pool = require('../shared/db');
 
 async function searchStartups({ domain, stage, fundingStage, role, skill, q }, requestingUserId) {
-  const conditions = [`(status = 'ACTIVE' AND visibility = 'DISCOVERABLE')`];
+  // Qualified with the table alias now that the query joins profiles.
+  const conditions = [`(s.status = 'ACTIVE' AND s.visibility = 'DISCOVERABLE')`];
   const params = [];
   let i = 1;
 
   // Owner can always see their own startups regardless of status/visibility.
   if (requestingUserId) {
-    conditions[0] = `((status = 'ACTIVE' AND visibility = 'DISCOVERABLE') OR founder_id = $${i})`;
+    conditions[0] = `((s.status = 'ACTIVE' AND s.visibility = 'DISCOVERABLE') OR s.founder_id = $${i})`;
     params.push(requestingUserId);
     i++;
   }
@@ -51,34 +52,47 @@ async function searchStartups({ domain, stage, fundingStage, role, skill, q }, r
   }
 
   if (stage) {
-    conditions.push(`LOWER(stage) = LOWER($${i})`);
+    conditions.push(`LOWER(s.stage) = LOWER($${i})`);
     params.push(stage);
     i++;
   }
   if (fundingStage) {
-    conditions.push(`LOWER(funding_stage) = LOWER($${i})`);
+    conditions.push(`LOWER(s.funding_stage) = LOWER($${i})`);
     params.push(fundingStage);
     i++;
   }
   if (role) {
     // role_requirements is JSONB [{role, skills}] — search within it.
-    conditions.push(`role_requirements::text ILIKE $${i}`);
+    conditions.push(`s.role_requirements::text ILIKE $${i}`);
     params.push(`%${role}%`);
     i++;
   }
   if (skill) {
-    conditions.push(`role_requirements::text ILIKE $${i}`);
+    conditions.push(`s.role_requirements::text ILIKE $${i}`);
     params.push(`%${skill}%`);
     i++;
   }
   if (q) {
-    conditions.push(`(name ILIKE $${i} OR problem ILIKE $${i} OR solution ILIKE $${i})`);
+    conditions.push(`(s.name ILIKE $${i} OR s.problem ILIKE $${i} OR s.solution ILIKE $${i})`);
     params.push(`%${q}%`);
     i++;
   }
 
-  const query = `SELECT id, name, problem, solution, domain, stage, business_model, status, created_at
-                  FROM startups WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC LIMIT 50`;
+  // THE CARD NEEDS MORE THAN A NAME. Explore rendered a title, a few grey
+  // domain tags and a problem line, while the contributor's equivalent card
+  // carried the founder, the team, the stage and the readiness. The data was
+  // one join away and simply was not being selected.
+  const query = `SELECT s.id, s.name, s.problem, s.solution, s.domain, s.stage, s.business_model, s.status, s.created_at,
+                   s.founder_id,
+                   p.display_name AS founder_name,
+                   p.profile_image AS founder_avatar,
+                   (SELECT COUNT(*)::int FROM startup_team_members tm WHERE tm.startup_id = s.id) AS team_size,
+                   (SELECT overall_score FROM readiness_assessments ra
+                    WHERE ra.startup_id = s.id ORDER BY ra.generated_at DESC LIMIT 1) AS readiness
+                  FROM startups s
+                  JOIN profiles p ON p.user_id = s.founder_id
+                  WHERE ${conditions.join(' AND ')}
+                  ORDER BY s.created_at DESC LIMIT 50`;
   const result = await pool.query(query, params);
 
   // The field filter, applied with the same matcher the rest of the engine
