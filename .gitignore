@@ -10,3 +10,7 @@ __pycache__/
 frontend/dist/
 frontend/node_modules/
 frontend/.claude/
+
+# Database dumps. Real user data, and large. Never commit these.
+backups/
+*.sql.gz

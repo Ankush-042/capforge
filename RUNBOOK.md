@@ -198,6 +198,35 @@ and Groq only affects AI surfaces, all of which degrade.
 
 ---
 
+## Going away for a while
+
+Two things, both worth five minutes.
+
+**Take a backup.**
+```
+node scripts/backup.js
+```
+Writes `backups/capforge-<date>.sql`. The free Supabase tier has no
+automatic backups, so this file is the only thing standing between you and
+starting over. Copy it off this laptop — Drive, a USB stick, anywhere. A
+backup that exists in one place is not a backup.
+
+Restoring, into an **empty** database:
+```
+psql "<connection string>" < backups/capforge-<date>.sql
+```
+
+**Stop the database pausing.** A free Supabase project pauses after about a
+week of inactivity, and resuming takes a minute from the dashboard. If you
+would rather it never happen, point a free uptime monitor
+(uptimerobot.com, cron-job.org) at any public endpoint of the deployed app
+every few days. One request is enough to keep it active.
+
+If it does pause, nothing is lost. It is a button in the Supabase
+dashboard, and the app works again a minute later.
+
+---
+
 ## What cannot break
 
 Worth knowing, because it narrows where to look:
