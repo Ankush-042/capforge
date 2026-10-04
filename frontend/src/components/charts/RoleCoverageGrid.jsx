@@ -45,7 +45,7 @@ export default function RoleCoverageGrid({ gaps }) {
             className="group relative flex items-center gap-3.5 rounded-xl bg-surface border border-surface-border shadow-card p-4 pl-5 overflow-hidden hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200"
           >
             <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: covered ? '#E4E3EC' : '#7C5CFC' }} />
-            <RoleRing coverage={g.coverage} color={covered ? '#7C5CFC' : '#B9AEEA'} />
+            <RoleRing coverage={g.coverage} color={covered ? '#7C5CFC' : '#454551'} />
             <div className="min-w-0">
               <p className="text-[14px] font-semibold text-ink-950 truncate">{g.role}</p>
               <p className="text-[12px] font-medium mt-0.5" style={{ color: covered ? '#6E7079' : '#6845F0' }}>

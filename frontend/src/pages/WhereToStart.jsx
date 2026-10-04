@@ -62,7 +62,7 @@ function Option({ o, onMessage, isTop, index }) {
         </div>
 
         <div className="shrink-0 text-right">
-          <span className="text-[24px] font-bold leading-none tabular-nums" style={{ color: isTop ? '#6845F0' : '#6B6480' }}>
+          <span className="text-[24px] font-bold leading-none tabular-nums" style={{ color: isTop ? '#6845F0' : '#3A3A45' }}>
             {o.leverage}
           </span>
           <p className="text-[11px] text-ink-300 mt-0.5">where you matter</p>

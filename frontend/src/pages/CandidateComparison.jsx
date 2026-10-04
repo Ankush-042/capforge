@@ -156,7 +156,7 @@ export default function CandidateComparison() {
                       ) : (
                         <>
                           <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="text-[14px] font-semibold tabular-nums" style={{ color: isLeader ? '#1F5D52' : '#5A6B64' }}>{v}%</span>
+                            <span className="text-[14px] font-semibold tabular-nums" style={{ color: isLeader ? '#1F5D52' : '#3A3A45' }}>{v}%</span>
                             {isLeader && (
                               <span className="flex items-center gap-1 text-[10.5px] font-semibold text-mint-500"><Check size={11} /> best</span>
                             )}
@@ -167,7 +167,7 @@ export default function CandidateComparison() {
                               animate={{ width: `${v}%` }}
                               transition={{ duration: 0.6, delay: 0.1 + ri * 0.05 }}
                               className="h-full rounded-full"
-                              style={{ backgroundColor: isLeader ? '#3FB081' : '#9EC4B6' }}
+                              style={{ backgroundColor: isLeader ? '#3FB081' : '#454551' }}
                             />
                           </div>
                         </>

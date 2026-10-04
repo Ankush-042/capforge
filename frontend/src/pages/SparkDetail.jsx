@@ -210,7 +210,7 @@ export default function SparkDetail() {
             </div>
             <div className="h-9 w-px bg-surface-border" />
             <div>
-              <p className="text-[26px] font-bold leading-none tabular-nums" style={{ color: data.reach.resonated > 0 ? '#3FB081' : '#6B6D78' }}>
+              <p className="text-[26px] font-bold leading-none tabular-nums" style={{ color: data.reach.resonated > 0 ? '#3FB081' : '#3A3A45' }}>
                 {data.reach.resonated}
               </p>
               <p className="text-[12px] text-ink-500 mt-1">said they want in</p>

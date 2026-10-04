@@ -84,7 +84,7 @@ function RoleRow({ r, startupId, isTop, index }) {
             <p className="text-[11px] text-ink-300">best fit</p>
           </div>
           <div className="text-right w-16">
-            <p className="text-[22px] font-bold leading-none tabular-nums" style={{ color: isTop ? '#6845F0' : '#6B6480' }}>
+            <p className="text-[22px] font-bold leading-none tabular-nums" style={{ color: isTop ? '#6845F0' : '#3A3A45' }}>
               {r.actionability}
             </p>
             <p className="text-[11px] text-ink-300 mt-0.5">movable</p>
