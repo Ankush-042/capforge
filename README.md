@@ -9,6 +9,8 @@ language model can produce a fluent justification for any pairing, and in this
 domain people act on those justifications. So the architecture is built to make
 the system unable to assert what it cannot support.
 
+![CapForge](docs/screenshots/1.png)
+
 ---
 
 ## Architecture
@@ -71,6 +73,11 @@ result rather than a *filter* on it:
 Messaging the founder is available in all three. The role-first path survives
 for the founder's genuinely different question — *rank candidates for this
 specific gap*.
+
+![Contributor opportunities, with role states](docs/screenshots/3.png)
+
+Every venture in the chosen fields is ranked. The amber rows say *no open role
+fits you* and name the closest one — and you can still write to the founder.
 
 ### Renormalisation over missing signals
 
@@ -184,6 +191,20 @@ a critical first hire; grounded, it recommends 1.56–3.13%.
 
 **Schemes** — 5 Indian schemes, 18 dated criteria, three-state output:
 `MET` / `NOT_MET` / `CANNOT_CHECK`. The engine never outputs "eligible".
+
+![Government scheme eligibility](docs/screenshots/6.png)
+
+![Readiness](docs/screenshots/5.png)
+
+Readiness states the two dimensions it cannot measure rather than inventing a
+proxy for them.
+
+![Founder progress](docs/screenshots/2.png)
+
+![Investor deal flow](docs/screenshots/4.png)
+
+Deal flow separates what matches the stated thesis from everything else, and
+leads with what has moved since the investor last marked it.
 
 ---
 
