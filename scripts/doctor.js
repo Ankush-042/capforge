@@ -139,6 +139,24 @@ async function checkMigrations() {
   ok('Migrations', `All ${files.length} applied.`);
 }
 
+async function checkRowLevelSecurity() {
+  // Supabase serves every public table over a REST API authorised by a key
+  // that is public by design. A table without RLS is open to anyone with the
+  // project URL. Nothing in the application would show it: the backend
+  // connects as postgres and bypasses RLS, so everything works either way.
+  const r = await pool.query(
+    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND NOT rowsecurity ORDER BY tablename`
+  );
+  if (r.rows.length > 0) {
+    const names = r.rows.map((x) => x.tablename).slice(0, 5).join(', ');
+    fail('Row Level Security', `${r.rows.length} table(s) are publicly readable: ${names}${r.rows.length > 5 ? ', ...' : ''}`,
+      'Anyone with the project URL can read, edit and delete these through Supabase\'s REST API, including password hashes. The app itself shows no sign of it.',
+      'Run database/migrations/042_enable_rls.sql in the Supabase SQL editor. Run it again after adding any table.');
+  } else {
+    ok('Row Level Security', 'Enabled on every public table.');
+  }
+}
+
 async function checkGroqKeys() {
   const keys = [process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2, process.env.GROQ_API_KEY_3].filter(Boolean);
   if (keys.length === 0) {
@@ -354,6 +372,7 @@ async function checkQualityRules() {
   const dbOk = await checkDatabase();
   if (dbOk) {
     await checkMigrations();
+    await checkRowLevelSecurity();
     await checkDerivedData();
   }
   await checkGroqKeys();
